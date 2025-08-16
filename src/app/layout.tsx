@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Prompt } from "next/font/google";
 import { ClerkProvider } from '@clerk/nextjs'
+import { TRPCReactProvider } from './providers'
 import "./globals.css";
 
 const prompt = Prompt({
@@ -23,7 +24,9 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${prompt.variable} antialiased`}>
-          {children}
+          <TRPCReactProvider>
+            {children}
+          </TRPCReactProvider>
         </body>
       </html>
     </ClerkProvider>

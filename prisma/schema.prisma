@@ -10,13 +10,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Example model - will be replaced with actual models in future stories
-model Post {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// Category model for product organization
+model Category {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[] // Relation: One Category can have many Products
 
-  @@map("posts")
+  @@map("categories")
+}
+
+// Product model (future implementation)
+model Product {
+  id            String   @id @default(cuid())
+  name          String
+  salePrice     Float
+  quantity      Int      @default(0)
+  averageCost   Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  category      Category @relation(fields: [categoryId], references: [id])
+  categoryId    String
+  
+  @@map("products")
 }

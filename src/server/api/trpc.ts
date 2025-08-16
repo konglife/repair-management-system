@@ -1,15 +1,15 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { auth } from "@clerk/nextjs/server";
 import { db } from "~/lib/db";
-import { getAuth } from "~/server/auth";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const auth = await getAuth();
+  const authData = await auth();
   
   return {
     db,
-    auth,
+    auth: authData,
     ...opts,
   };
 };
