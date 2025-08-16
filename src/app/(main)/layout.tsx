@@ -62,7 +62,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-row">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -76,7 +76,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:h-screen flex flex-col`}>
+      } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:h-screen flex flex-col lg:border-r lg:border-gray-200`}>
         
         {/* Sidebar header */}
         <div className="flex items-center justify-between h-14 px-4 border-b border-gray-200 flex-shrink-0">
@@ -121,8 +121,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </nav>
       </div>
 
-      {/* Main content */}
-      <div className="lg:pl-64">
+  {/* Main content */}
+  <div className="flex-1 flex flex-col">
         {/* Desktop Navigation Bar */}
         <div className="hidden lg:block sticky top-0 z-10 bg-white">
           <div className="flex items-center justify-between h-14 px-6 bg-white border-b border-gray-200">
@@ -173,7 +173,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </div>
 
         {/* Page content */}
-        <main>
+        <main className="flex-1">
           {children}
         </main>
       </div>
