@@ -8,6 +8,29 @@ jest.mock('@clerk/nextjs/server', () => ({
 
 const mockedAuth = auth as jest.MockedFunction<typeof auth>
 
+// Helper to create mock auth objects
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const createMockAuth = (overrides: Record<string, unknown> = {}): any => ({
+  userId: null,
+  sessionId: null,
+  actor: undefined,
+  orgId: null,
+  orgRole: null,
+  orgSlug: null,
+  orgPermissions: null,
+  sessionClaims: null,
+  sessionStatus: null,
+  tokenType: 'non-existent' as const,
+  factorVerificationAge: null,
+  getToken: jest.fn(),
+  has: jest.fn(),
+  redirectToSignIn: jest.fn(),
+  redirectToSignUp: jest.fn(),
+  debug: jest.fn(),
+  isAuthenticated: false,
+  ...overrides,
+})
+
 describe('Authentication utilities', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -15,17 +38,7 @@ describe('Authentication utilities', () => {
 
   describe('getAuth', () => {
     it('should return null values when user is not authenticated', async () => {
-      mockedAuth.mockResolvedValue({
-        userId: null,
-        sessionId: null,
-        actor: null,
-        orgId: null,
-        orgRole: null,
-        orgSlug: null,
-        orgPermissions: null,
-        sessionClaims: null,
-        has: jest.fn(),
-      })
+      mockedAuth.mockResolvedValue(createMockAuth())
 
       const result = await getAuth()
 
@@ -37,17 +50,13 @@ describe('Authentication utilities', () => {
 
     it('should return userId when user is authenticated', async () => {
       const testUserId = 'user_test123'
-      mockedAuth.mockResolvedValue({
+      mockedAuth.mockResolvedValue(createMockAuth({
         userId: testUserId,
         sessionId: 'session_test',
-        actor: null,
-        orgId: null,
-        orgRole: null,
-        orgSlug: null,
-        orgPermissions: null,
-        sessionClaims: null,
-        has: jest.fn(),
-      })
+        sessionStatus: null,
+        tokenType: 'signed-in',
+        isAuthenticated: true,
+      }))
 
       const result = await getAuth()
 
@@ -60,34 +69,20 @@ describe('Authentication utilities', () => {
 
   describe('requireAuth', () => {
     it('should throw error when user is not authenticated', async () => {
-      mockedAuth.mockResolvedValue({
-        userId: null,
-        sessionId: null,
-        actor: null,
-        orgId: null,
-        orgRole: null,
-        orgSlug: null,
-        orgPermissions: null,
-        sessionClaims: null,
-        has: jest.fn(),
-      })
+      mockedAuth.mockResolvedValue(createMockAuth())
 
       await expect(requireAuth()).rejects.toThrow('Unauthorized')
     })
 
     it('should return userId when user is authenticated', async () => {
       const testUserId = 'user_test123'
-      mockedAuth.mockResolvedValue({
+      mockedAuth.mockResolvedValue(createMockAuth({
         userId: testUserId,
         sessionId: 'session_test',
-        actor: null,
-        orgId: null,
-        orgRole: null,
-        orgSlug: null,
-        orgPermissions: null,
-        sessionClaims: null,
-        has: jest.fn(),
-      })
+        sessionStatus: null,
+        tokenType: 'signed-in',
+        isAuthenticated: true,
+      }))
 
       const result = await requireAuth()
 

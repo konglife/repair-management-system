@@ -13,6 +13,7 @@ import {
   X 
 } from 'lucide-react'
 import { useState } from 'react'
+import { Button } from '@/components/ui/button'
 
 interface MainLayoutProps {
   children: ReactNode
@@ -83,12 +84,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <h1 className="text-lg font-semibold text-gray-900">
             Repair Management
           </h1>
-          <button
-            className="lg:hidden p-1 rounded-md hover:bg-gray-100"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
             onClick={() => setSidebarOpen(false)}
           >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
         {/* Navigation - Main content area */}
@@ -150,12 +153,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {/* Mobile header */}
         <div className="lg:hidden sticky top-0 z-10 bg-white">
           <div className="flex items-center justify-between h-14 px-4 bg-white border-b border-gray-200">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setSidebarOpen(true)}
-              className="p-1 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors duration-200"
             >
               <Menu className="h-5 w-5" />
-            </button>
+            </Button>
             <h1 className="text-lg font-semibold text-gray-900">
               Repair Management
             </h1>
