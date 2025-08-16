@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Prompt } from "next/font/google";
+import { ClerkProvider } from '@clerk/nextjs'
 import "./globals.css";
 
 const prompt = Prompt({
@@ -19,10 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${prompt.variable} antialiased`}>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`${prompt.variable} antialiased`}>
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

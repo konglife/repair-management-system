@@ -15,7 +15,7 @@ const customJestConfig = {
   },
   testEnvironment: 'jest-environment-jsdom',
   transformIgnorePatterns: [
-    'node_modules/(?!(superjson)/)',
+    'node_modules/(?!(superjson|@clerk)/)',
   ],
 }
 
