@@ -1,118 +1,156 @@
 import { render, screen } from '@testing-library/react'
-import '@testing-library/jest-dom'
-import Home from './page'
-import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
+import { useRouter } from 'next/navigation'
+import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import type { UserResource } from '@clerk/types'
+import HomePage from './page'
 
-// Mock Next.js router
+// Mock the Clerk hooks
+jest.mock('@clerk/nextjs', () => ({
+  useUser: jest.fn(),
+}))
+
+// Mock next/navigation
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }))
 
-// Mock Clerk components
-jest.mock('@clerk/nextjs', () => ({
-  UserButton: jest.fn(() => <div data-testid="user-button">Mocked UserButton</div>),
-  useUser: jest.fn(),
-}))
-
-const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>
-const mockUseUser = useUser as jest.MockedFunction<typeof useUser>
 const mockPush = jest.fn()
+const mockBack = jest.fn()
+const mockForward = jest.fn()
+const mockRefresh = jest.fn()
+const mockReplace = jest.fn()
+const mockPrefetch = jest.fn()
 
-describe('Home page', () => {
+const mockUseUser = useUser as jest.MockedFunction<typeof useUser>
+const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>
+
+// Create a complete AppRouterInstance mock
+const createMockRouter = (): AppRouterInstance => ({
+  push: mockPush,
+  back: mockBack,
+  forward: mockForward,
+  refresh: mockRefresh,
+  replace: mockReplace,
+  prefetch: mockPrefetch,
+})
+
+// Helper to create minimal mock user objects
+const createMockUser = (overrides: Partial<UserResource> = {}): Partial<UserResource> => ({
+  id: 'user_test123',
+  fullName: 'Test User',
+  emailAddresses: [{ emailAddress: 'test@example.com' }] as UserResource['emailAddresses'],
+  ...overrides,
+})
+
+describe('HomePage', () => {
   beforeEach(() => {
+    mockUseRouter.mockReturnValue(createMockRouter())
+  })
+
+  afterEach(() => {
     jest.clearAllMocks()
-    mockUseRouter.mockReturnValue({
-      push: mockPush,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
   })
 
-  describe('when user is authenticated', () => {
-    beforeEach(() => {
-      mockUseUser.mockReturnValue({
-        isLoaded: true,
-        isSignedIn: true,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        user: { id: 'test-user' } as any,
-      })
+  it('shows loading state when auth is not loaded', () => {
+    mockUseUser.mockReturnValue({
+      isLoaded: false,
+      isSignedIn: undefined,
+      user: undefined,
     })
 
-    it('renders the page title in header', () => {
-      render(<Home />)
-      
-      const heading = screen.getByRole('heading', { level: 1 })
-      expect(heading).toBeInTheDocument()
-      expect(heading).toHaveTextContent('Repair Management System')
-    })
-    
-    it('renders the dashboard welcome message', () => {
-      render(<Home />)
-      
-      const welcomeHeading = screen.getByText('Welcome to Your Dashboard')
-      expect(welcomeHeading).toBeInTheDocument()
-      
-      const description = screen.getByText('Manage your repair shop operations efficiently')
-      expect(description).toBeInTheDocument()
-    })
-    
-    it('renders the UserButton component', () => {
-      render(<Home />)
-      
-      const userButton = screen.getByTestId('user-button')
-      expect(userButton).toBeInTheDocument()
-    })
-    
-    it('renders the feature cards', () => {
-      render(<Home />)
-      
-      expect(screen.getByText('Repairs')).toBeInTheDocument()
-      expect(screen.getByText('Track and manage repair jobs')).toBeInTheDocument()
-      
-      expect(screen.getByText('Inventory')).toBeInTheDocument()
-      expect(screen.getByText('Manage parts and stock levels')).toBeInTheDocument()
-      
-      expect(screen.getByText('Customers')).toBeInTheDocument()
-      expect(screen.getByText('Customer information and history')).toBeInTheDocument()
-    })
-    
-    it('has proper layout structure', () => {
-      render(<Home />)
-      
-      const mainElement = screen.getByRole('main')
-      expect(mainElement).toBeInTheDocument()
-    })
+    render(<HomePage />)
+
+    expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
-  describe('when user is not authenticated', () => {
-    beforeEach(() => {
-      mockUseUser.mockReturnValue({
-        isLoaded: true,
-        isSignedIn: false,
-        user: null,
-      })
+  it('redirects authenticated user to dashboard', () => {
+    const mockUser = createMockUser()
+
+    mockUseUser.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: mockUser as UserResource,
     })
 
-    it('shows redirecting state', () => {
-      render(<Home />)
-      
-      expect(screen.getByText('Redirecting...')).toBeInTheDocument()
-    })
+    render(<HomePage />)
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard')
+    expect(screen.getByText('Redirecting to dashboard...')).toBeInTheDocument()
   })
 
-  describe('when authentication is loading', () => {
-    beforeEach(() => {
-      mockUseUser.mockReturnValue({
-        isLoaded: false,
-        isSignedIn: false,
-        user: null,
-      })
+  it('redirects unauthenticated user to sign-in', () => {
+    mockUseUser.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: false,
+      user: null,
     })
 
-    it('shows loading state', () => {
-      render(<Home />)
-      
-      expect(screen.getByText('Loading...')).toBeInTheDocument()
+    render(<HomePage />)
+
+    expect(mockPush).toHaveBeenCalledWith('/sign-in')
+    expect(screen.getByText('Redirecting to sign in...')).toBeInTheDocument()
+  })
+
+  it('shows appropriate redirecting message for authenticated users', () => {
+    const mockUser = createMockUser()
+
+    mockUseUser.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: mockUser as UserResource,
     })
+
+    render(<HomePage />)
+
+    expect(screen.getByText('Redirecting to dashboard...')).toBeInTheDocument()
+    expect(screen.queryByText('Redirecting to sign in...')).not.toBeInTheDocument()
+  })
+
+  it('shows appropriate redirecting message for unauthenticated users', () => {
+    mockUseUser.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: false,
+      user: null,
+    })
+
+    render(<HomePage />)
+
+    expect(screen.getByText('Redirecting to sign in...')).toBeInTheDocument()
+    expect(screen.queryByText('Redirecting to dashboard...')).not.toBeInTheDocument()
+  })
+
+  it('displays loading spinner in all states', () => {
+    // Test loading state
+    mockUseUser.mockReturnValue({
+      isLoaded: false,
+      isSignedIn: undefined,
+      user: undefined,
+    })
+
+    const { rerender } = render(<HomePage />)
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+
+    // Test authenticated state
+    const mockUser = createMockUser()
+    mockUseUser.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: true,
+      user: mockUser as UserResource,
+    })
+
+    rerender(<HomePage />)
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
+
+    // Test unauthenticated state
+    mockUseUser.mockReturnValue({
+      isLoaded: true,
+      isSignedIn: false,
+      user: null,
+    })
+
+    rerender(<HomePage />)
+    expect(document.querySelector('.animate-spin')).toBeInTheDocument()
   })
 })

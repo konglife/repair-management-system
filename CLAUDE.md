@@ -131,3 +131,4 @@ Ensure these environment variables are configured:
 - Critical business logic must have unit test coverage
 - Use `npm run test:watch` during development
 - Mock external services (database, auth) in tests
+- No need to run npm run dev because it is already running.
