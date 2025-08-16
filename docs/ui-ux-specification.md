@@ -38,9 +38,19 @@ graph TD
 
 ### Navigation Structure
 
-  * **Primary Navigation:** Will be a vertical sidebar menu that is persistently displayed after the user logs in. The menu will consist of links to the 5 main pages: Dashboard, Stock Management, Sales, Repairs, and Customers.
-  * **Secondary Navigation:** Will be located within each main page. For example, on the "Stock Management" page, there will be sub-menus or Tabs to choose between "Products", "Categories", and "Units".
-  * **Breadcrumb Strategy:** A breadcrumb trail will be displayed at the top of the content area to show the user's current location (e.g., Home \> Stock Management \> Products), helping to prevent users from getting lost.
+  * **Primary Navigation:** Implemented as a responsive vertical sidebar menu with two different behaviors:
+    * **Desktop (≥768px):** Permanently visible 256px-wide sidebar with light theme and clean typography
+    * **Mobile (<768px):** Hidden sidebar accessed via hamburger menu button, displayed as sliding overlay using Sheet component
+  * **Navigation Items:** Five main sections with Lucide icons and active state highlighting:
+    * **Dashboard** (LayoutDashboard icon) → `/dashboard`
+    * **Stock** (Boxes icon) → `/stock` 
+    * **Sales** (ShoppingCart icon) → `/sales`
+    * **Repairs** (Wrench icon) → `/repairs`
+    * **Customers** (Users icon) → `/customers`
+  * **Active State:** Current page highlighted with blue accent color and visual border indicator
+  * **Mobile Navigation:** Sheet-based overlay with proper accessibility (WCAG compliant screen reader support)
+  * **User Controls:** Clerk UserButton integrated in header for profile management and sign-out
+  * **Secondary Navigation:** Located within each main page as needed (e.g., Categories/Products tabs on Stock page)
 
 ## 3\. User Flows
 
@@ -111,15 +121,23 @@ We will use a **pre-built UI Component Library** to give the application a beaut
 
 ### Core Components
 
-Here is a list of the basic components that will be needed from the chosen library:
+Implemented using **Shadcn/ui** design system with the following components:
 
-  * **Button:** For all actions.
-  * **Table:** For displaying lists of data.
-  * **Card:** For displaying summary information on the Dashboard.
-  * **Input:** For all forms.
-  * **Select/Dropdown:** For selecting data from a list.
-  * **Dialog/Modal:** For displaying confirmation messages or sub-forms.
-  * **Tabs:** For switching views on the same page.
+  * **Button:** Implemented with variants (default, outline, ghost) for all user actions
+  * **Table:** Complete table family (Table, TableHeader, TableBody, TableRow, TableCell) for data display
+  * **Card:** Card system (Card, CardHeader, CardTitle, CardContent) for dashboard summary information
+  * **Input:** Form input components with validation states and proper accessibility
+  * **Dialog:** Modal system (Dialog, DialogContent, DialogHeader, DialogTitle) for confirmations and forms
+  * **Sheet:** Mobile navigation overlay system with proper accessibility (SheetContent, SheetTitle, SheetDescription)
+  * **Badge:** Status indicators and categorization labels
+  * **Layout Components:** Custom MainLayout, Sidebar, and Header components built on Shadcn/ui primitives
+
+### Accessibility Implementation
+
+  * **WCAG Compliance:** Achieved through Radix UI primitives underlying Shadcn/ui components
+  * **Screen Reader Support:** Proper ARIA labels and semantic markup throughout
+  * **Keyboard Navigation:** Full keyboard accessibility for all interactive elements
+  * **Focus Management:** Visible focus indicators and logical tab order
 
 ## 6\. Branding & Style Guide
 
@@ -142,7 +160,10 @@ Here is a list of the basic components that will be needed from the chosen libra
 
 ### Iconography
 
-  * **Icon Library:** Recommended to use **"Lucide Icons"** (lucide.dev)
+  * **Icon Library:** **Lucide Icons** (0.539.x) implemented throughout the application
+  * **Navigation Icons:** LayoutDashboard, Boxes, ShoppingCart, Wrench, Users for main sections
+  * **Action Icons:** Plus, Edit, Trash2, Menu, X for user interactions  
+  * **Implementation:** Imported from `lucide-react` package with consistent sizing and theming
 
 ## 7\. Accessibility Requirements
 
@@ -150,7 +171,18 @@ Here is a list of the basic components that will be needed from the chosen libra
 
 ## 8\. Responsiveness Strategy
 
-We will use a **"Mobile-First"** approach, using standard breakpoints to adjust the layout to fit mobile, tablet, and desktop screen sizes.
+**"Mobile-First"** approach implemented with the following breakpoints and behaviors:
+
+  * **Mobile (<768px):** 
+    * Hidden sidebar navigation with hamburger menu toggle
+    * Sheet-based overlay navigation with smooth animations
+    * Single-column layout optimized for touch interaction
+    * Clerk UserButton in mobile header for user management
+  * **Desktop (≥768px):** 
+    * Permanent 256px sidebar with two-column layout
+    * Fixed navigation with hover states and active indicators  
+    * Optimized for mouse and keyboard interaction
+    * UserButton in main header area
 
 ## 9\. Animation & Micro-interactions
 

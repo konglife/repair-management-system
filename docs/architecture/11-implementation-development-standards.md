@@ -47,3 +47,24 @@ This is the section we just summarized and agreed upon, which consists of 5 key 
 
   * **Error Handling:** tRPC has an excellent built-in error handling system. When an error occurs on the Backend, the Frontend will receive a well-typed error, making it easy to display user-friendly error messages.
   * **Logging & Monitoring:** For the first version (MVP), we will use the **Vercel Logs** and **Vercel Analytics** systems that come with the platform, requiring no additional setup, to monitor the application's performance and errors.
+
+-----
+
+### 11.7 Layout & UI Component Standards
+
+  * **Design System:** All UI components must use **Shadcn/ui** design system for consistency and accessibility compliance.
+  * **Component Structure:** Layout components follow a three-tier architecture:
+    * **MainLayout** - Root layout wrapper with responsive grid system
+    * **Sidebar** - Navigation component with active route highlighting  
+    * **Header** - Top bar component with mobile menu and user controls
+  * **Responsive Design Standards:**
+    * **Desktop (≥768px):** Permanent sidebar with two-column layout
+    * **Mobile (<768px):** Hidden sidebar with Sheet-based overlay navigation
+    * **Accessibility:** Full WCAG compliance through Radix UI primitives
+  * **Icon Standards:** Use **Lucide Icons** exclusively for all iconography needs
+  * **Component File Organization:**
+    * Layout components: `src/components/layout/`
+    * UI primitives: `src/components/ui/` (Shadcn/ui components)
+    * Page-specific components: Co-located with pages
+  * **State Management:** Use React hooks for layout state (sidebar toggle, active routes)
+  * **Authentication Integration:** Layout components must integrate with Clerk's UserButton and route protection

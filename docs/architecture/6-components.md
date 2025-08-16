@@ -44,8 +44,17 @@ This is the group of UI elements that users will see and interact with on the sc
 
   * **1. UI Layout System**
 
-      * **Responsibility:** The main structure of the web page, consisting of a **Sidebar** for navigation and a content area for displaying the main content of each page.
-      * **Dependencies:** **Clerk** (to display user information and a Logout button).
+      * **Responsibility:** The main structure of the web page, providing consistent navigation and responsive design across all application pages.
+      * **Components:**
+        * **MainLayout Component** (`src/components/layout/main-layout.tsx`): Two-column responsive layout with sidebar and main content area
+        * **Sidebar Component** (`src/components/layout/sidebar.tsx`): Fixed navigation with 5 main sections (Dashboard, Stock, Sales, Repairs, Customers)
+        * **Header Component** (`src/components/layout/header.tsx`): Top bar with mobile hamburger menu and user controls
+      * **Features:**
+        * **Desktop:** Permanent sidebar navigation with clean light theme
+        * **Mobile:** Sheet-based sliding sidebar with hamburger menu toggle
+        * **Active Route Highlighting:** Visual indication of current page location
+        * **Accessibility:** Full WCAG compliance with screen reader support
+      * **Dependencies:** **Clerk** (UserButton integration), **Shadcn/ui** (Sheet, Button components), **Lucide Icons** (navigation icons).
 
   * **2. Dashboard View**
 
@@ -59,8 +68,14 @@ This is the group of UI elements that users will see and interact with on the sc
 
   * **4. Shared UI Components**
 
-      * **Responsibility:** A group of components used repeatedly throughout the app, such as `Button`, `Table`, `Card`, `Input`, most of which will come from **Shadcn/ui**.
-      * **Dependencies:** N/A.
+      * **Responsibility:** A group of reusable components used throughout the app, all implemented using **Shadcn/ui** design system for consistency.
+      * **Implemented Components:**
+        * **Form Components:** `Button`, `Input` with proper validation states
+        * **Data Display:** `Table`, `Card`, `Badge` for organized information presentation
+        * **Interactive:** `Dialog`, `Sheet` for modals and mobile navigation
+        * **Navigation:** Custom navigation components with `Lucide Icons`
+      * **Standards:** All components follow Shadcn/ui design patterns with Tailwind CSS styling
+      * **Dependencies:** **Shadcn/ui**, **Radix UI**, **Lucide Icons**, **Tailwind CSS**.
 
 -----
 
