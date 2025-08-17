@@ -13,6 +13,9 @@ jest.mock('~/app/providers', () => ({
       create: {
         useMutation: jest.fn(),
       },
+      update: {
+        useMutation: jest.fn(),
+      },
     },
   },
 }))
@@ -57,10 +60,16 @@ describe('CustomersPage', () => {
     isPending: false,
   }
 
+  const mockUpdateMutation = {
+    mutate: jest.fn(),
+    isPending: false,
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     ;(api.customers.getAll.useQuery as jest.Mock).mockReturnValue(mockGetAllQuery)
     ;(api.customers.create.useMutation as jest.Mock).mockReturnValue(mockCreateMutation)
+    ;(api.customers.update.useMutation as jest.Mock).mockReturnValue(mockUpdateMutation)
   })
 
   describe('Page Structure', () => {
@@ -111,6 +120,7 @@ describe('CustomersPage', () => {
       expect(screen.getByText('Phone')).toBeInTheDocument()
       expect(screen.getByText('Address')).toBeInTheDocument()
       expect(screen.getByText('Created')).toBeInTheDocument()
+      expect(screen.getByText('Actions')).toBeInTheDocument()
     })
 
     it('displays customer data correctly', () => {
@@ -432,6 +442,335 @@ describe('CustomersPage', () => {
       expect(api.customers.create.useMutation).toHaveBeenCalledWith({
         onSuccess: expect.any(Function),
         onError: expect.any(Function),
+      })
+    })
+  })
+
+  describe('Edit Customer Functionality', () => {
+    describe('Edit Button Display', () => {
+      it('displays edit buttons for each customer row', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // There should be edit buttons for each customer
+        const editButtons = screen.getAllByRole('button', { name: '' }) // Edit buttons have no text, just icon
+        // Filter out the "Add New Customer" button
+        const editButtonsOnly = editButtons.filter(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        expect(editButtonsOnly).toHaveLength(mockCustomers.length)
+      })
+
+      it('edit buttons are clickable', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const editButtonsOnly = editButtons.filter(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        
+        editButtonsOnly.forEach(button => {
+          expect(button).not.toBeDisabled()
+        })
+      })
+    })
+
+    describe('Edit Dialog Opening', () => {
+      it('opens edit dialog when edit button is clicked', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        
+        fireEvent.click(firstEditButton!)
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: /edit customer/i })).toBeInTheDocument()
+        expect(screen.getByText('Update the customer information. Name is required, phone and address are optional.')).toBeInTheDocument()
+      })
+
+      it('pre-populates form with customer data when edit is opened', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        
+        fireEvent.click(firstEditButton!)
+
+        // Form should be pre-populated with first customer's data
+        expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
+        expect(screen.getByDisplayValue('123-456-7890')).toBeInTheDocument()
+        expect(screen.getByDisplayValue('123 Main St')).toBeInTheDocument()
+      })
+
+      it('pre-populates form correctly for customer with null values', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const editButtonsOnly = editButtons.filter(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        const secondEditButton = editButtonsOnly[1] // Jane Smith has null phone/address
+        
+        fireEvent.click(secondEditButton)
+
+        // Form should be pre-populated with second customer's data
+        expect(screen.getByDisplayValue('Jane Smith')).toBeInTheDocument()
+        // Phone and address inputs should be empty (not "null")
+        const phoneInput = screen.getByLabelText(/phone/i)
+        const addressInput = screen.getByLabelText(/address/i)
+        expect(phoneInput).toHaveValue('')
+        expect(addressInput).toHaveValue('')
+      })
+    })
+
+    describe('Edit Form Fields', () => {
+      beforeEach(() => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        fireEvent.click(firstEditButton!)
+      })
+
+      it('displays all form fields with correct labels', () => {
+        expect(screen.getByLabelText(/name \*/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/phone/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/address/i)).toBeInTheDocument()
+      })
+
+      it('has update and cancel buttons', () => {
+        expect(screen.getByRole('button', { name: /update customer/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+      })
+
+      it('allows editing form fields', () => {
+        const nameInput = screen.getByLabelText(/name \*/i)
+        const phoneInput = screen.getByLabelText(/phone/i)
+        const addressInput = screen.getByLabelText(/address/i)
+
+        fireEvent.change(nameInput, { target: { value: 'Updated Name' } })
+        fireEvent.change(phoneInput, { target: { value: '999-888-7777' } })
+        fireEvent.change(addressInput, { target: { value: 'Updated Address' } })
+
+        expect(nameInput).toHaveValue('Updated Name')
+        expect(phoneInput).toHaveValue('999-888-7777')
+        expect(addressInput).toHaveValue('Updated Address')
+      })
+    })
+
+    describe('Edit Form Validation', () => {
+      beforeEach(() => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        fireEvent.click(firstEditButton!)
+      })
+
+      it('disables submit button when name is empty', () => {
+        const nameInput = screen.getByLabelText(/name \*/i)
+        fireEvent.change(nameInput, { target: { value: '' } })
+
+        const submitButton = screen.getByRole('button', { name: /update customer/i })
+        expect(submitButton).toBeDisabled()
+      })
+
+      it('disables submit button when name is only whitespace', () => {
+        const nameInput = screen.getByLabelText(/name \*/i)
+        fireEvent.change(nameInput, { target: { value: '   ' } })
+
+        const submitButton = screen.getByRole('button', { name: /update customer/i })
+        expect(submitButton).toBeDisabled()
+      })
+
+      it('enables submit button when name has valid content', () => {
+        const nameInput = screen.getByLabelText(/name \*/i)
+        fireEvent.change(nameInput, { target: { value: 'Valid Name' } })
+
+        const submitButton = screen.getByRole('button', { name: /update customer/i })
+        expect(submitButton).not.toBeDisabled()
+      })
+    })
+
+    describe('Edit Form Submission', () => {
+      beforeEach(() => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        fireEvent.click(firstEditButton!)
+      })
+
+      it('calls update mutation with correct data when form is submitted', () => {
+        const nameInput = screen.getByLabelText(/name \*/i)
+        const phoneInput = screen.getByLabelText(/phone/i)
+        const addressInput = screen.getByLabelText(/address/i)
+
+        fireEvent.change(nameInput, { target: { value: 'Updated John' } })
+        fireEvent.change(phoneInput, { target: { value: '555-0123' } })
+        fireEvent.change(addressInput, { target: { value: '456 New St' } })
+
+        fireEvent.click(screen.getByRole('button', { name: /update customer/i }))
+
+        expect(mockUpdateMutation.mutate).toHaveBeenCalledWith({
+          id: '1', // First customer's ID
+          name: 'Updated John',
+          phone: '555-0123',
+          address: '456 New St',
+        })
+      })
+
+      it('calls update mutation with undefined for empty optional fields', () => {
+        const nameInput = screen.getByLabelText(/name \*/i)
+        const phoneInput = screen.getByLabelText(/phone/i)
+        const addressInput = screen.getByLabelText(/address/i)
+
+        fireEvent.change(nameInput, { target: { value: 'Name Only' } })
+        fireEvent.change(phoneInput, { target: { value: '' } })
+        fireEvent.change(addressInput, { target: { value: '' } })
+
+        fireEvent.click(screen.getByRole('button', { name: /update customer/i }))
+
+        expect(mockUpdateMutation.mutate).toHaveBeenCalledWith({
+          id: '1',
+          name: 'Name Only',
+          phone: undefined,
+          address: undefined,
+        })
+      })
+
+      it('shows loading state during submission', () => {
+        ;(api.customers.update.useMutation as jest.Mock).mockReturnValue({
+          ...mockUpdateMutation,
+          isPending: true,
+        })
+
+        // Re-render with pending state
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        fireEvent.click(firstEditButton!)
+
+        const submitButton = screen.getByRole('button', { name: /update customer/i })
+        expect(submitButton).toBeDisabled()
+      })
+    })
+
+    describe('Edit Dialog Management', () => {
+      it('closes dialog when cancel button is clicked', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        fireEvent.click(firstEditButton!)
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+        fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+
+      it('clears form state when dialog is closed', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Open edit dialog for first customer
+        const editButtons = screen.getAllByRole('button', { name: '' })
+        const firstEditButton = editButtons.find(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        fireEvent.click(firstEditButton!)
+
+        // Modify fields
+        const nameInput = screen.getByLabelText(/name \*/i)
+        fireEvent.change(nameInput, { target: { value: 'Modified Name' } })
+
+        // Close dialog
+        fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+
+        // Open edit dialog for second customer
+        const editButtonsAgain = screen.getAllByRole('button', { name: '' })
+        const editButtonsOnlyAgain = editButtonsAgain.filter(button => 
+          button.querySelector('svg') && !button.textContent?.includes('Add')
+        )
+        const secondEditButton = editButtonsOnlyAgain[1]
+        fireEvent.click(secondEditButton)
+
+        // Should show second customer's data, not the modified data
+        expect(screen.getByDisplayValue('Jane Smith')).toBeInTheDocument()
+      })
+    })
+
+    describe('Edit Mutation Configuration', () => {
+      it('verifies update mutation is configured correctly', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        expect(api.customers.update.useMutation).toHaveBeenCalledWith({
+          onSuccess: expect.any(Function),
+          onError: expect.any(Function),
+        })
       })
     })
   })

@@ -96,6 +96,37 @@ describe("Customer Router Logic", () => {
         message: "Failed to create customer",
       });
     });
+
+    it("should handle update error code mapping correctly", () => {
+      const mapUpdatePrismaErrorToTRPCError = (error: { code?: string }) => {
+        // P2025 is Prisma's "Record not found" error
+        if (error.code === "P2025") {
+          return {
+            code: "NOT_FOUND",
+            message: "Customer not found",
+          };
+        }
+        return {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to update customer",
+        };
+      };
+
+      expect(mapUpdatePrismaErrorToTRPCError({ code: "P2025" })).toEqual({
+        code: "NOT_FOUND",
+        message: "Customer not found",
+      });
+
+      expect(mapUpdatePrismaErrorToTRPCError({ code: "P2002" })).toEqual({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to update customer",
+      });
+
+      expect(mapUpdatePrismaErrorToTRPCError({})).toEqual({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to update customer",
+      });
+    });
   });
 
   describe("data transformation", () => {
@@ -240,6 +271,74 @@ describe("Customer Router Logic", () => {
         isValid: false,
         errors: ["Customer name too long"],
         sanitizedData: { name: "a".repeat(101), phone: null, address: null },
+      });
+    });
+
+    it("should implement update procedure validation", () => {
+      const validateUpdateInput = (input: {
+        id: string;
+        name: string;
+        phone?: string;
+        address?: string;
+      }) => {
+        const errors: string[] = [];
+
+        if (!input.id || typeof input.id !== "string") {
+          errors.push("Customer ID is required");
+        }
+
+        if (!input.name || typeof input.name !== "string") {
+          errors.push("Customer name is required");
+        } else if (input.name.trim().length === 0) {
+          errors.push("Customer name cannot be empty");
+        } else if (input.name.length > 100) {
+          errors.push("Customer name too long");
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+          sanitizedData: {
+            id: input.id,
+            name: input.name ? input.name.trim() : "",
+            phone: input.phone?.trim() || null,
+            address: input.address?.trim() || null,
+          },
+        };
+      };
+
+      expect(validateUpdateInput({ id: "cm123456789", name: "John Doe" })).toEqual({
+        isValid: true,
+        errors: [],
+        sanitizedData: { id: "cm123456789", name: "John Doe", phone: null, address: null },
+      });
+
+      expect(validateUpdateInput({
+        id: "cm123456789",
+        name: "  Alice  ",
+        phone: "  123-456-7890  ",
+        address: "  123 Main St  ",
+      })).toEqual({
+        isValid: true,
+        errors: [],
+        sanitizedData: {
+          id: "cm123456789",
+          name: "Alice",
+          phone: "123-456-7890",
+          address: "123 Main St",
+        },
+      });
+
+      expect(validateUpdateInput({ id: "", name: "John" })).toEqual({
+        isValid: false,
+        errors: ["Customer ID is required"],
+        sanitizedData: { id: "", name: "John", phone: null, address: null },
+      });
+
+      expect(validateUpdateInput({ id: "cm123456789", name: "" })).toEqual({
+        isValid: false,
+        errors: ["Customer name is required"],
+        sanitizedData: { id: "cm123456789", name: "", phone: null, address: null },
       });
     });
 

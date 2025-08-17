@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Plus, Loader2 } from "lucide-react";
+import { Users, Plus, Loader2, Edit } from "lucide-react";
 import { useState } from "react";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,13 @@ export default function CustomersPage() {
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerAddress, setNewCustomerAddress] = useState("");
+  
+  // State for Edit Customer form
+  const [showEditCustomerForm, setShowEditCustomerForm] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<{ id: string; name: string; phone: string | null; address: string | null } | null>(null);
+  const [editCustomerName, setEditCustomerName] = useState("");
+  const [editCustomerPhone, setEditCustomerPhone] = useState("");
+  const [editCustomerAddress, setEditCustomerAddress] = useState("");
 
   // tRPC queries and mutations for customers
   const { data: customers = [], refetch: refetchCustomers, isLoading: customersLoading } = api.customers.getAll.useQuery();
@@ -29,6 +36,20 @@ export default function CustomersPage() {
     },
     onError: (error) => {
       alert(`Failed to create customer: ${error.message}`);
+    },
+  });
+
+  const updateCustomerMutation = api.customers.update.useMutation({
+    onSuccess: () => {
+      refetchCustomers();
+      setShowEditCustomerForm(false);
+      setEditingCustomer(null);
+      setEditCustomerName("");
+      setEditCustomerPhone("");
+      setEditCustomerAddress("");
+    },
+    onError: (error) => {
+      alert(`Failed to update customer: ${error.message}`);
     },
   });
 
@@ -53,6 +74,34 @@ export default function CustomersPage() {
     setNewCustomerName("");
     setNewCustomerPhone("");
     setNewCustomerAddress("");
+  };
+
+  const openEditForm = (customer: { id: string; name: string; phone: string | null; address: string | null }) => {
+    setEditingCustomer(customer);
+    setEditCustomerName(customer.name);
+    setEditCustomerPhone(customer.phone || "");
+    setEditCustomerAddress(customer.address || "");
+    setShowEditCustomerForm(true);
+  };
+
+  const closeEditForm = () => {
+    setShowEditCustomerForm(false);
+    setEditingCustomer(null);
+    setEditCustomerName("");
+    setEditCustomerPhone("");
+    setEditCustomerAddress("");
+  };
+
+  const handleEditCustomer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editCustomerName.trim() || !editingCustomer) return;
+    
+    updateCustomerMutation.mutate({
+      id: editingCustomer.id,
+      name: editCustomerName.trim(),
+      phone: editCustomerPhone.trim() || undefined,
+      address: editCustomerAddress.trim() || undefined,
+    });
   };
 
   return (
@@ -98,18 +147,19 @@ export default function CustomersPage() {
                   <TableHead>Phone</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {customersLoading ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : customers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground">
                       No customers found. Add your first customer to get started.
                     </TableCell>
                   </TableRow>
@@ -121,6 +171,15 @@ export default function CustomersPage() {
                       <TableCell>{customer.address || "—"}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(customer.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditForm(customer)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -202,6 +261,83 @@ export default function CustomersPage() {
                   <Plus className="h-4 w-4 mr-2" />
                 )}
                 Add Customer
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={showEditCustomerForm} onOpenChange={closeEditForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>
+              Update the customer information. Name is required, phone and address are optional.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditCustomer}>
+            <div className="space-y-4 py-4">
+              <div>
+                <label htmlFor="editCustomerName" className="text-sm font-medium">
+                  Name *
+                </label>
+                <Input
+                  id="editCustomerName"
+                  type="text"
+                  value={editCustomerName}
+                  onChange={(e) => setEditCustomerName(e.target.value)}
+                  placeholder="Enter customer name"
+                  className="mt-1"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="editCustomerPhone" className="text-sm font-medium">
+                  Phone
+                </label>
+                <Input
+                  id="editCustomerPhone"
+                  type="tel"
+                  value={editCustomerPhone}
+                  onChange={(e) => setEditCustomerPhone(e.target.value)}
+                  placeholder="Enter phone number (optional)"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label htmlFor="editCustomerAddress" className="text-sm font-medium">
+                  Address
+                </label>
+                <Input
+                  id="editCustomerAddress"
+                  type="text"
+                  value={editCustomerAddress}
+                  onChange={(e) => setEditCustomerAddress(e.target.value)}
+                  placeholder="Enter address (optional)"
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeEditForm}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateCustomerMutation.isPending || !editCustomerName.trim()}
+              >
+                {updateCustomerMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Edit className="h-4 w-4 mr-2" />
+                )}
+                Update Customer
               </Button>
             </DialogFooter>
           </form>
