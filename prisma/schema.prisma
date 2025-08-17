@@ -61,3 +61,18 @@ model PurchaseRecord {
   
   @@map("purchase_records")
 }
+
+// Customer model for CRM functionality
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String? // Optional phone number
+  address   String? // Optional address
+  createdAt DateTime @default(now())
+
+  // Relations (for future implementation)
+  // sales     Sale[]
+  // repairs   Repair[]
+
+  @@map("customers")
+}
