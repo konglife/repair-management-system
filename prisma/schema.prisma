@@ -19,6 +19,15 @@ model Category {
   @@map("categories")
 }
 
+// Unit model for product measurement units
+model Unit {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  products Product[] // Relation: One Unit can have many Products
+
+  @@map("units")
+}
+
 // Product model (future implementation)
 model Product {
   id            String   @id @default(cuid())
@@ -32,6 +41,8 @@ model Product {
   // Relations
   category      Category @relation(fields: [categoryId], references: [id])
   categoryId    String
+  unit          Unit     @relation(fields: [unitId], references: [id])
+  unitId        String
   
   @@map("products")
 }
