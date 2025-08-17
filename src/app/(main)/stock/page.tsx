@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function StockPage() {
-  const [activeTab, setActiveTab] = useState<"categories" | "units">("categories");
+  const [activeTab, setActiveTab] = useState<"categories" | "units" | "products">("categories");
   
   // Categories state
   const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
@@ -25,6 +25,18 @@ export default function StockPage() {
   const [deleteUnitConfirm, setDeleteUnitConfirm] = useState<string | null>(null);
   const [newUnitName, setNewUnitName] = useState("");
   const [editUnitName, setEditUnitName] = useState("");
+
+  // Products state
+  const [showCreateProductForm, setShowCreateProductForm] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<{ id: string; name: string; salePrice: number; categoryId: string; unitId: string } | null>(null);
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductPrice, setNewProductPrice] = useState("");
+  const [newProductCategoryId, setNewProductCategoryId] = useState("");
+  const [newProductUnitId, setNewProductUnitId] = useState("");
+  const [editProductName, setEditProductName] = useState("");
+  const [editProductPrice, setEditProductPrice] = useState("");
+  const [editProductCategoryId, setEditProductCategoryId] = useState("");
+  const [editProductUnitId, setEditProductUnitId] = useState("");
 
   // tRPC queries and mutations for categories
   const { data: categories = [], refetch: refetchCategories, isLoading: categoriesLoading } = api.categories.getAll.useQuery();
@@ -64,6 +76,9 @@ export default function StockPage() {
 
   // tRPC queries and mutations for units
   const { data: units = [], refetch: refetchUnits, isLoading: unitsLoading } = api.units.getAll.useQuery();
+
+  // tRPC queries and mutations for products
+  const { data: products = [], refetch: refetchProducts, isLoading: productsLoading } = api.products.getAll.useQuery();
   
   const createUnitMutation = api.units.create.useMutation({
     onSuccess: () => {
@@ -95,6 +110,34 @@ export default function StockPage() {
     onError: (error) => {
       alert(`Failed to delete unit: ${error.message}`);
       setDeleteUnitConfirm(null);
+    },
+  });
+
+  const createProductMutation = api.products.create.useMutation({
+    onSuccess: () => {
+      refetchProducts();
+      setShowCreateProductForm(false);
+      setNewProductName("");
+      setNewProductPrice("");
+      setNewProductCategoryId("");
+      setNewProductUnitId("");
+    },
+    onError: (error) => {
+      alert(`Failed to create product: ${error.message}`);
+    },
+  });
+
+  const updateProductMutation = api.products.update.useMutation({
+    onSuccess: () => {
+      refetchProducts();
+      setEditingProduct(null);
+      setEditProductName("");
+      setEditProductPrice("");
+      setEditProductCategoryId("");
+      setEditProductUnitId("");
+    },
+    onError: (error) => {
+      alert(`Failed to update product: ${error.message}`);
     },
   });
 
@@ -158,6 +201,56 @@ export default function StockPage() {
     setEditUnitName("");
   };
 
+  // Product handlers
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProductName.trim() || !newProductPrice.trim() || !newProductCategoryId || !newProductUnitId) return;
+    const salePrice = parseFloat(newProductPrice);
+    if (isNaN(salePrice) || salePrice < 0) {
+      alert("Please enter a valid sale price");
+      return;
+    }
+    createProductMutation.mutate({ 
+      name: newProductName.trim(),
+      salePrice,
+      categoryId: newProductCategoryId,
+      unitId: newProductUnitId
+    });
+  };
+
+  const handleUpdateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct || !editProductName.trim() || !editProductPrice.trim() || !editProductCategoryId || !editProductUnitId) return;
+    const salePrice = parseFloat(editProductPrice);
+    if (isNaN(salePrice) || salePrice < 0) {
+      alert("Please enter a valid sale price");
+      return;
+    }
+    updateProductMutation.mutate({ 
+      id: editingProduct.id,
+      name: editProductName.trim(),
+      salePrice,
+      categoryId: editProductCategoryId,
+      unitId: editProductUnitId
+    });
+  };
+
+  const startEditProduct = (product: { id: string; name: string; salePrice: number; categoryId: string; unitId: string }) => {
+    setEditingProduct(product);
+    setEditProductName(product.name);
+    setEditProductPrice(product.salePrice.toString());
+    setEditProductCategoryId(product.categoryId);
+    setEditProductUnitId(product.unitId);
+  };
+
+  const cancelEditProduct = () => {
+    setEditingProduct(null);
+    setEditProductName("");
+    setEditProductPrice("");
+    setEditProductCategoryId("");
+    setEditProductUnitId("");
+  };
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -200,7 +293,7 @@ export default function StockPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{products.length}</div>
             <p className="text-xs text-muted-foreground">
               Items in inventory
             </p>
@@ -239,11 +332,19 @@ export default function StockPage() {
           <Ruler className="h-4 w-4 mr-2" />
           Units
         </Button>
+        <Button
+          variant={activeTab === "products" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("products")}
+        >
+          <Package className="h-4 w-4 mr-2" />
+          Products
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-4">
-          {activeTab === "categories" ? (
+          {activeTab === "categories" && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -381,7 +482,8 @@ export default function StockPage() {
                 </div>
               </CardContent>
             </Card>
-          ) : (
+          )}
+          {activeTab === "units" && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -507,6 +609,238 @@ export default function StockPage() {
                                     className="h-8 w-8 text-destructive hover:text-destructive"
                                   >
                                     <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          {activeTab === "products" && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Products</CardTitle>
+                  <Button onClick={() => setShowCreateProductForm(!showCreateProductForm)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Create Product Form */}
+                {showCreateProductForm && (
+                  <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+                    <form onSubmit={handleCreateProduct} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Input
+                            type="text"
+                            value={newProductName}
+                            onChange={(e) => setNewProductName(e.target.value)}
+                            placeholder="Product name"
+                            autoFocus
+                          />
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={newProductPrice}
+                            onChange={(e) => setNewProductPrice(e.target.value)}
+                            placeholder="Sale price"
+                          />
+                        </div>
+                        <div>
+                          <select
+                            value={newProductCategoryId}
+                            onChange={(e) => setNewProductCategoryId(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="">Select category</option>
+                            {categories.map((category: { id: string; name: string }) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <select
+                            value={newProductUnitId}
+                            onChange={(e) => setNewProductUnitId(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="">Select unit</option>
+                            {units.map((unit: { id: string; name: string }) => (
+                              <option key={unit.id} value={unit.id}>
+                                {unit.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="submit"
+                          disabled={createProductMutation.isPending || !newProductName.trim() || !newProductPrice.trim() || !newProductCategoryId || !newProductUnitId}
+                        >
+                          {createProductMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            "Create"
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowCreateProductForm(false);
+                            setNewProductName("");
+                            setNewProductPrice("");
+                            setNewProductCategoryId("");
+                            setNewProductUnitId("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Unit</TableHead>
+                        <TableHead>Sale Price</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Avg Cost</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {productsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                          </TableCell>
+                        </TableRow>
+                      ) : products.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                            No products found. Create your first product to get started.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        products.map((product: { id: string; name: string; salePrice: number; quantity: number; averageCost: number; categoryId: string; unitId: string; category: { name: string }; unit: { name: string } }) => (
+                          <TableRow key={product.id}>
+                            <TableCell>
+                              {editingProduct?.id === product.id ? (
+                                <Input
+                                  type="text"
+                                  value={editProductName}
+                                  onChange={(e) => setEditProductName(e.target.value)}
+                                  className="h-8"
+                                  autoFocus
+                                />
+                              ) : (
+                                <span className="font-medium">{product.name}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editingProduct?.id === product.id ? (
+                                <select
+                                  value={editProductCategoryId}
+                                  onChange={(e) => setEditProductCategoryId(e.target.value)}
+                                  className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                >
+                                  {categories.map((category: { id: string; name: string }) => (
+                                    <option key={category.id} value={category.id}>
+                                      {category.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span>{product.category?.name}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editingProduct?.id === product.id ? (
+                                <select
+                                  value={editProductUnitId}
+                                  onChange={(e) => setEditProductUnitId(e.target.value)}
+                                  className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                >
+                                  {units.map((unit: { id: string; name: string }) => (
+                                    <option key={unit.id} value={unit.id}>
+                                      {unit.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span>{product.unit?.name}</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editingProduct?.id === product.id ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={editProductPrice}
+                                  onChange={(e) => setEditProductPrice(e.target.value)}
+                                  className="h-8 w-20"
+                                />
+                              ) : (
+                                <span>${product.salePrice.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{product.quantity}</TableCell>
+                            <TableCell className="text-muted-foreground">${product.averageCost.toFixed(2)}</TableCell>
+                            <TableCell>
+                              {editingProduct?.id === product.id ? (
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    onClick={handleUpdateProduct}
+                                    disabled={updateProductMutation.isPending || !editProductName.trim() || !editProductPrice.trim() || !editProductCategoryId || !editProductUnitId}
+                                  >
+                                    {updateProductMutation.isPending ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      "Save"
+                                    )}
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={cancelEditProduct}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => startEditProduct(product)}
+                                    className="h-8 w-8"
+                                  >
+                                    <Edit className="h-4 w-4" />
                                   </Button>
                                 </div>
                               )}
