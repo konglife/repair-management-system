@@ -39,10 +39,25 @@ model Product {
   updatedAt     DateTime @updatedAt
   
   // Relations
-  category      Category @relation(fields: [categoryId], references: [id])
-  categoryId    String
-  unit          Unit     @relation(fields: [unitId], references: [id])
-  unitId        String
+  category        Category        @relation(fields: [categoryId], references: [id])
+  categoryId      String
+  unit            Unit            @relation(fields: [unitId], references: [id])
+  unitId          String
+  purchaseRecords PurchaseRecord[] // One Product can have many PurchaseRecords
   
   @@map("products")
+}
+
+// PurchaseRecord model for stock purchase history
+model PurchaseRecord {
+  id           String   @id @default(cuid())
+  quantity     Int
+  costPerUnit  Float
+  purchaseDate DateTime @default(now())
+  
+  // Relation
+  product      Product @relation(fields: [productId], references: [id])
+  productId    String
+  
+  @@map("purchase_records")
 }

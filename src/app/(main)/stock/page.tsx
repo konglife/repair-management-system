@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler } from "lucide-react";
+import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function StockPage() {
-  const [activeTab, setActiveTab] = useState<"categories" | "units" | "products">("categories");
+  const [activeTab, setActiveTab] = useState<"categories" | "units" | "products" | "purchases">("categories");
   
   // Categories state
   const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
@@ -37,6 +37,12 @@ export default function StockPage() {
   const [editProductPrice, setEditProductPrice] = useState("");
   const [editProductCategoryId, setEditProductCategoryId] = useState("");
   const [editProductUnitId, setEditProductUnitId] = useState("");
+
+  // Purchase recording state
+  const [selectedProductForPurchase, setSelectedProductForPurchase] = useState("");
+  const [purchaseQuantity, setPurchaseQuantity] = useState("");
+  const [purchaseCostPerUnit, setPurchaseCostPerUnit] = useState("");
+  const [selectedProductForHistory, setSelectedProductForHistory] = useState("");
 
   // tRPC queries and mutations for categories
   const { data: categories = [], refetch: refetchCategories, isLoading: categoriesLoading } = api.categories.getAll.useQuery();
@@ -79,6 +85,35 @@ export default function StockPage() {
 
   // tRPC queries and mutations for products
   const { data: products = [], refetch: refetchProducts, isLoading: productsLoading } = api.products.getAll.useQuery();
+
+  // tRPC queries and mutations for purchases
+  const { data: allPurchases = [], refetch: refetchAllPurchases, isLoading: allPurchasesLoading } = api.purchases.getAll.useQuery();
+  
+  const { data: productPurchases = [], refetch: refetchProductPurchases, isLoading: productPurchasesLoading } = api.purchases.getByProduct.useQuery(
+    { productId: selectedProductForHistory },
+    { enabled: !!selectedProductForHistory }
+  );
+
+  // Determine which purchase data to show
+  const purchaseHistory = selectedProductForHistory ? productPurchases : allPurchases;
+  const purchaseHistoryLoading = selectedProductForHistory ? productPurchasesLoading : allPurchasesLoading;
+
+  const createPurchaseMutation = api.purchases.create.useMutation({
+    onSuccess: () => {
+      refetchProducts();
+      refetchAllPurchases();
+      if (selectedProductForHistory) {
+        refetchProductPurchases();
+      }
+      setSelectedProductForPurchase("");
+      setPurchaseQuantity("");
+      setPurchaseCostPerUnit("");
+      alert("Purchase recorded successfully!");
+    },
+    onError: (error) => {
+      alert(`Failed to record purchase: ${error.message}`);
+    },
+  });
   
   const createUnitMutation = api.units.create.useMutation({
     onSuccess: () => {
@@ -251,6 +286,31 @@ export default function StockPage() {
     setEditProductUnitId("");
   };
 
+  // Purchase handlers
+  const handleRecordPurchase = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductForPurchase || !purchaseQuantity.trim() || !purchaseCostPerUnit.trim()) return;
+    
+    const quantity = parseInt(purchaseQuantity);
+    const costPerUnit = parseFloat(purchaseCostPerUnit);
+    
+    if (isNaN(quantity) || quantity <= 0) {
+      alert("Please enter a valid quantity");
+      return;
+    }
+    
+    if (isNaN(costPerUnit) || costPerUnit < 0) {
+      alert("Please enter a valid cost per unit");
+      return;
+    }
+    
+    createPurchaseMutation.mutate({
+      productId: selectedProductForPurchase,
+      quantity,
+      costPerUnit
+    });
+  };
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -339,6 +399,14 @@ export default function StockPage() {
         >
           <Package className="h-4 w-4 mr-2" />
           Products
+        </Button>
+        <Button
+          variant={activeTab === "purchases" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("purchases")}
+        >
+          <ShoppingCart className="h-4 w-4 mr-2" />
+          Record Purchase
         </Button>
       </div>
 
@@ -854,6 +922,141 @@ export default function StockPage() {
               </CardContent>
             </Card>
           )}
+          {activeTab === "purchases" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Record Stock Purchase</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Purchase Recording Form */}
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <h3 className="text-lg font-medium mb-4">Record New Purchase</h3>
+                    <form onSubmit={handleRecordPurchase} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Product</label>
+                          <select
+                            value={selectedProductForPurchase}
+                            onChange={(e) => setSelectedProductForPurchase(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <option value="">Select product</option>
+                            {products.map((product: { id: string; name: string; unit: { name: string } }) => (
+                              <option key={product.id} value={product.id}>
+                                {product.name} ({product.unit?.name})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Quantity</label>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={purchaseQuantity}
+                            onChange={(e) => setPurchaseQuantity(e.target.value)}
+                            placeholder="Enter quantity"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Cost Per Unit ($)</label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={purchaseCostPerUnit}
+                            onChange={(e) => setPurchaseCostPerUnit(e.target.value)}
+                            placeholder="Enter cost per unit"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={createPurchaseMutation.isPending || !selectedProductForPurchase || !purchaseQuantity.trim() || !purchaseCostPerUnit.trim()}
+                        className="w-full md:w-auto"
+                      >
+                        {createPurchaseMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <ShoppingCart className="h-4 w-4 mr-2" />
+                        )}
+                        Record Purchase
+                      </Button>
+                    </form>
+                  </div>
+
+                  {/* Purchase History */}
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Purchase History</h3>
+                    <div className="mb-4">
+                      <label className="text-sm font-medium mb-2 block">Filter by product</label>
+                      <select
+                        value={selectedProductForHistory}
+                        onChange={(e) => setSelectedProductForHistory(e.target.value)}
+                        className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="">All Purchases</option>
+                        {products.map((product: { id: string; name: string; unit: { name: string } }) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name} ({product.unit?.name})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            {!selectedProductForHistory && <TableHead>Product</TableHead>}
+                            <TableHead>Date</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Cost Per Unit</TableHead>
+                            <TableHead>Total Cost</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {purchaseHistoryLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={!selectedProductForHistory ? 5 : 4} className="text-center text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                              </TableCell>
+                            </TableRow>
+                          ) : purchaseHistory.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={!selectedProductForHistory ? 5 : 4} className="text-center text-muted-foreground">
+                                {selectedProductForHistory 
+                                  ? "No purchase history found for this product."
+                                  : "No purchase records found."}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            purchaseHistory.map((purchase: { id: string; quantity: number; costPerUnit: number; purchaseDate: Date | string; product: { name: string } }) => (
+                              <TableRow key={purchase.id}>
+                                {!selectedProductForHistory && (
+                                  <TableCell className="font-medium">
+                                    {purchase.product?.name}
+                                  </TableCell>
+                                )}
+                                <TableCell>
+                                  {new Date(purchase.purchaseDate).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>{purchase.quantity}</TableCell>
+                                <TableCell>${purchase.costPerUnit.toFixed(2)}</TableCell>
+                                <TableCell>${(purchase.quantity * purchase.costPerUnit).toFixed(2)}</TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="col-span-3">
@@ -867,7 +1070,11 @@ export default function StockPage() {
                   <Plus className="h-4 w-4 mr-2" />
                   Add Product
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab("purchases")}
+                >
                   <Package className="h-4 w-4 mr-2" />
                   Record Purchase
                 </Button>
