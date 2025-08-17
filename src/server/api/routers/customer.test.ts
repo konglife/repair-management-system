@@ -420,4 +420,206 @@ describe("Customer Router Logic", () => {
       expect(isAcceptableAddressFormat("a".repeat(501))).toBe(false);
     });
   });
+
+  describe("getTransactionHistory procedure", () => {
+    it("should validate customerId input correctly", () => {
+      const validateTransactionHistoryInput = (input: { customerId: string }) => {
+        const errors: string[] = [];
+
+        if (!input.customerId || typeof input.customerId !== "string") {
+          errors.push("Customer ID is required");
+        }
+
+        // Simple CUID validation - starts with 'c' and has minimum length
+        if (input.customerId && !input.customerId.startsWith("c")) {
+          errors.push("Invalid customer ID format");
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+        };
+      };
+
+      expect(validateTransactionHistoryInput({ customerId: "cm123456789" })).toEqual({
+        isValid: true,
+        errors: [],
+      });
+
+      expect(validateTransactionHistoryInput({ customerId: "" })).toEqual({
+        isValid: false,
+        errors: ["Customer ID is required"],
+      });
+
+      expect(validateTransactionHistoryInput({ customerId: "invalid-id" })).toEqual({
+        isValid: false,
+        errors: ["Invalid customer ID format"],
+      });
+    });
+
+    it("should format transaction history data correctly", () => {
+      const formatTransactionHistory = (customer: {
+        id: string;
+        name: string;
+        phone: string | null;
+        address: string | null;
+        sales: Array<{
+          id: string;
+          totalAmount: number;
+          createdAt: Date;
+          saleItems: Array<{ id: string; quantity: number }>;
+        }>;
+        repairs: Array<{
+          id: string;
+          description: string;
+          totalCost: number;
+          createdAt: Date;
+          usedParts: Array<{ id: string; costAtTime: number }>;
+        }>;
+      }) => {
+        return {
+          ...customer,
+          salesCount: customer.sales.length,
+          repairsCount: customer.repairs.length,
+          totalSalesAmount: customer.sales.reduce((sum, sale) => sum + sale.totalAmount, 0),
+          totalRepairCost: customer.repairs.reduce((sum, repair) => sum + repair.totalCost, 0),
+          formattedSales: customer.sales.map(sale => ({
+            ...sale,
+            formattedDate: sale.createdAt.toLocaleDateString(),
+            itemsCount: sale.saleItems.length,
+          })),
+          formattedRepairs: customer.repairs.map(repair => ({
+            ...repair,
+            formattedDate: repair.createdAt.toLocaleDateString(),
+            partsCount: repair.usedParts.length,
+          })),
+        };
+      };
+
+      const mockCustomer = {
+        id: "cm123456789",
+        name: "John Doe",
+        phone: "123-456-7890",
+        address: "123 Main St",
+        sales: [
+          {
+            id: "s1",
+            totalAmount: 150.00,
+            createdAt: new Date("2025-01-15"),
+            saleItems: [{ id: "si1", quantity: 2 }, { id: "si2", quantity: 1 }],
+          },
+          {
+            id: "s2",
+            totalAmount: 75.50,
+            createdAt: new Date("2025-01-10"),
+            saleItems: [{ id: "si3", quantity: 1 }],
+          },
+        ],
+        repairs: [
+          {
+            id: "r1",
+            description: "Screen replacement",
+            totalCost: 200.00,
+            createdAt: new Date("2025-01-12"),
+            usedParts: [{ id: "up1", costAtTime: 80.00 }],
+          },
+        ],
+      };
+
+      const result = formatTransactionHistory(mockCustomer);
+
+      expect(result.salesCount).toBe(2);
+      expect(result.repairsCount).toBe(1);
+      expect(result.totalSalesAmount).toBe(225.50);
+      expect(result.totalRepairCost).toBe(200.00);
+      expect(result.formattedSales[0].formattedDate).toBe("1/15/2025");
+      expect(result.formattedSales[0].itemsCount).toBe(2);
+      expect(result.formattedRepairs[0].formattedDate).toBe("1/12/2025");
+      expect(result.formattedRepairs[0].partsCount).toBe(1);
+    });
+
+    it("should handle empty transaction history correctly", () => {
+      const formatEmptyTransactionHistory = (customer: {
+        id: string;
+        name: string;
+        phone: string | null;
+        address: string | null;
+        sales: never[];
+        repairs: never[];
+      }) => {
+        return {
+          ...customer,
+          salesCount: customer.sales.length,
+          repairsCount: customer.repairs.length,
+          hasTransactions: customer.sales.length > 0 || customer.repairs.length > 0,
+        };
+      };
+
+      const mockCustomerNoHistory = {
+        id: "cm987654321",
+        name: "Jane Smith",
+        phone: null,
+        address: null,
+        sales: [],
+        repairs: [],
+      };
+
+      const result = formatEmptyTransactionHistory(mockCustomerNoHistory);
+
+      expect(result.salesCount).toBe(0);
+      expect(result.repairsCount).toBe(0);
+      expect(result.hasTransactions).toBe(false);
+    });
+
+    it("should sort transactions chronologically", () => {
+      const sortTransactionsChronologically = (transactions: Array<{
+        id: string;
+        createdAt: Date;
+      }>) => {
+        return [...transactions].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      };
+
+      const unsortedTransactions = [
+        { id: "t1", createdAt: new Date("2025-01-10") },
+        { id: "t2", createdAt: new Date("2025-01-15") },
+        { id: "t3", createdAt: new Date("2025-01-12") },
+      ];
+
+      const sortedTransactions = sortTransactionsChronologically(unsortedTransactions);
+
+      expect(sortedTransactions[0].id).toBe("t2"); // Most recent (2025-01-15)
+      expect(sortedTransactions[1].id).toBe("t3"); // Middle (2025-01-12)
+      expect(sortedTransactions[2].id).toBe("t1"); // Oldest (2025-01-10)
+    });
+
+    it("should handle transaction history error scenarios", () => {
+      const mapTransactionHistoryError = (error: { code?: string }) => {
+        if (error.code === "P2025") {
+          return {
+            code: "NOT_FOUND",
+            message: "Customer not found",
+          };
+        }
+        return {
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to retrieve customer transaction history",
+        };
+      };
+
+      expect(mapTransactionHistoryError({ code: "P2025" })).toEqual({
+        code: "NOT_FOUND",
+        message: "Customer not found",
+      });
+
+      expect(mapTransactionHistoryError({ code: "P2002" })).toEqual({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve customer transaction history",
+      });
+
+      expect(mapTransactionHistoryError({})).toEqual({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve customer transaction history",
+      });
+    });
+  });
 });

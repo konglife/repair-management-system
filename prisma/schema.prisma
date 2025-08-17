@@ -44,6 +44,8 @@ model Product {
   unit            Unit            @relation(fields: [unitId], references: [id])
   unitId          String
   purchaseRecords PurchaseRecord[] // One Product can have many PurchaseRecords
+  saleItems       SaleItem[]       // One Product can be in many SaleItems
+  usedParts       UsedPart[]       // One Product can be used in many Repairs
   
   @@map("products")
 }
@@ -70,9 +72,71 @@ model Customer {
   address   String? // Optional address
   createdAt DateTime @default(now())
 
-  // Relations (for future implementation)
-  // sales     Sale[]
-  // repairs   Repair[]
+  // Relations
+  sales     Sale[]
+  repairs   Repair[]
 
   @@map("customers")
+}
+
+// Sale model for sales transactions
+model Sale {
+  id          String     @id @default(cuid())
+  totalAmount Float
+  totalCost   Float
+  createdAt   DateTime   @default(now())
+
+  // Relations
+  customer    Customer   @relation(fields: [customerId], references: [id])
+  customerId  String
+  saleItems   SaleItem[]
+
+  @@map("sales")
+}
+
+// SaleItem model for individual items in a sale
+model SaleItem {
+  id          String @id @default(cuid())
+  quantity    Int
+  priceAtTime Float
+  costAtTime  Float
+
+  // Relations
+  sale        Sale    @relation(fields: [saleId], references: [id])
+  saleId      String
+  product     Product @relation(fields: [productId], references: [id])
+  productId   String
+
+  @@map("sale_items")
+}
+
+// Repair model for repair jobs
+model Repair {
+  id          String     @id @default(cuid())
+  description String
+  totalCost   Float
+  partsCost   Float
+  laborCost   Float
+  createdAt   DateTime   @default(now())
+
+  // Relations
+  customer    Customer   @relation(fields: [customerId], references: [id])
+  customerId  String
+  usedParts   UsedPart[]
+
+  @@map("repairs")
+}
+
+// UsedPart model for parts used in repairs
+model UsedPart {
+  id         String @id @default(cuid())
+  costAtTime Float
+
+  // Relations
+  repair     Repair  @relation(fields: [repairId], references: [id])
+  repairId   String
+  product    Product @relation(fields: [productId], references: [id])
+  productId  String
+
+  @@map("used_parts")
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { Users, Plus, Loader2, Edit } from "lucide-react";
+import { Users, Plus, Loader2, Edit, Eye } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function CustomersPage() {
+  const router = useRouter();
+  
   // State for Add Customer form
   const [showCreateCustomerForm, setShowCreateCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -104,6 +107,10 @@ export default function CustomersPage() {
     });
   };
 
+  const handleViewCustomerDetails = (customerId: string) => {
+    router.push(`/customers/${customerId}`);
+  };
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -173,13 +180,24 @@ export default function CustomersPage() {
                         {new Date(customer.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditForm(customer)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewCustomerDetails(customer.id)}
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditForm(customer)}
+                            title="Edit Customer"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

@@ -75,4 +75,46 @@ export const customerRouter = createTRPCRouter({
         });
       }
     }),
+
+  // Get customer transaction history
+  getTransactionHistory: protectedProcedure
+    .input(
+      z.object({
+        customerId: z.string().cuid(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      try {
+        const customer = await ctx.db.customer.findUnique({
+          where: { id: input.customerId },
+          include: {
+            sales: {
+              include: { saleItems: true },
+              orderBy: { createdAt: "desc" },
+            },
+            repairs: {
+              include: { usedParts: true },
+              orderBy: { createdAt: "desc" },
+            },
+          },
+        });
+
+        if (!customer) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Customer not found",
+          });
+        }
+
+        return customer;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to retrieve customer transaction history",
+        });
+      }
+    }),
 });
