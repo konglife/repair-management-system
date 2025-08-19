@@ -21,6 +21,7 @@ This Back-Office system will be built to replace these processes. It will help r
 | Date          | Version | Description        | Author     |
 | :------------ | :------ | :----------------- | :--------- |
 | Aug 12, 2025  | 1.0     | Initial PRD creation | John (PM)  |
+| Aug 19, 2025  | 1.1     | Updated with Story 4.3 implementation planning | Claude Code |
 
 ## 2. Requirements
 
@@ -325,6 +326,8 @@ The application will be a Responsive Web App, designed for optimal use on a Desk
 6.  The user must enter the `total_cost` (the total repair price agreed upon with the customer).
 7.  When the repair job is saved, the `quantity` of each spare part used is deducted from the stock.
 8.  The new repair job appears in the repair job history list.
+
+**Technical Design:** Architecture and UI workflows have been designed. Implementation will include repair job creation form, parts selection, automatic stock deduction, and cost calculations (parts cost + labor cost). The repair model uses `description` field for job title as defined in the database schema.
 
 ### Story 4.4: View Repair Job Details
 

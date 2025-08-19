@@ -88,6 +88,45 @@ graph TD
   * What happens if the user tries to save a sales invoice with no items?
   * What happens if the database connection fails during saving?
 
+-----
+
+### User Flow: Create a New Repair Job
+
+  * **User Goal:** To efficiently record a repair job by selecting a customer, describing the work, adding parts used, and setting the total repair cost.
+  * **Entry Points:** Click the "Create New Repair Job" button from the "Repairs" page.
+  * **Success Criteria:** A new repair job is created successfully, parts are deducted from stock, costs are calculated correctly (parts + labor), and the user returns to the repair history page.
+
+#### Flow Diagram
+
+```mermaid
+graph TD
+    A[Repairs Page] -->|Click 'Create New Repair Job'| B(Create Repair Form);
+    B --> C{Select Customer};
+    C -->|Existing Customer| D[Select from list];
+    C -->|New Customer| E[Open 'Add Customer' dialog];
+    E --> F[Save new customer info];
+    F --> D;
+    D --> G[Enter Job Title/Description];
+    G --> H[Search and add parts];
+    H --> I[Specify parts quantity];
+    I --> J{Add more parts?};
+    J -->|Yes| H;
+    J -->|No| K[Enter Total Repair Cost];
+    K --> L[Review: Parts Cost + Labor Cost];
+    L --> M[Click 'Save Repair Job'];
+    M --> N[System: Save data, deduct parts stock, calculate costs];
+    N --> O[Return to Repair History page];
+    O --> P[Display "Repair job created successfully" message];
+
+```
+
+#### Edge Cases & Error Handling:
+
+  * What happens if selected parts have insufficient stock?
+  * What happens if total cost is less than parts cost?
+  * What happens if the user tries to save without a job description?
+  * What happens if the database connection fails during saving?
+
 ## 4\. Wireframes & Mockups
 
 **Primary Design Files:** Will be created by an AI UI tool based on the outlines defined below.
@@ -112,6 +151,23 @@ graph TD
       * Sub-menu (Tabs): "Products", "Categories", "Units"
       * Product Data Table: With columns (Name, Category, Quantity, Selling Price, etc.)
       * Action buttons in each table row: (Edit, Delete)
+
+#### 3\. Repairs Management Page
+
+  * **Purpose:** To view repair job history and create new repair jobs efficiently.
+  * **Key Elements:**
+      * Header: "Repairs"
+      * Dashboard Cards: (Total Repairs, Total Revenue, Average Job Value)
+      * Primary Action Button: "+ Create New Repair Job"
+      * Repair History Table: With columns (Date, Customer, Job Title, Total Cost, Status)
+      * Action buttons in each table row: (View Details)
+      * Create Repair Job Dialog:
+        * Customer selection dropdown
+        * Job title/description text field
+        * Parts selection with quantity inputs
+        * Total cost input field
+        * Automatic parts cost calculation
+        * Labor cost display (Total - Parts Cost)
 
 ## 5\. Component Library / Design System
 

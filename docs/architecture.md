@@ -20,6 +20,7 @@ This section will be used to record future changes made to the architecture docu
 | Date | Version | Description | Author |
 | :--- | :--- | :--- | :--- |
 | 15 Aug 2025 | 1.0 | Initial architecture design | Winston (Architect) |
+| 19 Aug 2025 | 1.1 | Updated for Story 4.3: Create New Repair Job implementation | Claude Code |
 
 Excellent\! That's a very good decision. Choosing the T3 Stack will help this project get started quickly with a modern foundation. 👨‍💻
 
@@ -385,7 +386,28 @@ const saleRouter = t.router({
 });
 
 const repairRouter = t.router({
-  // ... functions for creating and viewing repairs
+  // CRUD functions for Repair management
+  getAll: t.procedure.query(() => {
+    // Fetch all repair jobs with customer and used parts details
+  }),
+  getById: t.procedure
+    .input(z.object({ id: z.string() }))
+    .query(({ input }) => {
+      // Fetch single repair job with detailed breakdown
+    }),
+  create: t.procedure
+    .input(z.object({
+      customerId: z.string(),
+      jobTitle: z.string(), // Job title/description
+      totalCost: z.number(),
+      usedParts: z.array(z.object({
+        productId: z.string(),
+        quantity: z.number()
+      }))
+    }))
+    .mutation(({ input }) => {
+      // Create repair job, deduct stock, calculate costs
+    })
 });
 
 const dashboardRouter = t.router({
@@ -614,6 +636,46 @@ sequenceDiagram
 
     TransactionService (tRPC)-->>SalesView (Frontend): Responds with "Sale created successfully"
     SalesView (Frontend)-->>User: Displays "Saved successfully" message and navigates back to history page
+```
+
+-----
+
+### 3\. Create New Repair Job Workflow
+
+**Goal:** To show the sequence of operations for creating a repair job, including selecting parts, calculating costs, and managing inventory deductions.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant RepairView (Frontend)
+    participant TransactionService (tRPC)
+    participant StockService (tRPC)
+    participant Prisma Client
+    participant NeonDB
+
+    User->>RepairView (Frontend): Fills repair form (customer, job title, parts, total cost)
+    User->>RepairView (Frontend): Clicks "Save Repair Job" button
+    RepairView (Frontend)->>TransactionService (tRPC): Calls .mutate('repairs.create', { ...repair data })
+
+    activate TransactionService (tRPC)
+    TransactionService (tRPC)->>Prisma Client: Starts a Transaction
+    TransactionService (tRPC)->>StockService (tRPC): Validates stock availability for all parts
+    
+    activate StockService (tRPC)
+    StockService (tRPC)->>Prisma Client: Checks product quantities
+    StockService (tRPC)->>Prisma Client: Deducts part quantities from stock
+    deactivate StockService (tRPC)
+
+    TransactionService (tRPC)->>Prisma Client: Calculates parts cost from average costs
+    TransactionService (tRPC)->>Prisma Client: Creates `Repair` record
+    TransactionService (tRPC)->>Prisma Client: Creates `UsedPart` records for each part
+    TransactionService (tRPC)->>Prisma Client: Updates labor cost (total - parts cost)
+    TransactionService (tRPC)->>Prisma Client: Commits the Transaction
+    Prisma Client->>NeonDB: Saves all repair data to database
+    deactivate TransactionService (tRPC)
+
+    TransactionService (tRPC)-->>RepairView (Frontend): Responds with "Repair job created successfully"
+    RepairView (Frontend)-->>User: Displays success message and navigates to repair history
 ```
 
 ## 9\. Database Schema

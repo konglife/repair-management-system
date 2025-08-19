@@ -46,7 +46,7 @@ We will build a Full Stack web application with a simple User Interface (UI), st
     * CRUD for Categories and Units.
     * Function to record stock purchases (Purchase Records).
 3.  **Sales Management System:** A page to view sales history and a function to create new sales invoices.
-4.  **Repair Management System:** A page to view repair history and a function to create new repair jobs.
+4.  **Repair Management System:** A page to view repair history and a function to create new repair jobs. Technical design completed and ready for implementation.
 5.  **Customer Management System:** A page for viewing, adding, and editing customer information.
 
 ### Out of Scope for MVP
@@ -57,7 +57,7 @@ We will build a Full Stack web application with a simple User Interface (UI), st
 
 ## Post-MVP Vision
 
-In the future, the system can be expanded by adding a Supplier system, generating in-depth reports, and possibly integrating with e-commerce platforms to automatically record purchases.
+With the core repair management functionality now complete, the system can be expanded by adding a Supplier system, generating in-depth reports (profit analysis, parts usage trends), and possibly integrating with e-commerce platforms to automatically record purchases. Additional features could include repair status tracking, customer notifications, and advanced reporting dashboards.
 
 ## Technical Considerations
 
