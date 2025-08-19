@@ -87,7 +87,13 @@ export const dashboardRouter = createTRPCRouter({
     }),
 
   // Get trend data for 30-day period for dashboard graph
-  getTrendData: protectedProcedure.query(async ({ ctx }) => {
+  getTrendData: protectedProcedure
+    .input(
+      z.object({
+        period: z.literal('last30days'),
+      })
+    )
+    .query(async ({ ctx }) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -176,7 +182,7 @@ export const dashboardRouter = createTRPCRouter({
       .sort((a, b) => a.date.localeCompare(b.date));
 
     return {
-      dailyData,
+      trendData: dailyData,
     };
   }),
 });

@@ -17,6 +17,7 @@ import {
   ShoppingCart
 } from "lucide-react"
 import { api } from "~/lib/trpc"
+import TrendGraph from "./components/TrendGraph"
 
 type TimePeriod = 'today' | 'last7days' | 'thismonth'
 
@@ -179,6 +180,11 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Trend Graph Section */}
+      <div className="w-full">
+        <TrendGraph />
       </div>
     </div>
   )
