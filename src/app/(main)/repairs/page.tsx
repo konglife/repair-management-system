@@ -2,6 +2,7 @@
 
 import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ interface UsedPart {
 }
 
 export default function RepairsPage() {
+  const router = useRouter();
   
   // State for Create Repair form
   const [showCreateRepairForm, setShowCreateRepairForm] = useState(false);
@@ -266,6 +268,7 @@ export default function RepairsPage() {
                           variant="ghost"
                           size="sm"
                           title="View Details"
+                          onClick={() => router.push(`/repairs/${repair.id}`)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>

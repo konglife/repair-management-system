@@ -697,5 +697,277 @@ describe("Repair Router Logic", () => {
         wouldProceed: false,
       });
     });
+
+    it("should implement getById procedure logic", () => {
+      const getRepairById = (
+        repairId: string,
+        repairs: Array<{
+          id: string;
+          customerId: string;
+          description: string;
+          totalCost: number;
+          partsCost: number;
+          laborCost: number;
+          createdAt: Date;
+          customer: { id: string; name: string };
+          usedParts: Array<{
+            id: string;
+            quantity: number;
+            costAtTime: number;
+            product: { id: string; name: string };
+          }>;
+        }>
+      ) => {
+        const repair = repairs.find(r => r.id === repairId);
+        
+        if (!repair) {
+          return {
+            found: false,
+            error: "Repair not found",
+          };
+        }
+
+        return {
+          found: true,
+          repair,
+          error: null,
+        };
+      };
+
+      const mockRepairs = [
+        {
+          id: "repair123",
+          customerId: "customer123",
+          description: "Fix broken screen",
+          totalCost: 200.0,
+          partsCost: 150.0,
+          laborCost: 50.0,
+          createdAt: new Date("2025-01-15"),
+          customer: { id: "customer123", name: "John Doe" },
+          usedParts: [
+            {
+              id: "usedpart1",
+              quantity: 1,
+              costAtTime: 150.0,
+              product: { id: "product1", name: "Screen Assembly" },
+            },
+          ],
+        },
+      ];
+
+      // Valid repair ID
+      expect(getRepairById("repair123", mockRepairs)).toEqual({
+        found: true,
+        repair: mockRepairs[0],
+        error: null,
+      });
+
+      // Invalid repair ID
+      expect(getRepairById("nonexistent", mockRepairs)).toEqual({
+        found: false,
+        error: "Repair not found",
+      });
+    });
+
+    it("should validate repair ID format for getById", () => {
+      const validateRepairId = (id: string) => {
+        const errors: string[] = [];
+
+        if (!id) {
+          errors.push("Repair ID is required");
+        } else if (typeof id !== "string") {
+          errors.push("Repair ID must be a string");
+        } else if (id.trim().length === 0) {
+          errors.push("Repair ID cannot be empty");
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+        };
+      };
+
+      expect(validateRepairId("repair123")).toEqual({
+        isValid: true,
+        errors: [],
+      });
+
+      expect(validateRepairId("")).toEqual({
+        isValid: false,
+        errors: ["Repair ID is required"],
+      });
+
+      expect(validateRepairId("   ")).toEqual({
+        isValid: false,
+        errors: ["Repair ID cannot be empty"],
+      });
+    });
+
+    it("should include proper relationships in getById response", () => {
+      const validateRepairDetailsStructure = (repairData: unknown) => {
+        const requirements = [
+          { field: "id", type: "string", required: true },
+          { field: "description", type: "string", required: true },
+          { field: "totalCost", type: "number", required: true },
+          { field: "partsCost", type: "number", required: true },
+          { field: "laborCost", type: "number", required: true },
+          { field: "createdAt", type: "object", required: true }, // Date object
+          { field: "customer", type: "object", required: true },
+          { field: "customer.name", type: "string", required: true },
+          { field: "usedParts", type: "object", required: true }, // Array
+          { field: "usedParts[0].quantity", type: "number", required: true },
+          { field: "usedParts[0].costAtTime", type: "number", required: true },
+          { field: "usedParts[0].product", type: "object", required: true },
+          { field: "usedParts[0].product.name", type: "string", required: true },
+        ];
+
+        const validationResults = requirements.map(req => {
+          let value = repairData;
+          const fieldPath = req.field.split(/[\[\].]/).filter(Boolean);
+          
+          for (const path of fieldPath) {
+            if (value == null) break;
+            if (path === "0" && Array.isArray(value)) {
+              value = value[0];
+            } else {
+              value = (value as Record<string, unknown>)[path];
+            }
+          }
+
+          const isPresent = value !== undefined && value !== null;
+          const isCorrectType = !isPresent || typeof value === req.type || 
+            (req.type === "object" && (typeof value === "object" || Array.isArray(value)));
+
+          return {
+            field: req.field,
+            isPresent,
+            isCorrectType,
+            isValid: !req.required || (isPresent && isCorrectType),
+          };
+        });
+
+        return {
+          isValid: validationResults.every(r => r.isValid),
+          validationResults,
+        };
+      };
+
+      const validRepairData = {
+        id: "repair123",
+        description: "Fix broken screen",
+        totalCost: 200.0,
+        partsCost: 150.0,
+        laborCost: 50.0,
+        createdAt: new Date("2025-01-15"),
+        customer: { name: "John Doe" },
+        usedParts: [
+          {
+            quantity: 1,
+            costAtTime: 150.0,
+            product: { name: "Screen Assembly" },
+          },
+        ],
+      };
+
+      const result = validateRepairDetailsStructure(validRepairData);
+      expect(result.isValid).toBe(true);
+
+      // Test missing customer name
+      const invalidRepairData = {
+        ...validRepairData,
+        customer: {},
+      };
+
+      const invalidResult = validateRepairDetailsStructure(invalidRepairData);
+      expect(invalidResult.isValid).toBe(false);
+    });
+  });
+
+  describe("repair detail display logic", () => {
+    it("should calculate individual part costs correctly", () => {
+      const calculatePartTotals = (usedParts: Array<{
+        quantity: number;
+        costAtTime: number;
+        product: { name: string };
+      }>) => {
+        return usedParts.map(part => ({
+          ...part,
+          totalCost: part.quantity * part.costAtTime,
+          formattedUnitCost: `$${part.costAtTime.toFixed(2)}`,
+          formattedTotalCost: `$${(part.quantity * part.costAtTime).toFixed(2)}`,
+        }));
+      };
+
+      const mockUsedParts = [
+        {
+          quantity: 2,
+          costAtTime: 25.50,
+          product: { name: "Battery" },
+        },
+        {
+          quantity: 1,
+          costAtTime: 150.0,
+          product: { name: "Screen" },
+        },
+      ];
+
+      const result = calculatePartTotals(mockUsedParts);
+
+      expect(result[0]).toEqual({
+        quantity: 2,
+        costAtTime: 25.50,
+        product: { name: "Battery" },
+        totalCost: 51.0,
+        formattedUnitCost: "$25.50",
+        formattedTotalCost: "$51.00",
+      });
+
+      expect(result[1]).toEqual({
+        quantity: 1,
+        costAtTime: 150.0,
+        product: { name: "Screen" },
+        totalCost: 150.0,
+        formattedUnitCost: "$150.00",
+        formattedTotalCost: "$150.00",
+      });
+    });
+
+    it("should validate cost breakdown totals", () => {
+      const validateCostBreakdown = (
+        totalCost: number,
+        partsCost: number,
+        laborCost: number
+      ) => {
+        const calculatedLaborCost = totalCost - partsCost;
+        const isConsistent = Math.abs(laborCost - calculatedLaborCost) < 0.01; // Allow for floating point precision
+
+        return {
+          isConsistent,
+          totalCost,
+          partsCost,
+          laborCost,
+          calculatedLaborCost,
+          difference: laborCost - calculatedLaborCost,
+        };
+      };
+
+      expect(validateCostBreakdown(200.0, 150.0, 50.0)).toEqual({
+        isConsistent: true,
+        totalCost: 200.0,
+        partsCost: 150.0,
+        laborCost: 50.0,
+        calculatedLaborCost: 50.0,
+        difference: 0.0,
+      });
+
+      expect(validateCostBreakdown(200.0, 150.0, 60.0)).toEqual({
+        isConsistent: false,
+        totalCost: 200.0,
+        partsCost: 150.0,
+        laborCost: 60.0,
+        calculatedLaborCost: 50.0,
+        difference: 10.0,
+      });
+    });
   });
 });

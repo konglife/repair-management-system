@@ -21,6 +21,34 @@ export const repairRouter = createTRPCRouter({
     return repairs;
   }),
 
+  // Get single repair by ID with full details
+  getById: protectedProcedure
+    .input(z.object({
+      id: z.string().cuid("Invalid repair ID"),
+    }))
+    .query(async ({ ctx, input }) => {
+      const repair = await ctx.db.repair.findUnique({
+        where: { id: input.id },
+        include: {
+          customer: true,
+          usedParts: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!repair) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Repair not found",
+        });
+      }
+
+      return repair;
+    }),
+
   // Create a new repair with stock deduction
   create: protectedProcedure
     .input(
