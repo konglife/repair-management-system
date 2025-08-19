@@ -13,8 +13,6 @@ jest.mock('~/lib/trpc', () => ({
   },
 }))
 
-const mockedApi = api as jest.Mocked<typeof api>
-
 // Mock Recharts components to avoid SVG rendering issues in tests
 jest.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
@@ -60,7 +58,7 @@ describe('TrendGraph', () => {
 
   describe('Loading State', () => {
     it('should display loading skeleton when data is loading', () => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
@@ -73,7 +71,7 @@ describe('TrendGraph', () => {
     })
 
     it('should call API with correct parameters', () => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: mockTrendData },
         isLoading: false,
         error: null,
@@ -81,7 +79,7 @@ describe('TrendGraph', () => {
 
       render(<TrendGraph />)
 
-      expect(mockedApi.dashboard.getTrendData.useQuery).toHaveBeenCalledWith({
+      expect(api.dashboard.getTrendData.useQuery).toHaveBeenCalledWith({
         period: 'last30days'
       })
     })
@@ -89,8 +87,8 @@ describe('TrendGraph', () => {
 
   describe('Error State', () => {
     it('should display error message when API fails', () => {
-      const errorMessage = 'Failed to fetch trend data'
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      const errorMessage = 'Failed to fetch trend data';
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: undefined,
         isLoading: false,
         error: { message: errorMessage },
@@ -105,7 +103,7 @@ describe('TrendGraph', () => {
 
   describe('Empty State', () => {
     it('should display empty message when no data is available', () => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: [] },
         isLoading: false,
         error: null,
@@ -117,7 +115,7 @@ describe('TrendGraph', () => {
     })
 
     it('should handle undefined trendData', () => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: undefined },
         isLoading: false,
         error: null,
@@ -131,7 +129,7 @@ describe('TrendGraph', () => {
 
   describe('Chart Rendering', () => {
     beforeEach(() => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: mockTrendData },
         isLoading: false,
         error: null,
@@ -181,7 +179,7 @@ describe('TrendGraph', () => {
 
   describe('Data Transformation', () => {
     it('should transform date format for display', async () => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: mockTrendData },
         isLoading: false,
         error: null,
@@ -201,9 +199,9 @@ describe('TrendGraph', () => {
           totalIncome: 100,
           totalExpenses: 50,
         }
-      ]
+      ];
 
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: invalidData },
         isLoading: false,
         error: null,
@@ -216,7 +214,7 @@ describe('TrendGraph', () => {
 
   describe('Accessibility', () => {
     beforeEach(() => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: mockTrendData },
         isLoading: false,
         error: null,
@@ -240,7 +238,7 @@ describe('TrendGraph', () => {
 
   describe('Responsive Behavior', () => {
     it('should render ResponsiveContainer for responsive sizing', () => {
-      mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+      (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
         data: { trendData: mockTrendData },
         isLoading: false,
         error: null,
@@ -259,7 +257,7 @@ describe('TrendGraph CustomTooltip', () => {
   // we test it indirectly through the main component behavior
   
   it('should be included in the chart configuration', () => {
-    mockedApi.dashboard.getTrendData.useQuery.mockReturnValue({
+    (api.dashboard.getTrendData.useQuery as jest.Mock).mockReturnValue({
       data: { trendData: mockTrendData },
       isLoading: false,
       error: null,
