@@ -130,6 +130,7 @@ model Repair {
 // UsedPart model for parts used in repairs
 model UsedPart {
   id         String @id @default(cuid())
+  quantity   Int
   costAtTime Float
 
   // Relations
