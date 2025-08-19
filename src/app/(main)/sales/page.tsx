@@ -2,6 +2,7 @@
 
 import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ interface SaleItem {
 }
 
 export default function SalesPage() {
+  const router = useRouter();
+  
   // State for Create Sale form
   const [showCreateSaleForm, setShowCreateSaleForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -238,6 +241,7 @@ export default function SalesPage() {
                           variant="ghost"
                           size="sm"
                           title="View Details"
+                          onClick={() => router.push(`/sales/${sale.id}`)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>

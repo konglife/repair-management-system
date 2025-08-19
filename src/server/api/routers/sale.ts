@@ -21,6 +21,42 @@ export const saleRouter = createTRPCRouter({
     return sales;
   }),
 
+  // Get sale by ID with complete details for sale detail view
+  getById: protectedProcedure
+    .input(
+      z.object({
+        id: z.string().cuid("Invalid sale ID format"),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const sale = await ctx.db.sale.findUnique({
+        where: { id: input.id },
+        include: {
+          customer: true,
+          saleItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!sale) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Sale not found",
+        });
+      }
+
+      // Calculate gross profit (totalAmount - totalCost)
+      const grossProfit = sale.totalAmount - sale.totalCost;
+
+      return {
+        ...sale,
+        grossProfit,
+      };
+    }),
+
   // Create a new sale with stock deduction
   create: protectedProcedure
     .input(

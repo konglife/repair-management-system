@@ -548,6 +548,140 @@ describe("Sale Router Logic", () => {
       expect(result[1].id).toBe("s1");
     });
 
+    it("should implement getById procedure validation", () => {
+      const validateGetByIdInput = (input: { id: string }) => {
+        const errors: string[] = [];
+
+        if (!input.id || typeof input.id !== "string") {
+          errors.push("Sale ID is required");
+        }
+
+        // CUID format validation (simulated)
+        if (input.id && (input.id.length < 20 || !input.id.match(/^[a-z0-9]+$/))) {
+          errors.push("Invalid sale ID format");
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+        };
+      };
+
+      expect(validateGetByIdInput({ id: "cm1a2b3c4d5e6f7g8h9i" })).toEqual({
+        isValid: true,
+        errors: [],
+      });
+
+      expect(validateGetByIdInput({ id: "" })).toEqual({
+        isValid: false,
+        errors: ["Sale ID is required"],
+      });
+
+      expect(validateGetByIdInput({ id: "invalid-format" })).toEqual({
+        isValid: false,
+        errors: ["Invalid sale ID format"],
+      });
+
+      expect(validateGetByIdInput({ id: "short" })).toEqual({
+        isValid: false,
+        errors: ["Invalid sale ID format"],
+      });
+    });
+
+    it("should implement getById procedure logic with profit calculation", () => {
+      const getByIdLogic = (
+        saleId: string,
+        mockSales: Array<{
+          id: string;
+          totalAmount: number;
+          totalCost: number;
+          customer: { name: string };
+          saleItems: Array<{
+            id: string;
+            quantity: number;
+            priceAtTime: number;
+            product: { name: string };
+          }>;
+        }>
+      ) => {
+        const sale = mockSales.find(s => s.id === saleId);
+        
+        if (!sale) {
+          return {
+            error: {
+              code: "NOT_FOUND",
+              message: "Sale not found",
+            }
+          };
+        }
+
+        // Calculate gross profit (totalAmount - totalCost)
+        const grossProfit = sale.totalAmount - sale.totalCost;
+
+        return {
+          data: {
+            ...sale,
+            grossProfit,
+          },
+        };
+      };
+
+      const mockSales = [
+        {
+          id: "cs123456789abcdef0123",
+          totalAmount: 300.0,
+          totalCost: 180.0,
+          customer: { name: "John Doe" },
+          saleItems: [
+            {
+              id: "si1",
+              quantity: 2,
+              priceAtTime: 100.0,
+              product: { name: "Product A" },
+            },
+            {
+              id: "si2",
+              quantity: 1,
+              priceAtTime: 100.0,
+              product: { name: "Product B" },
+            },
+          ],
+        },
+      ];
+
+      // Valid sale ID
+      const result = getByIdLogic("cs123456789abcdef0123", mockSales);
+      expect(result.data).toBeDefined();
+      expect(result.data?.grossProfit).toBe(120.0);
+      expect(result.data?.customer.name).toBe("John Doe");
+      expect(result.data?.saleItems).toHaveLength(2);
+
+      // Invalid sale ID
+      const notFoundResult = getByIdLogic("nonexistent123456", mockSales);
+      expect(notFoundResult.error).toEqual({
+        code: "NOT_FOUND",
+        message: "Sale not found",
+      });
+    });
+
+    it("should calculate gross profit correctly in various scenarios", () => {
+      const calculateGrossProfit = (totalAmount: number, totalCost: number) => {
+        return totalAmount - totalCost;
+      };
+
+      // Positive profit
+      expect(calculateGrossProfit(500.0, 300.0)).toBe(200.0);
+      
+      // Zero profit
+      expect(calculateGrossProfit(250.0, 250.0)).toBe(0.0);
+      
+      // Loss scenario (negative profit)
+      expect(calculateGrossProfit(200.0, 300.0)).toBe(-100.0);
+      
+      // Small amounts with precision
+      expect(calculateGrossProfit(99.99, 59.99)).toBeCloseTo(40.0, 2);
+    });
+
     it("should implement create procedure validation flow", () => {
       const validateCreateFlow = (input: {
         customerId: string;

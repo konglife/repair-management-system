@@ -368,6 +368,97 @@ describe("Sales Page Logic", () => {
     });
   });
 
+  describe("navigation and routing", () => {
+    it("should generate correct sale detail route paths", () => {
+      const generateSaleDetailPath = (saleId: string) => {
+        return `/sales/${saleId}`;
+      };
+
+      expect(generateSaleDetailPath("cm1a2b3c4d5e6f7g8h9i")).toBe("/sales/cm1a2b3c4d5e6f7g8h9i");
+      expect(generateSaleDetailPath("cs123456789abcdef")).toBe("/sales/cs123456789abcdef");
+    });
+
+    it("should handle sale detail navigation action", () => {
+      const handleSaleDetailNavigation = (saleId: string) => {
+        return {
+          action: "navigate",
+          destination: `/sales/${saleId}`,
+          method: "push",
+          saleId,
+        };
+      };
+
+      expect(handleSaleDetailNavigation("sale123")).toEqual({
+        action: "navigate",
+        destination: "/sales/sale123",
+        method: "push",
+        saleId: "sale123",
+      });
+    });
+
+    it("should validate sale actions availability", () => {
+      const getSaleActions = (sale: { id: string; customer: { name: string } }) => {
+        return {
+          canViewDetails: Boolean(sale.id),
+          detailsButtonProps: {
+            variant: "ghost" as const,
+            size: "sm" as const,
+            title: "View Details",
+            onClick: () => ({ action: "navigate", path: `/sales/${sale.id}` }),
+          },
+        };
+      };
+
+      const mockSale = {
+        id: "cs123456789",
+        customer: { name: "John Doe" },
+      };
+
+      const actions = getSaleActions(mockSale);
+      expect(actions.canViewDetails).toBe(true);
+      expect(actions.detailsButtonProps.title).toBe("View Details");
+      expect(actions.detailsButtonProps.variant).toBe("ghost");
+      expect(actions.detailsButtonProps.size).toBe("sm");
+    });
+
+    it("should handle sales table row actions", () => {
+      const getSalesTableRowActions = (sales: Array<{ id: string; totalAmount: number }>) => {
+        return sales.map(sale => ({
+          saleId: sale.id,
+          totalAmount: sale.totalAmount,
+          actions: [
+            {
+              type: "view-details",
+              label: "View Details",
+              icon: "Eye",
+              destination: `/sales/${sale.id}`,
+            },
+          ],
+        }));
+      };
+
+      const mockSales = [
+        { id: "sale1", totalAmount: 100.0 },
+        { id: "sale2", totalAmount: 200.0 },
+      ];
+
+      const result = getSalesTableRowActions(mockSales);
+      expect(result).toHaveLength(2);
+      expect(result[0].actions[0]).toEqual({
+        type: "view-details",
+        label: "View Details",
+        icon: "Eye",
+        destination: "/sales/sale1",
+      });
+      expect(result[1].actions[0]).toEqual({
+        type: "view-details",
+        label: "View Details",
+        icon: "Eye",
+        destination: "/sales/sale2",
+      });
+    });
+  });
+
   describe("UI state management", () => {
     it("should manage form state correctly", () => {
       const resetFormState = () => ({
