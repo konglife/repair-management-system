@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { SidebarToggle } from "~/components/ui/sidebar-toggle";
+import { useSidebarState } from "~/hooks/use-sidebar-state";
 import {
   Sheet,
   SheetContent,
@@ -16,12 +18,44 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isCollapsed, isLoaded, toggleSidebar } = useSidebarState();
+
+  // Show a minimal loading state while localStorage is being read
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen bg-gray-100">
+        <div className="hidden md:flex md:w-64 md:flex-col bg-white border-r border-gray-200">
+          <div className="flex h-16 items-center px-6 border-b border-gray-200">
+            <div className="h-6 bg-gray-200 rounded animate-pulse w-32"></div>
+          </div>
+        </div>
+        <div className="flex flex-1 flex-col">
+          <div className="h-16 bg-white border-b border-gray-200"></div>
+          <main className="flex-1 p-6">
+            <div className="h-8 bg-gray-200 rounded animate-pulse w-48"></div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex md:w-64 md:flex-col">
-        <Sidebar />
+      <div className={`hidden md:flex md:flex-col transition-all duration-300 ${
+        isCollapsed ? "md:w-16" : "md:w-64"
+      }`}>
+        <div className="relative h-full">
+          <Sidebar isCollapsed={isCollapsed} />
+          {/* Desktop Toggle Button */}
+          <div className="absolute top-4 -right-3 z-10">
+            <SidebarToggle
+              isCollapsed={isCollapsed}
+              onClick={toggleSidebar}
+              className="bg-white border border-gray-200 shadow-sm"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Mobile Sidebar */}
