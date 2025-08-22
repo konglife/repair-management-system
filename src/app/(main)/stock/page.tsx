@@ -7,6 +7,7 @@ import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "~/components/ui/CurrencyInput";
 import { SearchInput } from "~/components/ui/SearchInput";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -811,13 +812,11 @@ export default function StockPage() {
                           />
                         </div>
                         <div>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={newProductPrice}
-                            onChange={(e) => setNewProductPrice(e.target.value)}
+                          <CurrencyInput
+                            value={newProductPrice ? parseFloat(newProductPrice) : undefined}
+                            onChange={(value) => setNewProductPrice(value?.toString() ?? "")}
                             placeholder="Sale price"
+                            min={0}
                           />
                         </div>
                         <div>
@@ -956,13 +955,11 @@ export default function StockPage() {
                             </TableCell>
                             <TableCell>
                               {editingProduct?.id === product.id ? (
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={editProductPrice}
-                                  onChange={(e) => setEditProductPrice(e.target.value)}
+                                <CurrencyInput
+                                  value={editProductPrice ? parseFloat(editProductPrice) : undefined}
+                                  onChange={(value) => setEditProductPrice(value?.toString() ?? "")}
                                   className="h-8 w-20"
+                                  min={0}
                                 />
                               ) : (
                                 <span>{formatCurrency(product.salePrice)}</span>
@@ -1056,13 +1053,11 @@ export default function StockPage() {
                         </div>
                         <div>
                           <label className="text-sm font-medium mb-2 block">Cost Per Unit (฿)</label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={purchaseCostPerUnit}
-                            onChange={(e) => setPurchaseCostPerUnit(e.target.value)}
+                          <CurrencyInput
+                            value={purchaseCostPerUnit ? parseFloat(purchaseCostPerUnit) : undefined}
+                            onChange={(value) => setPurchaseCostPerUnit(value?.toString() ?? "")}
                             placeholder="Enter cost per unit"
+                            min={0}
                           />
                         </div>
                       </div>

@@ -8,6 +8,7 @@ import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "~/components/ui/CurrencyInput";
 import { SearchInput } from "~/components/ui/SearchInput";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -445,15 +446,12 @@ export default function RepairsPage() {
               {/* Total Cost */}
               <div>
                 <Label htmlFor="totalCost">Total Repair Cost *</Label>
-                <Input
-                  id="totalCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                <CurrencyInput
                   value={totalCost}
-                  onChange={(e) => setTotalCost(Number(e.target.value))}
+                  onChange={(value) => setTotalCost(value ?? 0)}
                   placeholder="Enter total repair cost charged to customer"
                   className="mt-1"
+                  min={0}
                 />
                 {totalCost > 0 && usedParts.length > 0 && (
                   <p className="text-sm text-muted-foreground mt-1">

@@ -26,7 +26,6 @@
 ---
 
 ## 2. Requirements
-*(ส่วนนี้คือข้อกำหนด FR1-FR36 ทั้งหมดที่เรารวบรวมกันมา)*
 
 ### Module: Stock Management
 - **FR1**: Implement a search bar in the data tables for: `Categories`, `Units`, `Products`, and `Record Purchase`.
