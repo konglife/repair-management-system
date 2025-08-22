@@ -9,6 +9,26 @@ Object.defineProperty(Element.prototype, 'scrollIntoView', {
   value: jest.fn(),
 })
 
+// Mock Recharts components to avoid SVG rendering issues in tests
+jest.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
+  Line: ({ dataKey, name }: { dataKey: string; name: string }) => (
+    <div data-testid={`line-${dataKey}`} aria-label={name} />
+  ),
+  XAxis: ({ dataKey }: { dataKey: string }) => (
+    <div data-testid="x-axis" data-key={dataKey} />
+  ),
+  YAxis: () => <div data-testid="y-axis" />,
+  CartesianGrid: () => <div data-testid="cartesian-grid" />,
+  Tooltip: () => <div data-testid="tooltip" />,
+  Legend: () => <div data-testid="legend" />,
+}))
+
 // Mock tRPC client
 jest.mock('~/lib/trpc', () => ({
   api: {
@@ -16,12 +36,19 @@ jest.mock('~/lib/trpc', () => ({
       getSummary: {
         useQuery: jest.fn(),
       },
+      getTrendData: {
+        useQuery: jest.fn(),
+      },
     },
   },
 }))
 
-const mockUseQuery = api.dashboard.getSummary.useQuery as jest.MockedFunction<
+const mockGetSummaryQuery = api.dashboard.getSummary.useQuery as jest.MockedFunction<
   typeof api.dashboard.getSummary.useQuery
+>
+
+const mockGetTrendDataQuery = api.dashboard.getTrendData.useQuery as jest.MockedFunction<
+  typeof api.dashboard.getTrendData.useQuery
 >
 
 // Test wrapper with QueryClient
@@ -44,14 +71,35 @@ const mockSummaryData = {
   repairProfit: 7500,
 }
 
+const mockTrendData = {
+  trendData: [
+    {
+      date: '2024-01-01',
+      totalIncome: 1500,
+      totalExpenses: 800,
+    },
+    {
+      date: '2024-01-02',
+      totalIncome: 2200,
+      totalExpenses: 1200,
+    },
+  ]
+}
+
 describe('Dashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Setup default mocks for both API calls
+    mockGetTrendDataQuery.mockReturnValue({
+      data: mockTrendData,
+      isLoading: false,
+      error: null,
+    } as any)
   })
 
   describe('Dashboard Page Component Tests', () => {
     it('renders dashboard page correctly with all sections', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -73,7 +121,7 @@ describe('Dashboard', () => {
     })
 
     it('calls tRPC getSummary query with correct parameters', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -89,13 +137,13 @@ describe('Dashboard', () => {
         </TestWrapper>
       )
 
-      expect(mockUseQuery).toHaveBeenCalledWith({
+      expect(mockGetSummaryQuery).toHaveBeenCalledWith({
         period: 'thismonth'
       })
     })
 
     it('displays loading indicators during API calls', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: undefined,
         isLoading: true,
         error: null,
@@ -121,7 +169,7 @@ describe('Dashboard', () => {
 
     it('displays error states appropriately', () => {
       const mockError = { message: 'Failed to load dashboard data' }
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: undefined,
         isLoading: false,
         error: mockError,
@@ -144,7 +192,7 @@ describe('Dashboard', () => {
 
   describe('Time Range Selector Tests', () => {
     it('displays all three time range options', async () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -172,7 +220,7 @@ describe('Dashboard', () => {
     })
 
     it('updates component state when time range is selected', async () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -200,14 +248,14 @@ describe('Dashboard', () => {
 
       // Verify the API is called with new parameter
       await waitFor(() => {
-        expect(mockUseQuery).toHaveBeenCalledWith({
+        expect(mockGetSummaryQuery).toHaveBeenCalledWith({
           period: 'today'
         })
       })
     })
 
     it('defaults to "This Month" time range selection', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -223,14 +271,14 @@ describe('Dashboard', () => {
         </TestWrapper>
       )
 
-      expect(mockUseQuery).toHaveBeenCalledWith({
+      expect(mockGetSummaryQuery).toHaveBeenCalledWith({
         period: 'thismonth'
       })
       expect(screen.getByText('This Month')).toBeInTheDocument()
     })
 
     it('triggers new API call when time range changes', async () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -247,7 +295,7 @@ describe('Dashboard', () => {
       )
 
       // Initial call
-      expect(mockUseQuery).toHaveBeenCalledWith({
+      expect(mockGetSummaryQuery).toHaveBeenCalledWith({
         period: 'thismonth'
       })
 
@@ -262,7 +310,7 @@ describe('Dashboard', () => {
 
       // Verify new API call
       await waitFor(() => {
-        expect(mockUseQuery).toHaveBeenCalledWith({
+        expect(mockGetSummaryQuery).toHaveBeenCalledWith({
           period: 'last7days'
         })
       })
@@ -271,7 +319,7 @@ describe('Dashboard', () => {
 
   describe('Summary Cards Tests', () => {
     it('displays all five metric cards with correct data', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -311,7 +359,7 @@ describe('Dashboard', () => {
         repairProfit: 12345.67,
       }
 
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: testData,
         isLoading: false,
         error: null,
@@ -343,7 +391,7 @@ describe('Dashboard', () => {
         repairProfit: 0,
       }
 
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: emptyData,
         isLoading: false,
         error: null,
@@ -365,7 +413,7 @@ describe('Dashboard', () => {
     })
 
     it('has responsive grid layout for different screen sizes', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -399,7 +447,7 @@ describe('Dashboard', () => {
       const thisMonthData = { ...mockSummaryData, totalExpenses: 5000 }
 
       // Start with "This Month" data
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: thisMonthData,
         isLoading: false,
         error: null,
@@ -419,7 +467,7 @@ describe('Dashboard', () => {
       expect(screen.getByText('$5,000.00')).toBeInTheDocument()
 
       // Change to "Today" and mock new data
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: todayData,
         isLoading: false,
         error: null,
@@ -439,7 +487,7 @@ describe('Dashboard', () => {
 
       // Verify API was called with new period
       await waitFor(() => {
-        expect(mockUseQuery).toHaveBeenCalledWith({
+        expect(mockGetSummaryQuery).toHaveBeenCalledWith({
           period: 'today'
         })
       })
@@ -448,7 +496,7 @@ describe('Dashboard', () => {
 
   describe('Accessibility Tests', () => {
     it('has proper ARIA labels for screen readers', () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,
@@ -474,7 +522,7 @@ describe('Dashboard', () => {
     })
 
     it('supports keyboard navigation for all interactive elements', async () => {
-      mockUseQuery.mockReturnValue({
+      mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
         error: null,

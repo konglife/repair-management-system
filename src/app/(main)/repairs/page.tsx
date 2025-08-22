@@ -4,6 +4,7 @@ import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "luc
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
+import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,7 +183,7 @@ export default function RepairsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRepairAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalRepairAmount)}</div>
             <p className="text-xs text-muted-foreground">
               Total revenue
             </p>
@@ -194,7 +195,7 @@ export default function RepairsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${averageRepairCost.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(averageRepairCost)}</div>
             <p className="text-xs text-muted-foreground">
               Per repair job
             </p>
@@ -206,7 +207,7 @@ export default function RepairsPage() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalLaborAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalLaborAmount)}</div>
             <p className="text-xs text-muted-foreground">
               Total labor revenue
             </p>
@@ -261,8 +262,8 @@ export default function RepairsPage() {
                       <TableCell>{repair.customer.name}</TableCell>
                       <TableCell className="max-w-xs truncate">{repair.description}</TableCell>
                       <TableCell>{repair.usedParts.length} part(s)</TableCell>
-                      <TableCell>${repair.totalCost.toFixed(2)}</TableCell>
-                      <TableCell>${repair.laborCost.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(repair.totalCost)}</TableCell>
+                      <TableCell>{formatCurrency(repair.laborCost)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -337,7 +338,7 @@ export default function RepairsPage() {
                           .filter(product => product.quantity > 0) // Only show products with stock
                           .map((product) => (
                           <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${product.averageCost.toFixed(2)} (Stock: {product.quantity})
+                            {product.name} - {formatCurrency(product.averageCost)} (Stock: {product.quantity})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -374,7 +375,7 @@ export default function RepairsPage() {
                         <div className="flex-1">
                           <span className="font-medium">{part.productName}</span>
                           <span className="text-sm text-gray-500 ml-2">
-                            ${part.costAtTime?.toFixed(2)} each
+                            {formatCurrency(part.costAtTime || 0)} each
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -386,7 +387,7 @@ export default function RepairsPage() {
                             className="w-20"
                           />
                           <span className="w-20 text-right font-medium">
-                            ${part.partCost?.toFixed(2)}
+                            {formatCurrency(part.partCost || 0)}
                           </span>
                           <Button
                             type="button"
@@ -403,7 +404,7 @@ export default function RepairsPage() {
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-medium">Parts Cost:</span>
-                      <span className="text-lg font-medium">${calculatePartsCost().toFixed(2)}</span>
+                      <span className="text-lg font-medium">{formatCurrency(calculatePartsCost())}</span>
                     </div>
                   </div>
                 </div>
@@ -424,7 +425,7 @@ export default function RepairsPage() {
                 />
                 {totalCost > 0 && usedParts.length > 0 && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Labor Cost: ${calculateLaborCost().toFixed(2)}
+                    Labor Cost: {formatCurrency(calculateLaborCost())}
                   </p>
                 )}
               </div>

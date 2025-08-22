@@ -3,6 +3,7 @@
 import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart } from "lucide-react";
 import { useState } from "react";
 import { api } from "~/app/providers";
+import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -366,7 +367,7 @@ export default function StockPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0</div>
+            <div className="text-2xl font-bold">{formatCurrency(0)}</div>
             <p className="text-xs text-muted-foreground">
               Inventory value
             </p>
@@ -871,11 +872,11 @@ export default function StockPage() {
                                   className="h-8 w-20"
                                 />
                               ) : (
-                                <span>${product.salePrice.toFixed(2)}</span>
+                                <span>{formatCurrency(product.salePrice)}</span>
                               )}
                             </TableCell>
                             <TableCell className="text-muted-foreground">{product.quantity}</TableCell>
-                            <TableCell className="text-muted-foreground">${product.averageCost.toFixed(2)}</TableCell>
+                            <TableCell className="text-muted-foreground">{formatCurrency(product.averageCost)}</TableCell>
                             <TableCell>
                               {editingProduct?.id === product.id ? (
                                 <div className="flex gap-1">
@@ -961,7 +962,7 @@ export default function StockPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Cost Per Unit ($)</label>
+                          <label className="text-sm font-medium mb-2 block">Cost Per Unit (฿)</label>
                           <Input
                             type="number"
                             min="0"
@@ -1044,8 +1045,8 @@ export default function StockPage() {
                                   {new Date(purchase.purchaseDate).toLocaleDateString()}
                                 </TableCell>
                                 <TableCell>{purchase.quantity}</TableCell>
-                                <TableCell>${purchase.costPerUnit.toFixed(2)}</TableCell>
-                                <TableCell>${(purchase.quantity * purchase.costPerUnit).toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(purchase.costPerUnit)}</TableCell>
+                                <TableCell>{formatCurrency(purchase.quantity * purchase.costPerUnit)}</TableCell>
                               </TableRow>
                             ))
                           )}

@@ -362,8 +362,18 @@ describe("Repairs Page Logic", () => {
           customerName: repair.customer.name,
           description: repair.description,
           partsCount: repair.usedParts.length,
-          formattedTotal: `$${repair.totalCost.toFixed(2)}`,
-          formattedLaborCost: `$${repair.laborCost.toFixed(2)}`,
+          formattedTotal: new Intl.NumberFormat("th-TH", {
+            style: "currency",
+            currency: "THB",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(repair.totalCost),
+          formattedLaborCost: new Intl.NumberFormat("th-TH", {
+            style: "currency",
+            currency: "THB",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(repair.laborCost),
           partsSummary: repair.usedParts.map(part => 
             `${part.quantity}x ${part.product.name}`
           ).join(", "),
@@ -389,8 +399,8 @@ describe("Repairs Page Logic", () => {
         customerName: "Jane Smith",
         description: "Replace broken screen and battery",
         partsCount: 2,
-        formattedTotal: "$280.50",
-        formattedLaborCost: "$120.50",
+        formattedTotal: "฿280.50",
+        formattedLaborCost: "฿120.50",
         partsSummary: "1x Screen Assembly, 1x Battery Pack",
       });
     });
@@ -617,8 +627,18 @@ describe("Repairs Page Logic", () => {
           totalCost: cost,
           laborCost,
           isValid: cost > 0,
-          formattedTotalCost: `$${cost.toFixed(2)}`,
-          formattedLaborCost: `$${laborCost.toFixed(2)}`,
+          formattedTotalCost: new Intl.NumberFormat("th-TH", {
+            style: "currency",
+            currency: "THB",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(cost),
+          formattedLaborCost: new Intl.NumberFormat("th-TH", {
+            style: "currency",
+            currency: "THB",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(laborCost),
         };
       };
 
@@ -626,24 +646,24 @@ describe("Repairs Page Logic", () => {
         totalCost: 200.0,
         laborCost: 120.0,
         isValid: true,
-        formattedTotalCost: "$200.00",
-        formattedLaborCost: "$120.00",
+        formattedTotalCost: "฿200.00",
+        formattedLaborCost: "฿120.00",
       });
 
       expect(updateTotalCost(0, 50.0)).toEqual({
         totalCost: 0,
         laborCost: 0,
         isValid: false,
-        formattedTotalCost: "$0.00",
-        formattedLaborCost: "$0.00",
+        formattedTotalCost: "฿0.00",
+        formattedLaborCost: "฿0.00",
       });
 
       expect(updateTotalCost(50.0, 75.0)).toEqual({
         totalCost: 50.0,
         laborCost: 0, // Can't be negative
         isValid: true,
-        formattedTotalCost: "$50.00",
-        formattedLaborCost: "$0.00",
+        formattedTotalCost: "฿50.00",
+        formattedLaborCost: "฿0.00",
       });
     });
   });

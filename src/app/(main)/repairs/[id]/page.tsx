@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Wrench, User, Calendar, DollarSign, Package, Loader2 } from "lucide-react";
 import { api } from "~/app/providers";
+import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -103,7 +104,7 @@ export default function RepairDetailPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${repair.totalCost.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(repair.totalCost)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -156,9 +157,9 @@ export default function RepairDetailPage() {
                       {usedPart.product.name}
                     </TableCell>
                     <TableCell>{usedPart.quantity}</TableCell>
-                    <TableCell>${usedPart.costAtTime.toFixed(2)}</TableCell>
+                    <TableCell>{formatCurrency(usedPart.costAtTime)}</TableCell>
                     <TableCell className="text-right">
-                      ${(usedPart.quantity * usedPart.costAtTime).toFixed(2)}
+                      {formatCurrency(usedPart.quantity * usedPart.costAtTime)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -177,15 +178,15 @@ export default function RepairDetailPage() {
           <div className="space-y-4">
             <div className="flex justify-between items-center py-2">
               <span className="text-lg">Parts Cost:</span>
-              <span className="text-lg font-semibold">${repair.partsCost.toFixed(2)}</span>
+              <span className="text-lg font-semibold">{formatCurrency(repair.partsCost)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-t">
               <span className="text-lg">Labor Cost:</span>
-              <span className="text-lg font-semibold">${repair.laborCost.toFixed(2)}</span>
+              <span className="text-lg font-semibold">{formatCurrency(repair.laborCost)}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-t font-bold text-xl">
               <span>Total Cost:</span>
-              <span>${repair.totalCost.toFixed(2)}</span>
+              <span>{formatCurrency(repair.totalCost)}</span>
             </div>
           </div>
         </CardContent>

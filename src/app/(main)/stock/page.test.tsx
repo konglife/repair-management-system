@@ -49,6 +49,9 @@ jest.mock('~/app/providers', () => ({
       create: {
         useMutation: jest.fn(),
       },
+      getAll: {
+        useQuery: jest.fn(),
+      },
       getByProduct: {
         useQuery: jest.fn(),
       },
@@ -162,6 +165,12 @@ describe('StockPage - Purchase Recording', () => {
     (api.purchases.create.useMutation as jest.Mock).mockReturnValue({
       mutate: mockMutateFn,
       isPending: false,
+    });
+
+    (api.purchases.getAll.useQuery as jest.Mock).mockReturnValue({
+      data: [],
+      refetch: mockRefetch,
+      isLoading: false,
     });
 
     (api.purchases.getByProduct.useQuery as jest.Mock).mockReturnValue({
@@ -336,23 +345,24 @@ describe('StockPage - Purchase Recording', () => {
     const user = userEvent.setup();
     render(<StockPage />);
 
-    const purchaseTab = screen.getByRole('button', { name: /Record Purchase/i });
+    const purchaseTabs = screen.getAllByRole('button', { name: /Record Purchase/i });
+    const purchaseTab = purchaseTabs[0]; // Use the first one (tab navigation)
     await user.click(purchaseTab);
 
     // Select product for history
-    const historySelect = screen.getByDisplayValue('Select product to view history');
+    const historySelect = screen.getByDisplayValue('All Purchases');
     await user.selectOptions(historySelect, 'product-1');
 
     await waitFor(() => {
       // Check first purchase record
       expect(screen.getByText('5')).toBeInTheDocument(); // quantity
-      expect(screen.getByText('$70.00')).toBeInTheDocument(); // cost per unit
-      expect(screen.getByText('$350.00')).toBeInTheDocument(); // total cost (5 * 70)
+      expect(screen.getByText('฿70.00')).toBeInTheDocument(); // cost per unit
+      expect(screen.getByText('฿350.00')).toBeInTheDocument(); // total cost (5 * 70)
 
       // Check second purchase record
       expect(screen.getByText('3')).toBeInTheDocument(); // quantity
-      expect(screen.getByText('$80.00')).toBeInTheDocument(); // cost per unit
-      expect(screen.getByText('$240.00')).toBeInTheDocument(); // total cost (3 * 80)
+      expect(screen.getByText('฿80.00')).toBeInTheDocument(); // cost per unit
+      expect(screen.getByText('฿240.00')).toBeInTheDocument(); // total cost (3 * 80)
     });
   });
 

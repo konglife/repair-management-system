@@ -174,7 +174,7 @@ describe("RepairDetailPage", () => {
       render(<RepairDetailPage />);
       
       expect(screen.getByText("Total Cost")).toBeTruthy();
-      expect(screen.getByText("$250.00")).toBeTruthy();
+      expect(screen.getByText("฿250.00")).toBeTruthy();
     });
 
     it("should display parts count correctly", () => {
@@ -206,11 +206,11 @@ describe("RepairDetailPage", () => {
       
       // Screen Assembly part
       expect(screen.getByText("Screen Assembly")).toBeTruthy();
-      expect(screen.getByText("$150.00")).toBeTruthy();
+      expect(screen.getByText("฿150.00")).toBeTruthy();
       
       // Battery part
       expect(screen.getByText("Battery")).toBeTruthy();
-      expect(screen.getByText("$30.00")).toBeTruthy();
+      expect(screen.getByText("฿30.00")).toBeTruthy();
       
       // Verify quantities (both parts have quantity 1)
       const quantityCells = screen.getAllByText("1");
@@ -220,11 +220,11 @@ describe("RepairDetailPage", () => {
     it("should calculate and display part total costs correctly", () => {
       render(<RepairDetailPage />);
       
-      // Screen: 1 * $150.00 = $150.00
-      expect(screen.getByText("$150.00")).toBeTruthy();
+      // Screen: 1 * ฿150.00 = ฿150.00
+      expect(screen.getByText("฿150.00")).toBeTruthy();
       
-      // Battery: 1 * $30.00 = $30.00
-      expect(screen.getByText("$30.00")).toBeTruthy();
+      // Battery: 1 * ฿30.00 = ฿30.00
+      expect(screen.getByText("฿30.00")).toBeTruthy();
     });
 
     it("should display cost breakdown correctly", () => {
@@ -232,12 +232,12 @@ describe("RepairDetailPage", () => {
       
       expect(screen.getByText("Cost Breakdown")).toBeTruthy();
       expect(screen.getByText("Parts Cost:")).toBeTruthy();
-      expect(screen.getByText("$180.00")).toBeTruthy();
+      expect(screen.getByText("฿180.00")).toBeTruthy();
       expect(screen.getByText("Labor Cost:")).toBeTruthy();
-      expect(screen.getByText("$70.00")).toBeTruthy();
+      expect(screen.getByText("฿70.00")).toBeTruthy();
       
       // Total cost appears twice (in summary cards and breakdown)
-      const totalCostElements = screen.getAllByText("$250.00");
+      const totalCostElements = screen.getAllByText("฿250.00");
       expect(totalCostElements.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -323,8 +323,8 @@ describe("RepairDetailPage", () => {
       render(<RepairDetailPage />);
       
       expect(screen.getByText("0")).toBeTruthy(); // Parts count
-      expect(screen.getByText("$0.00")).toBeTruthy(); // Parts cost
-      expect(screen.getByText("$50.00")).toBeTruthy(); // Labor cost and total
+      expect(screen.getByText("฿0.00")).toBeTruthy(); // Parts cost
+      expect(screen.getByText("฿50.00")).toBeTruthy(); // Labor cost and total
     });
 
     it("should handle repair with multiple parts of same type", () => {
@@ -358,9 +358,9 @@ describe("RepairDetailPage", () => {
       expect(screen.getByText("Capacitor")).toBeTruthy();
       expect(screen.getByText("3")).toBeTruthy(); // Quantity for screws
       expect(screen.getByText("2")).toBeTruthy(); // Quantity for capacitors
-      expect(screen.getByText("$25.00")).toBeTruthy(); // Unit cost for screws
-      expect(screen.getByText("$37.50")).toBeTruthy(); // Unit cost for capacitors
-      expect(screen.getByText("$75.00")).toBeTruthy(); // Total cost for screws (3 * 25)
+      expect(screen.getByText("฿25.00")).toBeTruthy(); // Unit cost for screws
+      expect(screen.getByText("฿37.50")).toBeTruthy(); // Unit cost for capacitors
+      expect(screen.getByText("฿75.00")).toBeTruthy(); // Total cost for screws (3 * 25)
     });
 
     it("should format currency correctly for various amounts", () => {
@@ -384,9 +384,9 @@ describe("RepairDetailPage", () => {
       
       render(<RepairDetailPage />);
       
-      expect(screen.getByText("$1234.56")).toBeTruthy(); // Total cost
-      expect(screen.getByText("$999.99")).toBeTruthy(); // Parts cost and unit cost
-      expect(screen.getByText("$234.57")).toBeTruthy(); // Labor cost
+      expect(screen.getByText("฿1,234.56")).toBeTruthy(); // Total cost
+      expect(screen.getByText("฿999.99")).toBeTruthy(); // Parts cost and unit cost
+      expect(screen.getByText("฿234.57")).toBeTruthy(); // Labor cost
     });
   });
 });

@@ -4,6 +4,7 @@ import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } fro
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
+import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -171,7 +172,7 @@ export default function SalesPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalSalesAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(totalSalesAmount)}</div>
             <p className="text-xs text-muted-foreground">
               Total revenue
             </p>
@@ -183,7 +184,7 @@ export default function SalesPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${averageSaleAmount.toFixed(2)}</div>
+            <div className="text-2xl font-bold">{formatCurrency(averageSaleAmount)}</div>
             <p className="text-xs text-muted-foreground">
               Per transaction
             </p>
@@ -235,7 +236,7 @@ export default function SalesPage() {
                       </TableCell>
                       <TableCell>{sale.customer.name}</TableCell>
                       <TableCell>{sale.saleItems.length} item(s)</TableCell>
-                      <TableCell>${sale.totalAmount.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -298,7 +299,7 @@ export default function SalesPage() {
                           .filter(product => product.quantity > 0) // Only show products with stock
                           .map((product) => (
                           <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${product.salePrice.toFixed(2)} (Stock: {product.quantity})
+                            {product.name} - {formatCurrency(product.salePrice)} (Stock: {product.quantity})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -335,7 +336,7 @@ export default function SalesPage() {
                         <div className="flex-1">
                           <span className="font-medium">{item.productName}</span>
                           <span className="text-sm text-gray-500 ml-2">
-                            ${item.unitPrice?.toFixed(2)} each
+                            {formatCurrency(item.unitPrice || 0)} each
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -347,7 +348,7 @@ export default function SalesPage() {
                             className="w-20"
                           />
                           <span className="w-20 text-right font-medium">
-                            ${item.subtotal?.toFixed(2)}
+                            {formatCurrency(item.subtotal || 0)}
                           </span>
                           <Button
                             type="button"
@@ -364,7 +365,7 @@ export default function SalesPage() {
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-medium">Total:</span>
-                      <span className="text-lg font-bold">${calculateTotal().toFixed(2)}</span>
+                      <span className="text-lg font-bold">{formatCurrency(calculateTotal())}</span>
                     </div>
                   </div>
                 </div>

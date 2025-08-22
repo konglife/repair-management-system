@@ -17,6 +17,7 @@ import {
   ShoppingCart
 } from "lucide-react"
 import { api } from "~/lib/trpc"
+import { formatCurrency } from "~/lib/utils"
 import TrendGraph from "./components/TrendGraph"
 
 type TimePeriod = 'today' | 'last7days' | 'thismonth'
@@ -27,12 +28,6 @@ const timeRangeOptions = [
   { value: 'thismonth' as TimePeriod, label: 'This Month' },
 ]
 
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount)
-}
 
 export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('thismonth')

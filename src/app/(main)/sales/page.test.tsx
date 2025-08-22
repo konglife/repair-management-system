@@ -319,7 +319,12 @@ describe("Sales Page Logic", () => {
           formattedDate: new Date(sale.createdAt).toLocaleDateString(),
           customerName: sale.customer.name,
           itemsCount: sale.saleItems.length,
-          formattedTotal: `$${sale.totalAmount.toFixed(2)}`,
+          formattedTotal: new Intl.NumberFormat("th-TH", {
+            style: "currency",
+            currency: "THB",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(sale.totalAmount),
           itemsSummary: sale.saleItems.map(item => 
             `${item.quantity}x ${item.product.name}`
           ).join(", "),
@@ -342,7 +347,7 @@ describe("Sales Page Logic", () => {
         formattedDate: "1/15/2025",
         customerName: "John Doe",
         itemsCount: 2,
-        formattedTotal: "$250.75",
+        formattedTotal: "฿250.75",
         itemsSummary: "2x Product A, 1x Product B",
       });
     });

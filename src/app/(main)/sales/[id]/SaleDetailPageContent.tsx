@@ -3,6 +3,7 @@
 import { ArrowLeft, Receipt, User, Calendar, DollarSign, TrendingUp, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
+import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,12 +59,6 @@ export function SaleDetailPageContent({ saleId }: { saleId: string }) {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">

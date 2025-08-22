@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import { api } from "~/lib/trpc"
+import { formatCurrency } from "~/lib/utils"
 import { TrendingUp } from "lucide-react"
 
 interface TrendDataPoint {
@@ -21,10 +22,11 @@ interface TrendDataPoint {
   displayDate: string
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-US', {
+// Create a custom formatter for chart Y-axis (no decimals)
+const formatCurrencyForChart = (value: number) => {
+  return new Intl.NumberFormat('th-TH', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'THB',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value)
@@ -140,7 +142,7 @@ export default function TrendGraph() {
               <YAxis 
                 className="text-xs fill-muted-foreground"
                 tick={{ fontSize: 12 }}
-                tickFormatter={formatCurrency}
+                tickFormatter={formatCurrencyForChart}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend 

@@ -25,17 +25,17 @@ describe("Sale Detail Page Logic", () => {
 
     it("should format currency correctly", () => {
       const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("en-US", {
+        return new Intl.NumberFormat("th-TH", {
           style: "currency",
-          currency: "USD",
+          currency: "THB",
         }).format(amount);
       };
 
-      expect(formatCurrency(199.99)).toBe("$199.99");
-      expect(formatCurrency(1000)).toBe("$1,000.00");
-      expect(formatCurrency(0.50)).toBe("$0.50");
-      expect(formatCurrency(0)).toBe("$0.00");
-      expect(formatCurrency(-50.25)).toBe("-$50.25");
+      expect(formatCurrency(199.99)).toBe("฿199.99");
+      expect(formatCurrency(1000)).toBe("฿1,000.00");
+      expect(formatCurrency(0.50)).toBe("฿0.50");
+      expect(formatCurrency(0)).toBe("฿0.00");
+      expect(formatCurrency(-50.25)).toBe("-฿50.25");
     });
 
     it("should generate sale ID display format", () => {
@@ -105,13 +105,13 @@ describe("Sale Detail Page Logic", () => {
           quantity: item.quantity,
           unitPrice: item.priceAtTime,
           totalPrice: item.priceAtTime * item.quantity,
-          formattedUnitPrice: new Intl.NumberFormat("en-US", {
+          formattedUnitPrice: new Intl.NumberFormat("th-TH", {
             style: "currency",
-            currency: "USD",
+            currency: "THB",
           }).format(item.priceAtTime),
-          formattedTotalPrice: new Intl.NumberFormat("en-US", {
+          formattedTotalPrice: new Intl.NumberFormat("th-TH", {
             style: "currency",
-            currency: "USD",
+            currency: "THB",
           }).format(item.priceAtTime * item.quantity),
         }));
       };
@@ -140,8 +140,8 @@ describe("Sale Detail Page Logic", () => {
         quantity: 2,
         unitPrice: 99.99,
         totalPrice: 199.98,
-        formattedUnitPrice: "$99.99",
-        formattedTotalPrice: "$199.98",
+        formattedUnitPrice: "฿99.99",
+        formattedTotalPrice: "฿199.98",
       });
       expect(result[1]).toEqual({
         id: "si2",
@@ -149,8 +149,8 @@ describe("Sale Detail Page Logic", () => {
         quantity: 1,
         unitPrice: 149.50,
         totalPrice: 149.50,
-        formattedUnitPrice: "$149.50",
-        formattedTotalPrice: "$149.50",
+        formattedUnitPrice: "฿149.50",
+        formattedTotalPrice: "฿149.50",
       });
     });
 
@@ -167,17 +167,17 @@ describe("Sale Detail Page Logic", () => {
           totalCost,
           totalAmount,
           grossProfit,
-          formattedTotalCost: new Intl.NumberFormat("en-US", {
+          formattedTotalCost: new Intl.NumberFormat("th-TH", {
             style: "currency",
-            currency: "USD",
+            currency: "THB",
           }).format(totalCost),
-          formattedTotalAmount: new Intl.NumberFormat("en-US", {
+          formattedTotalAmount: new Intl.NumberFormat("th-TH", {
             style: "currency",
-            currency: "USD",
+            currency: "THB",
           }).format(totalAmount),
-          formattedGrossProfit: new Intl.NumberFormat("en-US", {
+          formattedGrossProfit: new Intl.NumberFormat("th-TH", {
             style: "currency",
-            currency: "USD",
+            currency: "THB",
           }).format(grossProfit),
         };
       };
@@ -196,9 +196,9 @@ describe("Sale Detail Page Logic", () => {
         totalCost: 210.0,
         totalAmount: 350.0,
         grossProfit: 140.0,
-        formattedTotalCost: "$210.00",
-        formattedTotalAmount: "$350.00",
-        formattedGrossProfit: "$140.00",
+        formattedTotalCost: "฿210.00",
+        formattedTotalAmount: "฿350.00",
+        formattedGrossProfit: "฿140.00",
       });
     });
   });
@@ -336,9 +336,9 @@ describe("Sale Detail Page Logic", () => {
       const formatGrossProfitDisplay = (grossProfit: number) => {
         return {
           amount: grossProfit,
-          formattedAmount: new Intl.NumberFormat("en-US", {
+          formattedAmount: new Intl.NumberFormat("th-TH", {
             style: "currency",
-            currency: "USD",
+            currency: "THB",
           }).format(grossProfit),
           isProfit: grossProfit > 0,
           isLoss: grossProfit < 0,
@@ -350,7 +350,7 @@ describe("Sale Detail Page Logic", () => {
 
       expect(formatGrossProfitDisplay(150.50)).toEqual({
         amount: 150.50,
-        formattedAmount: "$150.50",
+        formattedAmount: "฿150.50",
         isProfit: true,
         isLoss: false,
         isBreakEven: false,
@@ -360,7 +360,7 @@ describe("Sale Detail Page Logic", () => {
 
       expect(formatGrossProfitDisplay(-25.75)).toEqual({
         amount: -25.75,
-        formattedAmount: "-$25.75",
+        formattedAmount: "-฿25.75",
         isProfit: false,
         isLoss: true,
         isBreakEven: false,
@@ -370,7 +370,7 @@ describe("Sale Detail Page Logic", () => {
 
       expect(formatGrossProfitDisplay(0)).toEqual({
         amount: 0,
-        formattedAmount: "$0.00",
+        formattedAmount: "฿0.00",
         isProfit: false,
         isLoss: false,
         isBreakEven: true,
