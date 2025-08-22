@@ -1,17 +1,21 @@
 "use client";
 
 import { Users, Plus, Loader2, Edit, Eye } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "~/components/ui/SearchInput";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function CustomersPage() {
   const router = useRouter();
+  
+  // Search state
+  const [customersSearchTerm, setCustomersSearchTerm] = useState("");
   
   // State for Add Customer form
   const [showCreateCustomerForm, setShowCreateCustomerForm] = useState(false);
@@ -28,6 +32,24 @@ export default function CustomersPage() {
 
   // tRPC queries and mutations for customers
   const { data: customers = [], refetch: refetchCustomers, isLoading: customersLoading } = api.customers.getAll.useQuery();
+
+  // Filtered data for search functionality
+  const filteredCustomers = useMemo(() => {
+    if (!customersSearchTerm.trim()) return customers;
+    const searchTerm = customersSearchTerm.toLowerCase();
+    return customers.filter((customer: { name: string; phone: string | null; address: string | null }) => {
+      // Search by name
+      const nameMatch = customer.name.toLowerCase().includes(searchTerm);
+      
+      // Search by phone
+      const phoneMatch = customer.phone?.toLowerCase().includes(searchTerm);
+      
+      // Search by address
+      const addressMatch = customer.address?.toLowerCase().includes(searchTerm);
+      
+      return nameMatch || phoneMatch || addressMatch;
+    });
+  }, [customers, customersSearchTerm]);
   
   const createCustomerMutation = api.customers.create.useMutation({
     onSuccess: () => {
@@ -127,9 +149,11 @@ export default function CustomersPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{customers.length}</div>
+            <div className="text-2xl font-bold">
+              {customersSearchTerm.trim() ? filteredCustomers.length : customers.length}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Registered customers
+              {customersSearchTerm.trim() ? "Filtered customers" : "Registered customers"}
             </p>
           </CardContent>
         </Card>
@@ -146,6 +170,15 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4">
+            <SearchInput
+              placeholder="Search by name, phone, or address..."
+              value={customersSearchTerm}
+              onChange={setCustomersSearchTerm}
+              className="max-w-sm"
+            />
+          </div>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -164,14 +197,14 @@ export default function CustomersPage() {
                       <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
-                ) : customers.length === 0 ? (
+                ) : filteredCustomers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No customers found. Add your first customer to get started.
+                      {customersSearchTerm ? "No customers found matching your search." : "No customers found. Add your first customer to get started."}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  customers.map((customer: { id: string; name: string; phone: string | null; address: string | null; createdAt: Date | string }) => (
+                  filteredCustomers.map((customer: { id: string; name: string; phone: string | null; address: string | null; createdAt: Date | string }) => (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.name}</TableCell>
                       <TableCell>{customer.phone || "—"}</TableCell>

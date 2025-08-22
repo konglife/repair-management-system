@@ -1,13 +1,14 @@
 "use client";
 
 import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "~/components/ui/SearchInput";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,6 +25,9 @@ interface SaleItem {
 export default function SalesPage() {
   const router = useRouter();
   
+  // Search state
+  const [salesSearchTerm, setSalesSearchTerm] = useState("");
+  
   // State for Create Sale form
   const [showCreateSaleForm, setShowCreateSaleForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -35,6 +39,28 @@ export default function SalesPage() {
   const { data: sales = [], refetch: refetchSales, isLoading: salesLoading } = api.sales.getAll.useQuery();
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
+
+  // Filtered data for search functionality
+  const filteredSales = useMemo(() => {
+    if (!salesSearchTerm.trim()) return sales;
+    const searchTerm = salesSearchTerm.toLowerCase();
+    return sales.filter((sale: { customer: { name: string }; totalAmount: number; createdAt: string | Date }) => {
+      // Search by customer name
+      const customerNameMatch = sale.customer.name.toLowerCase().includes(searchTerm);
+      
+      // Search by date (various formats)
+      const saleDate = new Date(sale.createdAt);
+      const dateString = saleDate.toLocaleDateString().toLowerCase();
+      const dateMatch = dateString.includes(searchTerm);
+      
+      // Search by total amount (both number and formatted currency)
+      const totalAmountString = sale.totalAmount.toString();
+      const formattedAmount = formatCurrency(sale.totalAmount).toLowerCase();
+      const amountMatch = totalAmountString.includes(searchTerm) || formattedAmount.includes(searchTerm);
+      
+      return customerNameMatch || dateMatch || amountMatch;
+    });
+  }, [sales, salesSearchTerm]);
 
   // tRPC mutations
   const createSaleMutation = api.sales.create.useMutation({
@@ -138,9 +164,10 @@ export default function SalesPage() {
     resetForm();
   };
 
-  // Calculate dashboard statistics
-  const totalSalesAmount = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-  const totalSalesCount = sales.length;
+  // Calculate dashboard statistics (using filtered data when searching)
+  const displaySales = salesSearchTerm.trim() ? filteredSales : sales;
+  const totalSalesAmount = displaySales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+  const totalSalesCount = displaySales.length;
   const averageSaleAmount = totalSalesCount > 0 ? totalSalesAmount / totalSalesCount : 0;
 
   return (
@@ -204,6 +231,15 @@ export default function SalesPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4">
+            <SearchInput
+              placeholder="Search by customer name, date, or amount..."
+              value={salesSearchTerm}
+              onChange={setSalesSearchTerm}
+              className="max-w-sm"
+            />
+          </div>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -222,14 +258,14 @@ export default function SalesPage() {
                       <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
-                ) : sales.length === 0 ? (
+                ) : filteredSales.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      No sales found. Create your first sale to get started.
+                      {salesSearchTerm ? "No sales found matching your search." : "No sales found. Create your first sale to get started."}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sales.map((sale) => (
+                  filteredSales.map((sale) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
                         {new Date(sale.createdAt).toLocaleDateString()}

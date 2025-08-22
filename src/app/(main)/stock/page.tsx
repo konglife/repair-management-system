@@ -1,17 +1,24 @@
 "use client";
 
 import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { api } from "~/app/providers";
 import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "~/components/ui/SearchInput";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function StockPage() {
   const [activeTab, setActiveTab] = useState<"categories" | "units" | "products" | "purchases">("categories");
+  
+  // Search state
+  const [categorySearchTerm, setCategorySearchTerm] = useState("");
+  const [unitSearchTerm, setUnitSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [purchaseSearchTerm, setPurchaseSearchTerm] = useState("");
   
   // Categories state
   const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
@@ -95,9 +102,68 @@ export default function StockPage() {
     { enabled: !!selectedProductForHistory }
   );
 
-  // Determine which purchase data to show
-  const purchaseHistory = selectedProductForHistory ? productPurchases : allPurchases;
+  // Determine loading state for purchases
   const purchaseHistoryLoading = selectedProductForHistory ? productPurchasesLoading : allPurchasesLoading;
+
+  // Filtered data for search functionality
+  const filteredCategories = useMemo(() => {
+    if (!categorySearchTerm.trim()) return categories;
+    const searchTerm = categorySearchTerm.toLowerCase();
+    return categories.filter((category: { name: string }) =>
+      category.name.toLowerCase().includes(searchTerm)
+    );
+  }, [categories, categorySearchTerm]);
+
+  const filteredUnits = useMemo(() => {
+    if (!unitSearchTerm.trim()) return units;
+    const searchTerm = unitSearchTerm.toLowerCase();
+    return units.filter((unit: { name: string }) =>
+      unit.name.toLowerCase().includes(searchTerm)
+    );
+  }, [units, unitSearchTerm]);
+
+  const filteredProducts = useMemo(() => {
+    if (!productSearchTerm.trim()) return products;
+    const searchTerm = productSearchTerm.toLowerCase();
+    return products.filter((product: { name: string; category?: { name: string } }) =>
+      product.name.toLowerCase().includes(searchTerm) ||
+      product.category?.name.toLowerCase().includes(searchTerm)
+    );
+  }, [products, productSearchTerm]);
+
+  // Filtered purchase history for search functionality
+  const filteredPurchaseHistory = useMemo(() => {
+    const dataToFilter = selectedProductForHistory ? productPurchases : allPurchases;
+    
+    if (!purchaseSearchTerm.trim()) return dataToFilter;
+    
+    const searchTerm = purchaseSearchTerm.toLowerCase();
+    return dataToFilter.filter((purchase: { product: { name: string }; purchaseDate: Date | string; quantity: number; costPerUnit: number }) => {
+      // Search by product name
+      const productNameMatch = purchase.product?.name.toLowerCase().includes(searchTerm);
+      
+      // Search by date (various formats)
+      const purchaseDate = new Date(purchase.purchaseDate);
+      const dateString = purchaseDate.toLocaleDateString().toLowerCase();
+      const dateMatch = dateString.includes(searchTerm);
+      
+      // Search by quantity
+      const quantityMatch = purchase.quantity.toString().includes(searchTerm);
+      
+      // Search by cost per unit (both number and formatted currency)
+      const costPerUnitString = purchase.costPerUnit.toString();
+      const formattedCostPerUnit = formatCurrency(purchase.costPerUnit).toLowerCase();
+      const costPerUnitMatch = costPerUnitString.includes(searchTerm) || formattedCostPerUnit.includes(searchTerm);
+      
+      // Search by total cost
+      const totalCost = purchase.quantity * purchase.costPerUnit;
+      const totalCostString = totalCost.toString();
+      const formattedTotalCost = formatCurrency(totalCost).toLowerCase();
+      const totalCostMatch = totalCostString.includes(searchTerm) || formattedTotalCost.includes(searchTerm);
+      
+      return productNameMatch || dateMatch || quantityMatch || costPerUnitMatch || totalCostMatch;
+    });
+  }, [allPurchases, productPurchases, selectedProductForHistory, purchaseSearchTerm]);
 
   const createPurchaseMutation = api.purchases.create.useMutation({
     onSuccess: () => {
@@ -425,6 +491,15 @@ export default function StockPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Search Input */}
+                <div className="mb-4">
+                  <SearchInput
+                    placeholder="Search categories..."
+                    value={categorySearchTerm}
+                    onChange={setCategorySearchTerm}
+                    className="max-w-sm"
+                  />
+                </div>
                 {/* Create Category Form */}
                 {showCreateCategoryForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
@@ -477,14 +552,14 @@ export default function StockPage() {
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           </TableCell>
                         </TableRow>
-                      ) : categories.length === 0 ? (
+                      ) : filteredCategories.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            No categories found. Create your first category to get started.
+                            {categorySearchTerm ? "No categories found matching your search." : "No categories found. Create your first category to get started."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        categories.map((category: { id: string; name: string }) => (
+                        filteredCategories.map((category: { id: string; name: string }) => (
                           <TableRow key={category.id}>
                             <TableCell>
                               {editingCategory?.id === category.id ? (
@@ -564,6 +639,15 @@ export default function StockPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Search Input */}
+                <div className="mb-4">
+                  <SearchInput
+                    placeholder="Search units..."
+                    value={unitSearchTerm}
+                    onChange={setUnitSearchTerm}
+                    className="max-w-sm"
+                  />
+                </div>
                 {/* Create Unit Form */}
                 {showCreateUnitForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
@@ -616,14 +700,14 @@ export default function StockPage() {
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           </TableCell>
                         </TableRow>
-                      ) : units.length === 0 ? (
+                      ) : filteredUnits.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            No units found. Create your first unit to get started.
+                            {unitSearchTerm ? "No units found matching your search." : "No units found. Create your first unit to get started."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        units.map((unit: { id: string; name: string }) => (
+                        filteredUnits.map((unit: { id: string; name: string }) => (
                           <TableRow key={unit.id}>
                             <TableCell>
                               {editingUnit?.id === unit.id ? (
@@ -703,6 +787,15 @@ export default function StockPage() {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Search Input */}
+                <div className="mb-4">
+                  <SearchInput
+                    placeholder="Search products by name or category..."
+                    value={productSearchTerm}
+                    onChange={setProductSearchTerm}
+                    className="max-w-sm"
+                  />
+                </div>
                 {/* Create Product Form */}
                 {showCreateProductForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
@@ -805,14 +898,14 @@ export default function StockPage() {
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           </TableCell>
                         </TableRow>
-                      ) : products.length === 0 ? (
+                      ) : filteredProducts.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center text-muted-foreground">
-                            No products found. Create your first product to get started.
+                            {productSearchTerm ? "No products found matching your search." : "No products found. Create your first product to get started."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        products.map((product: { id: string; name: string; salePrice: number; quantity: number; averageCost: number; categoryId: string; unitId: string; category: { name: string }; unit: { name: string } }) => (
+                        filteredProducts.map((product: { id: string; name: string; salePrice: number; quantity: number; averageCost: number; categoryId: string; unitId: string; category: { name: string }; unit: { name: string } }) => (
                           <TableRow key={product.id}>
                             <TableCell>
                               {editingProduct?.id === product.id ? (
@@ -991,6 +1084,17 @@ export default function StockPage() {
                   {/* Purchase History */}
                   <div>
                     <h3 className="text-lg font-medium mb-4">Purchase History</h3>
+                    
+                    {/* Search Input */}
+                    <div className="mb-4">
+                      <SearchInput
+                        placeholder="Search purchase history by product, date, or amount..."
+                        value={purchaseSearchTerm}
+                        onChange={setPurchaseSearchTerm}
+                        className="max-w-sm"
+                      />
+                    </div>
+                    
                     <div className="mb-4">
                       <label className="text-sm font-medium mb-2 block">Filter by product</label>
                       <select
@@ -1025,16 +1129,18 @@ export default function StockPage() {
                                 <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                               </TableCell>
                             </TableRow>
-                          ) : purchaseHistory.length === 0 ? (
+                          ) : filteredPurchaseHistory.length === 0 ? (
                             <TableRow>
                               <TableCell colSpan={!selectedProductForHistory ? 5 : 4} className="text-center text-muted-foreground">
-                                {selectedProductForHistory 
-                                  ? "No purchase history found for this product."
-                                  : "No purchase records found."}
+                                {purchaseSearchTerm 
+                                  ? "No purchase records found matching your search."
+                                  : selectedProductForHistory 
+                                    ? "No purchase history found for this product."
+                                    : "No purchase records found."}
                               </TableCell>
                             </TableRow>
                           ) : (
-                            purchaseHistory.map((purchase: { id: string; quantity: number; costPerUnit: number; purchaseDate: Date | string; product: { name: string } }) => (
+                            filteredPurchaseHistory.map((purchase: { id: string; quantity: number; costPerUnit: number; purchaseDate: Date | string; product: { name: string } }) => (
                               <TableRow key={purchase.id}>
                                 {!selectedProductForHistory && (
                                   <TableCell className="font-medium">

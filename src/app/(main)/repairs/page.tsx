@@ -1,13 +1,14 @@
 "use client";
 
 import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "~/components/ui/SearchInput";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,6 +25,9 @@ interface UsedPart {
 export default function RepairsPage() {
   const router = useRouter();
   
+  // Search state
+  const [repairsSearchTerm, setRepairsSearchTerm] = useState("");
+  
   // State for Create Repair form
   const [showCreateRepairForm, setShowCreateRepairForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -37,6 +41,24 @@ export default function RepairsPage() {
   const { data: repairs = [], refetch: refetchRepairs, isLoading: repairsLoading } = api.repairs.getAll.useQuery();
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
+
+  // Filtered data for search functionality
+  const filteredRepairs = useMemo(() => {
+    if (!repairsSearchTerm.trim()) return repairs;
+    const searchTerm = repairsSearchTerm.toLowerCase();
+    return repairs.filter((repair: { customer: { name: string }; description: string; status?: string }) => {
+      // Search by customer name
+      const customerNameMatch = repair.customer.name.toLowerCase().includes(searchTerm);
+      
+      // Search by device/description
+      const descriptionMatch = repair.description.toLowerCase().includes(searchTerm);
+      
+      // Search by status if available (optional field)
+      const statusMatch = repair.status?.toLowerCase().includes(searchTerm);
+      
+      return customerNameMatch || descriptionMatch || statusMatch;
+    });
+  }, [repairs, repairsSearchTerm]);
 
   // tRPC mutations
   const createRepairMutation = api.repairs.create.useMutation({
@@ -148,11 +170,12 @@ export default function RepairsPage() {
     resetForm();
   };
 
-  // Calculate dashboard statistics
-  const totalRepairAmount = repairs.reduce((sum, repair) => sum + repair.totalCost, 0);
-  const totalRepairsCount = repairs.length;
+  // Calculate dashboard statistics (using filtered data when searching)
+  const displayRepairs = repairsSearchTerm.trim() ? filteredRepairs : repairs;
+  const totalRepairAmount = displayRepairs.reduce((sum, repair) => sum + repair.totalCost, 0);
+  const totalRepairsCount = displayRepairs.length;
   const averageRepairCost = totalRepairsCount > 0 ? totalRepairAmount / totalRepairsCount : 0;
-  const totalLaborAmount = repairs.reduce((sum, repair) => sum + repair.laborCost, 0);
+  const totalLaborAmount = displayRepairs.reduce((sum, repair) => sum + repair.laborCost, 0);
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -227,6 +250,15 @@ export default function RepairsPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="mb-4">
+            <SearchInput
+              placeholder="Search by customer name, device, or status..."
+              value={repairsSearchTerm}
+              onChange={setRepairsSearchTerm}
+              className="max-w-sm"
+            />
+          </div>
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -247,14 +279,14 @@ export default function RepairsPage() {
                       <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
-                ) : repairs.length === 0 ? (
+                ) : filteredRepairs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      No repairs found. Create your first repair job to get started.
+                      {repairsSearchTerm ? "No repairs found matching your search." : "No repairs found. Create your first repair job to get started."}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  repairs.map((repair) => (
+                  filteredRepairs.map((repair) => (
                     <TableRow key={repair.id}>
                       <TableCell className="font-medium">
                         {new Date(repair.createdAt).toLocaleDateString()}
