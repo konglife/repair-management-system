@@ -12,6 +12,7 @@
 - **FR6**: The "Products" column in the `Categories` table must display the count of products within that category.
 - **FR7**: The "Products" column in the `Units` table must display the count of products using that unit.
 - **FR8**: Add descriptive labels to all fields in the "Create New Product" form, consistent with the "Record Purchase" form.
+- **FR8.1**: Implement consistent "Add Purchase" button pattern in Record Purchase section, matching the collapsible form interaction used in Categories, Units, and Products sections.
 
 ### Module: Sales
 - **FR9**: Implement a search bar in the `Sales` data table.

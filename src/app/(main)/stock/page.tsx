@@ -48,6 +48,7 @@ export default function StockPage() {
   const [editProductUnitId, setEditProductUnitId] = useState("");
 
   // Purchase recording state
+  const [showCreatePurchaseForm, setShowCreatePurchaseForm] = useState(false);
   const [selectedProductForPurchase, setSelectedProductForPurchase] = useState("");
   const [purchaseQuantity, setPurchaseQuantity] = useState("");
   const [purchaseCostPerUnit, setPurchaseCostPerUnit] = useState("");
@@ -173,6 +174,7 @@ export default function StockPage() {
       if (selectedProductForHistory) {
         refetchProductPurchases();
       }
+      setShowCreatePurchaseForm(false);
       setSelectedProductForPurchase("");
       setPurchaseQuantity("");
       setPurchaseCostPerUnit("");
@@ -803,6 +805,7 @@ export default function StockPage() {
                     <form onSubmit={handleCreateProduct} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
+                          <label className="text-sm font-medium mb-2 block">Product Name</label>
                           <Input
                             type="text"
                             value={newProductName}
@@ -812,6 +815,7 @@ export default function StockPage() {
                           />
                         </div>
                         <div>
+                          <label className="text-sm font-medium mb-2 block">Sale Price (฿)</label>
                           <CurrencyInput
                             value={newProductPrice ? parseFloat(newProductPrice) : undefined}
                             onChange={(value) => setNewProductPrice(value?.toString() ?? "")}
@@ -820,6 +824,7 @@ export default function StockPage() {
                           />
                         </div>
                         <div>
+                          <label className="text-sm font-medium mb-2 block">Category</label>
                           <select
                             value={newProductCategoryId}
                             onChange={(e) => setNewProductCategoryId(e.target.value)}
@@ -834,6 +839,7 @@ export default function StockPage() {
                           </select>
                         </div>
                         <div>
+                          <label className="text-sm font-medium mb-2 block">Unit</label>
                           <select
                             value={newProductUnitId}
                             onChange={(e) => setNewProductUnitId(e.target.value)}
@@ -1016,65 +1022,86 @@ export default function StockPage() {
           {activeTab === "purchases" && (
             <Card>
               <CardHeader>
-                <CardTitle>Record Stock Purchase</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Record Stock Purchase</CardTitle>
+                  <Button onClick={() => setShowCreatePurchaseForm(!showCreatePurchaseForm)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Purchase
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
                   {/* Purchase Recording Form */}
-                  <div className="p-4 border rounded-lg bg-muted/50">
-                    <h3 className="text-lg font-medium mb-4">Record New Purchase</h3>
-                    <form onSubmit={handleRecordPurchase} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Product</label>
-                          <select
-                            value={selectedProductForPurchase}
-                            onChange={(e) => setSelectedProductForPurchase(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  {showCreatePurchaseForm && (
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                      <h3 className="text-lg font-medium mb-4">Record New Purchase</h3>
+                      <form onSubmit={handleRecordPurchase} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Product</label>
+                            <select
+                              value={selectedProductForPurchase}
+                              onChange={(e) => setSelectedProductForPurchase(e.target.value)}
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <option value="">Select product</option>
+                              {products.map((product: { id: string; name: string; unit: { name: string } }) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.name} ({product.unit?.name})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Quantity</label>
+                            <Input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={purchaseQuantity}
+                              onChange={(e) => setPurchaseQuantity(e.target.value)}
+                              placeholder="Enter quantity"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Cost Per Unit (฿)</label>
+                            <CurrencyInput
+                              value={purchaseCostPerUnit ? parseFloat(purchaseCostPerUnit) : undefined}
+                              onChange={(value) => setPurchaseCostPerUnit(value?.toString() ?? "")}
+                              placeholder="Enter cost per unit"
+                              min={0}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="submit"
+                            disabled={createPurchaseMutation.isPending || !selectedProductForPurchase || !purchaseQuantity.trim() || !purchaseCostPerUnit.trim()}
                           >
-                            <option value="">Select product</option>
-                            {products.map((product: { id: string; name: string; unit: { name: string } }) => (
-                              <option key={product.id} value={product.id}>
-                                {product.name} ({product.unit?.name})
-                              </option>
-                            ))}
-                          </select>
+                            {createPurchaseMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                            )}
+                            Record Purchase
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setShowCreatePurchaseForm(false);
+                              setSelectedProductForPurchase("");
+                              setPurchaseQuantity("");
+                              setPurchaseCostPerUnit("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
                         </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Quantity</label>
-                          <Input
-                            type="number"
-                            min="1"
-                            step="1"
-                            value={purchaseQuantity}
-                            onChange={(e) => setPurchaseQuantity(e.target.value)}
-                            placeholder="Enter quantity"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">Cost Per Unit (฿)</label>
-                          <CurrencyInput
-                            value={purchaseCostPerUnit ? parseFloat(purchaseCostPerUnit) : undefined}
-                            onChange={(value) => setPurchaseCostPerUnit(value?.toString() ?? "")}
-                            placeholder="Enter cost per unit"
-                            min={0}
-                          />
-                        </div>
-                      </div>
-                      <Button
-                        type="submit"
-                        disabled={createPurchaseMutation.isPending || !selectedProductForPurchase || !purchaseQuantity.trim() || !purchaseCostPerUnit.trim()}
-                        className="w-full md:w-auto"
-                      >
-                        {createPurchaseMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                        )}
-                        Record Purchase
-                      </Button>
-                    </form>
-                  </div>
+                      </form>
+                    </div>
+                  )}
 
                   {/* Purchase History */}
                   <div>
