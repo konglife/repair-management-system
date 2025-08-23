@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import type { Prisma } from "@prisma/client";
 
 export const purchaseRouter = createTRPCRouter({
   // Create a new purchase record and update product quantity and average cost
@@ -47,7 +48,7 @@ export const purchaseRouter = createTRPCRouter({
         const newQuantity = currentQuantity + purchaseQuantity;
 
         // Use transaction to ensure atomicity
-        const result = await ctx.db.$transaction(async (tx) => {
+        const result = await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
           // Create the purchase record
           const purchaseRecord = await tx.purchaseRecord.create({
             data: {

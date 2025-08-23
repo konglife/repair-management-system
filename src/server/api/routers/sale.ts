@@ -1,6 +1,28 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import type { Prisma } from "@prisma/client";
+
+// Type interfaces for database operations
+interface Product {
+  id: string;
+  quantity: number;
+  averageCost: number;
+  salePrice: number;
+}
+
+interface Sale {
+  totalAmount: number;
+  saleItems: SaleItem[];
+}
+
+interface SaleItem {
+  quantity: number;
+  productId: string;
+  product: {
+    name: string;
+  };
+}
 
 export const saleRouter = createTRPCRouter({
   // Get all sales with related data for sales history
@@ -110,7 +132,7 @@ export const saleRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Use Prisma transaction to ensure atomicity
-      const sale = await ctx.db.$transaction(async (tx) => {
+      const sale = await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
         // First, validate all products exist and have sufficient stock
         const products = await tx.product.findMany({
           where: {
@@ -128,7 +150,7 @@ export const saleRouter = createTRPCRouter({
 
         // Check stock availability for each product
         for (const item of input.items) {
-          const product = products.find((p) => p.id === item.productId);
+          const product = products.find((p: Product) => p.id === item.productId);
           if (!product) {
             throw new TRPCError({
               code: "BAD_REQUEST",
@@ -159,7 +181,7 @@ export const saleRouter = createTRPCRouter({
         let totalCost = 0;
 
         const saleItemsData = input.items.map((item) => {
-          const product = products.find((p) => p.id === item.productId)!;
+          const product = products.find((p: Product) => p.id === item.productId)!;
           const itemTotal = product.salePrice * item.quantity;
           const itemCost = product.averageCost * item.quantity;
           
@@ -265,13 +287,13 @@ export const saleRouter = createTRPCRouter({
 
       // Calculate analytics
       const totalSales = sales.length;
-      const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+      const totalRevenue = sales.reduce((sum: number, sale: Sale) => sum + sale.totalAmount, 0);
       const averageSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
 
       // Calculate top selling product
       const productSalesMap = new Map<string, { name: string; quantity: number }>();
-      sales.forEach(sale => {
-        sale.saleItems.forEach(item => {
+      sales.forEach((sale: Sale) => {
+        sale.saleItems.forEach((item: SaleItem) => {
           const existing = productSalesMap.get(item.productId);
           if (existing) {
             existing.quantity += item.quantity;

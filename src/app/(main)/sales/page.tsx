@@ -15,6 +15,45 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// Type interfaces for tRPC query results
+interface Product {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+  averageCost: number;
+  categoryId: string;
+  unitId: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  createdAt: Date;
+}
+
+interface SaleItemWithProduct {
+  id: string;
+  quantity: number;
+  priceAtTime: number;
+  costAtTime: number;
+  saleId: string;
+  productId: string;
+  product: Product;
+}
+
+interface SaleWithRelations {
+  id: string;
+  totalAmount: number;
+  totalCost: number;
+  createdAt: Date;
+  customerId: string;
+  customer: Customer;
+  saleItems: SaleItemWithProduct[];
+}
+
 interface SaleItem {
   productId: string;
   quantity: number;
@@ -95,7 +134,7 @@ export default function SalesPage() {
   const addProductToSale = () => {
     if (!selectedProductId || productQuantity <= 0) return;
 
-    const product = products.find(p => p.id === selectedProductId);
+    const product = products.find((p: Product) => p.id === selectedProductId);
     if (!product) return;
 
     // Check if product is already in the sale
@@ -322,7 +361,7 @@ export default function SalesPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredSales.map((sale) => (
+                  filteredSales.map((sale: SaleWithRelations) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
                         {new Date(sale.createdAt).toLocaleDateString()}
@@ -368,7 +407,7 @@ export default function SalesPage() {
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
+                    {customers.map((customer: Customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} {customer.phone && `(${customer.phone})`}
                       </SelectItem>

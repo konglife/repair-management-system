@@ -1,6 +1,79 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 
+// Type interfaces for database operations
+interface PurchaseRecord {
+  costPerUnit: number;
+  quantity: number;
+}
+
+interface Product {
+  quantity: number;
+  averageCost: number;
+}
+
+// Query-specific interfaces for trend data (limited field selections)
+interface TrendSaleData {
+  createdAt: Date;
+  totalAmount: number;
+}
+
+interface TrendRepairData {
+  createdAt: Date;
+  totalCost: number;
+}
+
+interface TrendPurchaseData {
+  purchaseDate: Date;
+  costPerUnit: number;
+  quantity: number;
+}
+
+// Full object interfaces for operations that include relations
+interface Sale {
+  id: string;
+  totalAmount: number;
+  createdAt: Date;
+  customer: { name: string };
+}
+
+interface Repair {
+  id: string;
+  description: string;
+  totalCost: number;
+  createdAt: Date;
+  customer: { name: string };
+}
+
+interface Purchase {
+  id: string;
+  costPerUnit: number;
+  quantity: number;
+  purchaseDate: Date;
+  product: { name: string };
+}
+
+interface TopProduct {
+  productId: string;
+  _sum: {
+    quantity: number | null;
+    priceAtTime: number | null;
+  };
+}
+
+interface ProductDetail {
+  id: string;
+  name: string;
+}
+
+interface LowStockProduct {
+  id: string;
+  name: string;
+  quantity: number;
+  category: { name: string };
+  unit: { name: string };
+}
+
 export const dashboardRouter = createTRPCRouter({
   // Get summary data for dashboard with time range filtering
   getSummary: protectedProcedure
@@ -41,7 +114,7 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       const totalExpenses = purchaseRecords.reduce(
-        (sum, record) => sum + (record.costPerUnit * record.quantity),
+        (sum: number, record: PurchaseRecord) => sum + (record.costPerUnit * record.quantity),
         0
       );
 
@@ -86,7 +159,7 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       const totalStockValue = products.reduce(
-        (sum, product) => sum + (product.quantity * product.averageCost),
+        (sum: number, product: Product) => sum + (product.quantity * product.averageCost),
         0
       );
 
@@ -162,7 +235,7 @@ export const dashboardRouter = createTRPCRouter({
     }
 
     // Merge sales data
-    salesData.forEach((sale) => {
+    salesData.forEach((sale: TrendSaleData) => {
       const dateString = sale.createdAt.toISOString().split('T')[0];
       const existing = dailyTotals.get(dateString!) ?? { totalIncome: 0, totalExpenses: 0 };
       existing.totalIncome += sale.totalAmount;
@@ -170,7 +243,7 @@ export const dashboardRouter = createTRPCRouter({
     });
 
     // Merge repair data
-    repairData.forEach((repair) => {
+    repairData.forEach((repair: TrendRepairData) => {
       const dateString = repair.createdAt.toISOString().split('T')[0];
       const existing = dailyTotals.get(dateString!) ?? { totalIncome: 0, totalExpenses: 0 };
       existing.totalIncome += repair.totalCost;
@@ -178,7 +251,7 @@ export const dashboardRouter = createTRPCRouter({
     });
 
     // Merge purchase data
-    purchaseData.forEach((purchase) => {
+    purchaseData.forEach((purchase: TrendPurchaseData) => {
       const dateString = purchase.purchaseDate.toISOString().split('T')[0];
       const existing = dailyTotals.get(dateString!) ?? { totalIncome: 0, totalExpenses: 0 };
       existing.totalExpenses += purchase.costPerUnit * purchase.quantity;
@@ -250,7 +323,7 @@ export const dashboardRouter = createTRPCRouter({
       const productDetails = await ctx.db.product.findMany({
         where: {
           id: {
-            in: topProducts.map(tp => tp.productId),
+            in: topProducts.map((tp: TopProduct) => tp.productId),
           },
         },
         select: {
@@ -260,8 +333,8 @@ export const dashboardRouter = createTRPCRouter({
       });
 
       // Map products with their sales data
-      const topProductsWithNames = topProducts.map((product) => {
-        const productInfo = productDetails.find(pd => pd.id === product.productId);
+      const topProductsWithNames = topProducts.map((product: TopProduct) => {
+        const productInfo = productDetails.find((pd: ProductDetail) => pd.id === product.productId);
         return {
           productName: productInfo?.name || 'Unknown Product',
           totalSales: product._sum.quantity || 0,
@@ -308,7 +381,7 @@ export const dashboardRouter = createTRPCRouter({
 
       // Combine and format activities
       const activities = [
-        ...recentSales.map(sale => ({
+        ...recentSales.map((sale: Sale) => ({
           id: `sale-${sale.id}`,
           type: 'sale' as const,
           description: `Sale completed`,
@@ -316,7 +389,7 @@ export const dashboardRouter = createTRPCRouter({
           customerName: sale.customer.name,
           date: sale.createdAt,
         })),
-        ...recentRepairs.map(repair => ({
+        ...recentRepairs.map((repair: Repair) => ({
           id: `repair-${repair.id}`,
           type: 'repair' as const,
           description: repair.description.length > 30 ? 
@@ -326,7 +399,7 @@ export const dashboardRouter = createTRPCRouter({
           customerName: repair.customer.name,
           date: repair.createdAt,
         })),
-        ...recentPurchases.map(purchase => ({
+        ...recentPurchases.map((purchase: Purchase) => ({
           id: `purchase-${purchase.id}`,
           type: 'purchase' as const,
           description: `Purchased ${purchase.product.name}`,
@@ -367,7 +440,7 @@ export const dashboardRouter = createTRPCRouter({
         take: 20, // Limit to prevent too many alerts
       });
 
-      const formattedLowStock = lowStockProducts.map(product => ({
+      const formattedLowStock = lowStockProducts.map((product: LowStockProduct) => ({
         id: product.id,
         name: product.name,
         currentStock: product.quantity,

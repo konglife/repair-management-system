@@ -8,6 +8,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// Type interfaces for tRPC query results
+interface Product {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+  averageCost: number;
+  categoryId: string;
+  unitId: string;
+}
+
+
+interface SaleItemWithProduct {
+  id: string;
+  quantity: number;
+  priceAtTime: number;
+  costAtTime: number;
+  saleId: string;
+  productId: string;
+  product: Product;
+}
+
+
 export function SaleDetailPageContent({ saleId }: { saleId: string }) {
   const router = useRouter();
   const { data: sale, isLoading, error } = api.sales.getById.useQuery({ id: saleId });
@@ -153,7 +176,7 @@ export function SaleDetailPageContent({ saleId }: { saleId: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sale.saleItems.map((item) => (
+                {sale.saleItems.map((item: SaleItemWithProduct) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.product.name}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
@@ -171,7 +194,7 @@ export function SaleDetailPageContent({ saleId }: { saleId: string }) {
           <div className="mt-6 pt-6 border-t">
             <div className="flex justify-between items-center text-lg">
               <span className="font-medium">Total Items:</span>
-              <span>{sale.saleItems.reduce((sum, item) => sum + item.quantity, 0)}</span>
+              <span>{sale.saleItems.reduce((sum: number, item: SaleItemWithProduct) => sum + item.quantity, 0)}</span>
             </div>
             <div className="flex justify-between items-center text-lg mt-2">
               <span className="font-medium">Total Cost:</span>

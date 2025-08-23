@@ -16,6 +16,46 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+// Type interfaces for tRPC query results
+interface Product {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+  averageCost: number;
+  categoryId: string;
+  unitId: string;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  createdAt: Date;
+}
+
+interface UsedPartWithProduct {
+  id: string;
+  quantity: number;
+  costAtTime: number;
+  repairId: string;
+  productId: string;
+  product: Product;
+}
+
+interface RepairWithRelations {
+  id: string;
+  description: string;
+  totalCost: number;
+  partsCost: number;
+  laborCost: number;
+  createdAt: Date;
+  customerId: string;
+  customer: Customer;
+  usedParts: UsedPartWithProduct[];
+}
+
 interface UsedPart {
   productId: string;
   quantity: number;
@@ -96,7 +136,7 @@ export default function RepairsPage() {
   const addPartToRepair = () => {
     if (!selectedProductId || partQuantity <= 0) return;
 
-    const product = products.find(p => p.id === selectedProductId);
+    const product = products.find((p: Product) => p.id === selectedProductId);
     if (!product) return;
 
     // Check if part is already in the repair
@@ -349,7 +389,7 @@ export default function RepairsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRepairs.map((repair) => (
+                  filteredRepairs.map((repair: RepairWithRelations) => (
                     <TableRow key={repair.id}>
                       <TableCell className="font-medium">
                         {new Date(repair.createdAt).toLocaleDateString()}
@@ -397,7 +437,7 @@ export default function RepairsPage() {
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {customers.map((customer) => (
+                    {customers.map((customer: Customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name} {customer.phone && `(${customer.phone})`}
                       </SelectItem>

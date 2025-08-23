@@ -1,6 +1,20 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import type { Prisma } from "@prisma/client";
+
+// Type interfaces for database operations
+interface Product {
+  id: string;
+  quantity: number;
+  averageCost: number;
+}
+
+interface Repair {
+  totalCost: number;
+  laborCost: number;
+  partsCost: number;
+}
 
 export const repairRouter = createTRPCRouter({
   // Get all repairs with related data for repair history
@@ -103,7 +117,7 @@ export const repairRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Use Prisma transaction to ensure atomicity
-      const repair = await ctx.db.$transaction(async (tx) => {
+      const repair = await ctx.db.$transaction(async (tx: Prisma.TransactionClient) => {
         // First, validate all products exist and have sufficient stock
         const products = await tx.product.findMany({
           where: {
@@ -121,7 +135,7 @@ export const repairRouter = createTRPCRouter({
 
         // Check stock availability for each part
         for (const part of input.usedParts) {
-          const product = products.find((p) => p.id === part.productId);
+          const product = products.find((p: Product) => p.id === part.productId);
           if (!product) {
             throw new TRPCError({
               code: "BAD_REQUEST",
@@ -151,7 +165,7 @@ export const repairRouter = createTRPCRouter({
         let partsCost = 0;
 
         const usedPartsData = input.usedParts.map((part) => {
-          const product = products.find((p) => p.id === part.productId)!;
+          const product = products.find((p: Product) => p.id === part.productId)!;
           const partCost = product.averageCost * part.quantity;
           partsCost += partCost;
 
@@ -258,10 +272,10 @@ export const repairRouter = createTRPCRouter({
 
       // Calculate analytics
       const totalRepairs = repairs.length;
-      const totalRevenue = repairs.reduce((sum, repair) => sum + repair.totalCost, 0);
+      const totalRevenue = repairs.reduce((sum: number, repair: Repair) => sum + repair.totalCost, 0);
       const averageRepairCost = totalRepairs > 0 ? totalRevenue / totalRepairs : 0;
-      const totalLaborRevenue = repairs.reduce((sum, repair) => sum + repair.laborCost, 0);
-      const totalPartsCost = repairs.reduce((sum, repair) => sum + repair.partsCost, 0);
+      const totalLaborRevenue = repairs.reduce((sum: number, repair: Repair) => sum + repair.laborCost, 0);
+      const totalPartsCost = repairs.reduce((sum: number, repair: Repair) => sum + repair.partsCost, 0);
 
       return {
         totalRepairs,

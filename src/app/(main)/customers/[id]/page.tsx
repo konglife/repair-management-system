@@ -8,6 +8,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// Type interfaces for the tRPC query result
+interface SaleItem {
+  id: string;
+  quantity: number;
+  priceAtTime: number;
+  costAtTime: number;
+  saleId: string;
+  productId: string;
+}
+
+interface SaleWithItems {
+  id: string;
+  totalAmount: number;
+  totalCost: number;
+  createdAt: Date;
+  customerId: string;
+  saleItems: SaleItem[];
+}
+
+interface UsedPart {
+  id: string;
+  quantity: number;
+  costAtTime: number;
+  repairId: string;
+  productId: string;
+}
+
+interface RepairWithParts {
+  id: string;
+  description: string;
+  totalCost: number;
+  partsCost: number;
+  laborCost: number;
+  createdAt: Date;
+  customerId: string;
+  usedParts: UsedPart[];
+}
+
 interface CustomerDetailsPageProps {
   params: Promise<{
     id: string;
@@ -158,7 +196,7 @@ export default function CustomerDetailsPage({ params }: CustomerDetailsPageProps
                     </TableCell>
                   </TableRow>
                 ) : (
-                  customer.sales.map((sale) => (
+                  customer.sales.map((sale: SaleWithItems) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
                         {new Date(sale.createdAt).toLocaleDateString()}
@@ -204,7 +242,7 @@ export default function CustomerDetailsPage({ params }: CustomerDetailsPageProps
                     </TableCell>
                   </TableRow>
                 ) : (
-                  customer.repairs.map((repair) => (
+                  customer.repairs.map((repair: RepairWithParts) => (
                     <TableRow key={repair.id}>
                       <TableCell className="font-medium">
                         {new Date(repair.createdAt).toLocaleDateString()}

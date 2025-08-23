@@ -8,6 +8,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// Type interfaces for tRPC query results
+interface Product {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+  averageCost: number;
+  categoryId: string;
+  unitId: string;
+}
+
+
+interface UsedPartWithProduct {
+  id: string;
+  quantity: number;
+  costAtTime: number;
+  repairId: string;
+  productId: string;
+  product: Product;
+}
+
+
 export default function RepairDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -151,7 +173,7 @@ export default function RepairDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {repair.usedParts.map((usedPart) => (
+                {repair.usedParts.map((usedPart: UsedPartWithProduct) => (
                   <TableRow key={usedPart.id}>
                     <TableCell className="font-medium">
                       {usedPart.product.name}
