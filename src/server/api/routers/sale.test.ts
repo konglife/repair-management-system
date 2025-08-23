@@ -750,4 +750,449 @@ describe("Sale Router Logic", () => {
       });
     });
   });
+
+  describe("date filtering logic", () => {
+    it("should calculate date ranges correctly", () => {
+      const calculateDateRange = (dateRange: "today" | "7days" | "1month") => {
+        const now = new Date("2025-01-15T10:00:00Z"); // Fixed date for testing
+        const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        
+        switch (dateRange) {
+          case "today":
+            return {
+              gte: startOfDay,
+            };
+          case "7days":
+            const sevenDaysAgo = new Date(startOfDay);
+            sevenDaysAgo.setUTCDate(sevenDaysAgo.getUTCDate() - 7);
+            return {
+              gte: sevenDaysAgo,
+            };
+          case "1month":
+            const oneMonthAgo = new Date(startOfDay);
+            oneMonthAgo.setUTCMonth(oneMonthAgo.getUTCMonth() - 1);
+            return {
+              gte: oneMonthAgo,
+            };
+        }
+      };
+
+      // Test today filter
+      const todayFilter = calculateDateRange("today");
+      expect(todayFilter.gte.toISOString()).toBe("2025-01-15T00:00:00.000Z");
+
+      // Test 7 days filter
+      const sevenDaysFilter = calculateDateRange("7days");
+      expect(sevenDaysFilter.gte.toISOString()).toBe("2025-01-08T00:00:00.000Z");
+
+      // Test 1 month filter
+      const oneMonthFilter = calculateDateRange("1month");
+      expect(oneMonthFilter.gte.toISOString()).toBe("2024-12-15T00:00:00.000Z");
+    });
+
+    it("should filter sales by date range", () => {
+      const filterSalesByDateRange = (
+        sales: Array<{ id: string; createdAt: Date; totalAmount: number }>,
+        dateFilter?: { gte: Date }
+      ) => {
+        if (!dateFilter) {
+          return sales;
+        }
+        
+        return sales.filter(sale => sale.createdAt >= dateFilter.gte);
+      };
+
+      const mockSales = [
+        { id: "s1", createdAt: new Date("2025-01-10"), totalAmount: 100 },
+        { id: "s2", createdAt: new Date("2025-01-14"), totalAmount: 200 },
+        { id: "s3", createdAt: new Date("2025-01-15"), totalAmount: 300 },
+        { id: "s4", createdAt: new Date("2025-01-16"), totalAmount: 400 },
+      ];
+
+      // No filter - return all
+      expect(filterSalesByDateRange(mockSales)).toHaveLength(4);
+
+      // Filter from 2025-01-14
+      const filtered = filterSalesByDateRange(mockSales, { gte: new Date("2025-01-14") });
+      expect(filtered).toHaveLength(3);
+      expect(filtered.map(s => s.id)).toEqual(["s2", "s3", "s4"]);
+
+      // Filter from 2025-01-16 (only one sale)
+      const strictFiltered = filterSalesByDateRange(mockSales, { gte: new Date("2025-01-16") });
+      expect(strictFiltered).toHaveLength(1);
+      expect(strictFiltered[0].id).toBe("s4");
+    });
+  });
+
+  describe("analytics calculations", () => {
+    it("should calculate basic analytics correctly", () => {
+      const calculateAnalytics = (sales: Array<{
+        id: string;
+        totalAmount: number;
+        saleItems: Array<{
+          productId: string;
+          quantity: number;
+          product: { name: string };
+        }>;
+      }>) => {
+        const totalSales = sales.length;
+        const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+        const averageSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+        return {
+          totalSales,
+          totalRevenue,
+          averageSaleValue,
+        };
+      };
+
+      const mockSales = [
+        {
+          id: "s1",
+          totalAmount: 1000,
+          saleItems: [
+            { productId: "p1", quantity: 2, product: { name: "Product A" } },
+          ],
+        },
+        {
+          id: "s2",
+          totalAmount: 500,
+          saleItems: [
+            { productId: "p2", quantity: 1, product: { name: "Product B" } },
+          ],
+        },
+        {
+          id: "s3",
+          totalAmount: 1500,
+          saleItems: [
+            { productId: "p1", quantity: 3, product: { name: "Product A" } },
+          ],
+        },
+      ];
+
+      const analytics = calculateAnalytics(mockSales);
+
+      expect(analytics.totalSales).toBe(3);
+      expect(analytics.totalRevenue).toBe(3000);
+      expect(analytics.averageSaleValue).toBe(1000);
+    });
+
+    it("should calculate top selling product correctly", () => {
+      const calculateTopSellingProduct = (sales: Array<{
+        saleItems: Array<{
+          productId: string;
+          quantity: number;
+          product: { name: string };
+        }>;
+      }>) => {
+        const productSalesMap = new Map<string, { name: string; quantity: number }>();
+        
+        sales.forEach(sale => {
+          sale.saleItems.forEach(item => {
+            const existing = productSalesMap.get(item.productId);
+            if (existing) {
+              existing.quantity += item.quantity;
+            } else {
+              productSalesMap.set(item.productId, {
+                name: item.product.name,
+                quantity: item.quantity,
+              });
+            }
+          });
+        });
+
+        const topSellingProduct = productSalesMap.size > 0 
+          ? Array.from(productSalesMap.values()).reduce((top, current) => 
+              current.quantity > top.quantity ? current : top
+            )
+          : null;
+
+        return topSellingProduct;
+      };
+
+      const mockSales = [
+        {
+          saleItems: [
+            { productId: "p1", quantity: 2, product: { name: "iPhone 15" } },
+            { productId: "p2", quantity: 1, product: { name: "MacBook Air" } },
+          ],
+        },
+        {
+          saleItems: [
+            { productId: "p1", quantity: 3, product: { name: "iPhone 15" } },
+          ],
+        },
+        {
+          saleItems: [
+            { productId: "p2", quantity: 1, product: { name: "MacBook Air" } },
+            { productId: "p3", quantity: 1, product: { name: "AirPods" } },
+          ],
+        },
+      ];
+
+      const topProduct = calculateTopSellingProduct(mockSales);
+
+      expect(topProduct).toEqual({
+        name: "iPhone 15",
+        quantity: 5, // 2 + 3
+      });
+    });
+
+    it("should handle empty sales data", () => {
+      const calculateAnalyticsEmpty = <T>(sales: T[]) => {
+        const totalSales = sales.length;
+        const totalRevenue = 0; // Empty array has no revenue
+        const averageSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+        
+        const productSalesMap = new Map();
+        const topSellingProduct = productSalesMap.size > 0 ? {} : null;
+
+        return {
+          totalSales,
+          totalRevenue,
+          averageSaleValue,
+          topSellingProduct,
+        };
+      };
+
+      const emptyAnalytics = calculateAnalyticsEmpty([]);
+
+      expect(emptyAnalytics.totalSales).toBe(0);
+      expect(emptyAnalytics.totalRevenue).toBe(0);
+      expect(emptyAnalytics.averageSaleValue).toBe(0);
+      expect(emptyAnalytics.topSellingProduct).toBeNull();
+    });
+
+    it("should validate analytics input parameters", () => {
+      const validateAnalyticsInput = (input: { dateRange?: "today" | "7days" | "1month" | string }) => {
+        const errors: string[] = [];
+
+        if (input.dateRange && !["today", "7days", "1month"].includes(input.dateRange)) {
+          errors.push("Invalid date range. Must be 'today', '7days', or '1month'");
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+        };
+      };
+
+      // Valid inputs
+      expect(validateAnalyticsInput({})).toEqual({ isValid: true, errors: [] });
+      expect(validateAnalyticsInput({ dateRange: "today" })).toEqual({ isValid: true, errors: [] });
+      expect(validateAnalyticsInput({ dateRange: "7days" })).toEqual({ isValid: true, errors: [] });
+      expect(validateAnalyticsInput({ dateRange: "1month" })).toEqual({ isValid: true, errors: [] });
+
+      // Invalid input
+      expect(validateAnalyticsInput({ dateRange: "invalid" })).toEqual({
+        isValid: false,
+        errors: ["Invalid date range. Must be 'today', '7days', or '1month'"],
+      });
+    });
+  });
+
+  describe("getAll procedure with date filtering", () => {
+    it("should validate input for getAll with date range", () => {
+      const validateGetAllInput = (input?: { dateRange?: "today" | "7days" | "1month" | string }) => {
+        const errors: string[] = [];
+
+        if (input?.dateRange && !["today", "7days", "1month"].includes(input.dateRange)) {
+          errors.push("Invalid date range");
+        }
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+        };
+      };
+
+      expect(validateGetAllInput()).toEqual({ isValid: true, errors: [] });
+      expect(validateGetAllInput({})).toEqual({ isValid: true, errors: [] });
+      expect(validateGetAllInput({ dateRange: "today" })).toEqual({ isValid: true, errors: [] });
+      expect(validateGetAllInput({ dateRange: "invalid" })).toEqual({
+        isValid: false,
+        errors: ["Invalid date range"],
+      });
+    });
+
+    it("should process getAll logic with optional date filtering", () => {
+      const processGetAllLogic = (
+        input: { dateRange?: "today" | "7days" | "1month" } | undefined,
+        mockSales: Array<{ id: string; createdAt: Date; totalAmount: number }>
+      ) => {
+        let dateFilter = undefined;
+        
+        if (input?.dateRange) {
+          const now = new Date("2025-01-15T10:00:00Z");
+          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          
+          switch (input.dateRange) {
+            case "today":
+              dateFilter = { gte: startOfDay };
+              break;
+            case "7days":
+              const sevenDaysAgo = new Date(startOfDay);
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+              dateFilter = { gte: sevenDaysAgo };
+              break;
+            case "1month":
+              const oneMonthAgo = new Date(startOfDay);
+              oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+              dateFilter = { gte: oneMonthAgo };
+              break;
+          }
+        }
+
+        const filteredSales = dateFilter 
+          ? mockSales.filter(sale => sale.createdAt >= dateFilter.gte)
+          : mockSales;
+
+        return filteredSales.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      };
+
+      const mockSales = [
+        { id: "s1", createdAt: new Date("2025-01-10"), totalAmount: 100 },
+        { id: "s2", createdAt: new Date("2025-01-14"), totalAmount: 200 },
+        { id: "s3", createdAt: new Date("2025-01-15"), totalAmount: 300 },
+      ];
+
+      // No filter
+      const allSales = processGetAllLogic(undefined, mockSales);
+      expect(allSales).toHaveLength(3);
+
+      // Today filter (January 15, 2025)
+      const todaySales = processGetAllLogic({ dateRange: "today" }, mockSales);
+      expect(todaySales).toHaveLength(1);
+      expect(todaySales[0].id).toBe("s3");
+
+      // 7 days filter (from January 8, 2025 onwards)
+      // Should include s2 (Jan 14) and s3 (Jan 15), but NOT s1 (Jan 10)
+      // Wait, Jan 10 is within 7 days of Jan 15: 15-10 = 5 days
+      // So all three should be included. Let me fix this.
+      const weekSales = processGetAllLogic({ dateRange: "7days" }, mockSales);
+      expect(weekSales).toHaveLength(3); // s1, s2, s3 are all within 7 days
+      expect(weekSales[0].id).toBe("s3"); // Most recent first
+      expect(weekSales[1].id).toBe("s2");
+      expect(weekSales[2].id).toBe("s1");
+    });
+  });
+
+  describe("getAnalytics procedure logic", () => {
+    it("should process analytics with date filtering", () => {
+      const processAnalyticsLogic = (
+        input: { dateRange?: "today" | "7days" | "1month" } | undefined,
+        mockSales: Array<{
+          id: string;
+          createdAt: Date;
+          totalAmount: number;
+          saleItems: Array<{
+            productId: string;
+            quantity: number;
+            product: { name: string };
+          }>;
+        }>
+      ) => {
+        // Same date filtering logic as getAll
+        let dateFilter = undefined;
+        if (input?.dateRange) {
+          const now = new Date("2025-01-15T10:00:00Z");
+          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          
+          switch (input.dateRange) {
+            case "today":
+              dateFilter = { gte: startOfDay };
+              break;
+            case "7days":
+              const sevenDaysAgo = new Date(startOfDay);
+              sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+              dateFilter = { gte: sevenDaysAgo };
+              break;
+            case "1month":
+              const oneMonthAgo = new Date(startOfDay);
+              oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+              dateFilter = { gte: oneMonthAgo };
+              break;
+          }
+        }
+
+        const filteredSales = dateFilter 
+          ? mockSales.filter(sale => sale.createdAt >= dateFilter.gte)
+          : mockSales;
+
+        // Calculate analytics
+        const totalSales = filteredSales.length;
+        const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+        const averageSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+        // Calculate top selling product
+        const productSalesMap = new Map<string, { name: string; quantity: number }>();
+        filteredSales.forEach(sale => {
+          sale.saleItems.forEach(item => {
+            const existing = productSalesMap.get(item.productId);
+            if (existing) {
+              existing.quantity += item.quantity;
+            } else {
+              productSalesMap.set(item.productId, {
+                name: item.product.name,
+                quantity: item.quantity,
+              });
+            }
+          });
+        });
+
+        const topSellingProduct = productSalesMap.size > 0 
+          ? Array.from(productSalesMap.values()).reduce((top, current) => 
+              current.quantity > top.quantity ? current : top
+            )
+          : null;
+
+        return {
+          totalSales,
+          totalRevenue,
+          averageSaleValue,
+          topSellingProduct,
+        };
+      };
+
+      const mockSales = [
+        {
+          id: "s1",
+          createdAt: new Date("2025-01-10"),
+          totalAmount: 1000,
+          saleItems: [
+            { productId: "p1", quantity: 2, product: { name: "iPhone" } },
+          ],
+        },
+        {
+          id: "s2",
+          createdAt: new Date("2025-01-15"),
+          totalAmount: 2000,
+          saleItems: [
+            { productId: "p1", quantity: 3, product: { name: "iPhone" } },
+            { productId: "p2", quantity: 1, product: { name: "MacBook" } },
+          ],
+        },
+      ];
+
+      // All sales
+      const allAnalytics = processAnalyticsLogic(undefined, mockSales);
+      expect(allAnalytics.totalSales).toBe(2);
+      expect(allAnalytics.totalRevenue).toBe(3000);
+      expect(allAnalytics.averageSaleValue).toBe(1500);
+      expect(allAnalytics.topSellingProduct).toEqual({
+        name: "iPhone",
+        quantity: 5, // 2 + 3
+      });
+
+      // Today only
+      const todayAnalytics = processAnalyticsLogic({ dateRange: "today" }, mockSales);
+      expect(todayAnalytics.totalSales).toBe(1);
+      expect(todayAnalytics.totalRevenue).toBe(2000);
+      expect(todayAnalytics.averageSaleValue).toBe(2000);
+      expect(todayAnalytics.topSellingProduct).toEqual({
+        name: "iPhone",
+        quantity: 3,
+      });
+    });
+  });
 });

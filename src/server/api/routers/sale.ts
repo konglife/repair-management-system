@@ -4,22 +4,60 @@ import { TRPCError } from "@trpc/server";
 
 export const saleRouter = createTRPCRouter({
   // Get all sales with related data for sales history
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const sales = await ctx.db.sale.findMany({
-      include: {
-        customer: true,
-        saleItems: {
-          include: {
-            product: true,
+  getAll: protectedProcedure
+    .input(
+      z.object({
+        dateRange: z.enum(["today", "7days", "1month"]).optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      // Calculate date range filter
+      let dateFilter = undefined;
+      if (input?.dateRange) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (input.dateRange) {
+          case "today":
+            dateFilter = {
+              gte: startOfDay,
+            };
+            break;
+          case "7days":
+            const sevenDaysAgo = new Date(startOfDay);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            dateFilter = {
+              gte: sevenDaysAgo,
+            };
+            break;
+          case "1month":
+            const oneMonthAgo = new Date(startOfDay);
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            dateFilter = {
+              gte: oneMonthAgo,
+            };
+            break;
+        }
+      }
+
+      const sales = await ctx.db.sale.findMany({
+        where: dateFilter ? {
+          createdAt: dateFilter,
+        } : undefined,
+        include: {
+          customer: true,
+          saleItems: {
+            include: {
+              product: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc", // Newest sales first
-      },
-    });
-    return sales;
-  }),
+        orderBy: {
+          createdAt: "desc", // Newest sales first
+        },
+      });
+      return sales;
+    }),
 
   // Get sale by ID with complete details for sale detail view
   getById: protectedProcedure
@@ -172,5 +210,91 @@ export const saleRouter = createTRPCRouter({
       });
 
       return sale;
+    }),
+
+  // Get sales analytics with date filtering
+  getAnalytics: protectedProcedure
+    .input(
+      z.object({
+        dateRange: z.enum(["today", "7days", "1month"]).optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      // Calculate date range filter (same logic as getAll)
+      let dateFilter = undefined;
+      if (input?.dateRange) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (input.dateRange) {
+          case "today":
+            dateFilter = {
+              gte: startOfDay,
+            };
+            break;
+          case "7days":
+            const sevenDaysAgo = new Date(startOfDay);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            dateFilter = {
+              gte: sevenDaysAgo,
+            };
+            break;
+          case "1month":
+            const oneMonthAgo = new Date(startOfDay);
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            dateFilter = {
+              gte: oneMonthAgo,
+            };
+            break;
+        }
+      }
+
+      // Get sales data for analytics calculations
+      const sales = await ctx.db.sale.findMany({
+        where: dateFilter ? {
+          createdAt: dateFilter,
+        } : undefined,
+        include: {
+          saleItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      // Calculate analytics
+      const totalSales = sales.length;
+      const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+      const averageSaleValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+
+      // Calculate top selling product
+      const productSalesMap = new Map<string, { name: string; quantity: number }>();
+      sales.forEach(sale => {
+        sale.saleItems.forEach(item => {
+          const existing = productSalesMap.get(item.productId);
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            productSalesMap.set(item.productId, {
+              name: item.product.name,
+              quantity: item.quantity,
+            });
+          }
+        });
+      });
+
+      const topSellingProduct = productSalesMap.size > 0 
+        ? Array.from(productSalesMap.values()).reduce((top, current) => 
+            current.quantity > top.quantity ? current : top
+          )
+        : null;
+
+      return {
+        totalSales,
+        totalRevenue,
+        averageSaleValue,
+        topSellingProduct,
+      };
     }),
 });

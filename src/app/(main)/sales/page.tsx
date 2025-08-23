@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "lucide-react";
+import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "~/components/ui/SearchInput";
+import { ProductAutocomplete } from "~/components/ui/ProductAutocomplete";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,11 +23,16 @@ interface SaleItem {
   subtotal?: number;
 }
 
+type DateRange = "today" | "7days" | "1month" | undefined;
+
 export default function SalesPage() {
   const router = useRouter();
   
   // Search state
   const [salesSearchTerm, setSalesSearchTerm] = useState("");
+  
+  // Date range filter state
+  const [dateRange, setDateRange] = useState<DateRange>(undefined);
   
   // State for Create Sale form
   const [showCreateSaleForm, setShowCreateSaleForm] = useState(false);
@@ -36,7 +42,12 @@ export default function SalesPage() {
   const [productQuantity, setProductQuantity] = useState(1);
 
   // tRPC queries
-  const { data: sales = [], refetch: refetchSales, isLoading: salesLoading } = api.sales.getAll.useQuery();
+  const { data: sales = [], refetch: refetchSales, isLoading: salesLoading } = api.sales.getAll.useQuery(
+    dateRange ? { dateRange } : undefined
+  );
+  const { data: analytics, isLoading: analyticsLoading } = api.sales.getAnalytics.useQuery(
+    dateRange ? { dateRange } : undefined
+  );
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
 
@@ -164,11 +175,7 @@ export default function SalesPage() {
     resetForm();
   };
 
-  // Calculate dashboard statistics (using filtered data when searching)
-  const displaySales = salesSearchTerm.trim() ? filteredSales : sales;
-  const totalSalesAmount = displaySales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-  const totalSalesCount = displaySales.length;
-  const averageSaleAmount = totalSalesCount > 0 ? totalSalesAmount / totalSalesCount : 0;
+  // Note: displaySales removed as analytics now come from dedicated endpoint
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -177,19 +184,39 @@ export default function SalesPage() {
           <h2 className="text-3xl font-bold tracking-tight">Sales</h2>
           <p className="text-muted-foreground">Manage sales transactions and view sales history</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="date-range" className="text-sm font-medium">Filter by:</Label>
+          <Select value={dateRange || "all"} onValueChange={(value) => setDateRange(value === "all" ? undefined : value as DateRange)}>
+            <SelectTrigger className="w-40" id="date-range">
+              <SelectValue placeholder="All time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="7days">Last 7 Days</SelectItem>
+              <SelectItem value="1month">Last 1 Month</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
       {/* Dashboard Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSalesCount}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{analytics?.totalSales ?? 0}</div>
+            )}
             <p className="text-xs text-muted-foreground">
-              Total transactions
+              Number of sales
             </p>
           </CardContent>
         </Card>
@@ -199,7 +226,13 @@ export default function SalesPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalSalesAmount)}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalRevenue ?? 0)}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Total revenue
             </p>
@@ -207,13 +240,37 @@ export default function SalesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Sale</CardTitle>
+            <CardTitle className="text-sm font-medium">Average Sale Value</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(averageSaleAmount)}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{formatCurrency(analytics?.averageSaleValue ?? 0)}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Per transaction
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Selling Product</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-lg font-bold truncate">{analytics?.topSellingProduct?.name ?? "None"}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {analytics?.topSellingProduct?.quantity ?? 0} sold
             </p>
           </CardContent>
         </Card>
@@ -326,20 +383,14 @@ export default function SalesPage() {
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
                     <Label htmlFor="product">Product</Label>
-                    <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products
-                          .filter(product => product.quantity > 0) // Only show products with stock
-                          .map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - {formatCurrency(product.salePrice)} (Stock: {product.quantity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1">
+                      <ProductAutocomplete
+                        products={products}
+                        value={selectedProductId}
+                        onValueChange={setSelectedProductId}
+                        placeholder="Search for a product..."
+                      />
+                    </div>
                   </div>
                   <div className="w-24">
                     <Label htmlFor="quantity">Quantity</Label>
