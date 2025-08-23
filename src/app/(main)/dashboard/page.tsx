@@ -14,11 +14,16 @@ import {
   TrendingUp,
   TrendingDown,
   Wrench,
-  ShoppingCart
+  ShoppingCart,
+  Package,
+  Target
 } from "lucide-react"
 import { api } from "~/lib/trpc"
 import { formatCurrency } from "~/lib/utils"
 import TrendGraph from "./components/TrendGraph"
+import TopProductsChart from "~/components/charts/TopProductsChart"
+import RecentActivities from "~/components/dashboard/RecentActivities"
+import LowStockAlerts from "~/components/dashboard/LowStockAlerts"
 
 type TimePeriod = 'today' | 'last7days' | 'thismonth'
 
@@ -75,7 +80,7 @@ export default function Dashboard() {
         </Select>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         {/* Expenses Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -175,11 +180,65 @@ export default function Dashboard() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Total Stock Value Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Stock Value</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <div className="h-8 w-20 animate-pulse bg-muted rounded" />
+              ) : (
+                formatCurrency(summaryData?.totalStockValue ?? 0)
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total inventory value
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Gross Profit Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? (
+                <div className="h-8 w-20 animate-pulse bg-muted rounded" />
+              ) : (
+                formatCurrency(summaryData?.grossProfit ?? 0)
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total profit ({selectedPeriod === 'today' ? 'Today' : selectedPeriod === 'last7days' ? 'Last 7 days' : 'This month'})
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Trend Graph Section */}
-      <div className="w-full">
-        <TrendGraph />
+      {/* Charts and Widgets Section */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Left Column - Trend Graph and Top Products Chart */}
+        <div className="space-y-6">
+          <div className="w-full">
+            <TrendGraph />
+          </div>
+          <div className="w-full">
+            <TopProductsChart period={selectedPeriod} />
+          </div>
+        </div>
+        
+        {/* Right Column - Recent Activities and Low Stock Alerts */}
+        <div className="space-y-6">
+          <RecentActivities />
+          <LowStockAlerts />
+        </div>
       </div>
     </div>
   )

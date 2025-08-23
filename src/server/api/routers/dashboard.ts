@@ -77,16 +77,31 @@ export const dashboardRouter = createTRPCRouter({
       const totalRepairIncome = repairAggregation._sum.totalCost ?? 0;
       const totalRepairLaborCost = repairAggregation._sum.laborCost ?? 0;
 
+      // Calculate total stock value (quantity * average cost)
+      const products = await ctx.db.product.findMany({
+        select: {
+          quantity: true,
+          averageCost: true,
+        },
+      });
+
+      const totalStockValue = products.reduce(
+        (sum, product) => sum + (product.quantity * product.averageCost),
+        0
+      );
+
       return {
         totalExpenses,
         totalRepairIncome,
         totalSalesIncome,
         salesProfit: totalSalesIncome - totalSalesCost,
         repairProfit: totalRepairLaborCost,
+        totalStockValue,
+        grossProfit: (totalSalesIncome - totalSalesCost) + totalRepairLaborCost,
       };
     }),
 
-  // Get trend data for 30-day period for dashboard graph
+  // Get trend data for 30-day period for dashboard graph (optimized with targeted Prisma queries)
   getTrendData: protectedProcedure
     .input(
       z.object({
@@ -97,33 +112,31 @@ export const dashboardRouter = createTRPCRouter({
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get sales data grouped by date
-    const salesData = await ctx.db.sale.groupBy({
-      by: ['createdAt'],
+    // Use optimized Prisma queries with proper field names
+    const salesData = await ctx.db.sale.findMany({
       where: {
         createdAt: {
           gte: thirtyDaysAgo,
         },
       },
-      _sum: {
+      select: {
+        createdAt: true,
         totalAmount: true,
       },
     });
 
-    // Get repair data grouped by date  
-    const repairData = await ctx.db.repair.groupBy({
-      by: ['createdAt'],
+    const repairData = await ctx.db.repair.findMany({
       where: {
         createdAt: {
           gte: thirtyDaysAgo,
         },
       },
-      _sum: {
+      select: {
+        createdAt: true,
         totalCost: true,
       },
     });
 
-    // Get purchase data grouped by date
     const purchaseData = await ctx.db.purchaseRecord.findMany({
       where: {
         purchaseDate: {
@@ -137,7 +150,7 @@ export const dashboardRouter = createTRPCRouter({
       },
     });
 
-    // Create a map to aggregate daily totals
+    // Create a map to aggregate daily totals efficiently
     const dailyTotals = new Map<string, { totalIncome: number; totalExpenses: number }>();
 
     // Initialize all days with zero values
@@ -148,23 +161,23 @@ export const dashboardRouter = createTRPCRouter({
       dailyTotals.set(dateString!, { totalIncome: 0, totalExpenses: 0 });
     }
 
-    // Add sales income to daily totals
+    // Merge sales data
     salesData.forEach((sale) => {
       const dateString = sale.createdAt.toISOString().split('T')[0];
       const existing = dailyTotals.get(dateString!) ?? { totalIncome: 0, totalExpenses: 0 };
-      existing.totalIncome += sale._sum.totalAmount ?? 0;
+      existing.totalIncome += sale.totalAmount;
       dailyTotals.set(dateString!, existing);
     });
 
-    // Add repair income to daily totals
+    // Merge repair data
     repairData.forEach((repair) => {
       const dateString = repair.createdAt.toISOString().split('T')[0];
       const existing = dailyTotals.get(dateString!) ?? { totalIncome: 0, totalExpenses: 0 };
-      existing.totalIncome += repair._sum.totalCost ?? 0;
+      existing.totalIncome += repair.totalCost;
       dailyTotals.set(dateString!, existing);
     });
 
-    // Add purchase expenses to daily totals
+    // Merge purchase data
     purchaseData.forEach((purchase) => {
       const dateString = purchase.purchaseDate.toISOString().split('T')[0];
       const existing = dailyTotals.get(dateString!) ?? { totalIncome: 0, totalExpenses: 0 };
@@ -185,4 +198,185 @@ export const dashboardRouter = createTRPCRouter({
       trendData: dailyData,
     };
   }),
+
+  // Get top selling products with date range filtering
+  getTopProducts: protectedProcedure
+    .input(
+      z.object({
+        period: z.enum(['today', 'last7days', 'thismonth']),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Calculate date range based on period
+      const now = new Date();
+      let startDate: Date;
+
+      switch (input.period) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'last7days':
+          startDate = new Date(now);
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'thismonth':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+      }
+
+      // Get top products from sales
+      const topProducts = await ctx.db.saleItem.groupBy({
+        by: ['productId'],
+        where: {
+          sale: {
+            createdAt: {
+              gte: startDate,
+            },
+          },
+        },
+        _sum: {
+          quantity: true,
+          priceAtTime: true,
+        },
+        orderBy: {
+          _sum: {
+            priceAtTime: 'desc',
+          },
+        },
+        take: 5,
+      });
+
+      // Get product details for the top products
+      const productDetails = await ctx.db.product.findMany({
+        where: {
+          id: {
+            in: topProducts.map(tp => tp.productId),
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      // Map products with their sales data
+      const topProductsWithNames = topProducts.map((product) => {
+        const productInfo = productDetails.find(pd => pd.id === product.productId);
+        return {
+          productName: productInfo?.name || 'Unknown Product',
+          totalSales: product._sum.quantity || 0,
+          totalRevenue: product._sum.priceAtTime || 0,
+        };
+      });
+
+      return {
+        topProducts: topProductsWithNames,
+      };
+    }),
+
+  // Get recent activities (sales, repairs, purchases)
+  getRecentActivities: protectedProcedure
+    .query(async ({ ctx }) => {
+      const limit = 10;
+
+      // Get recent sales
+      const recentSales = await ctx.db.sale.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: { select: { name: true } },
+        },
+      });
+
+      // Get recent repairs
+      const recentRepairs = await ctx.db.repair.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          customer: { select: { name: true } },
+        },
+      });
+
+      // Get recent purchases (last few days)
+      const recentPurchases = await ctx.db.purchaseRecord.findMany({
+        take: limit,
+        orderBy: { purchaseDate: 'desc' },
+        include: {
+          product: { select: { name: true } },
+        },
+      });
+
+      // Combine and format activities
+      const activities = [
+        ...recentSales.map(sale => ({
+          id: `sale-${sale.id}`,
+          type: 'sale' as const,
+          description: `Sale completed`,
+          amount: sale.totalAmount,
+          customerName: sale.customer.name,
+          date: sale.createdAt,
+        })),
+        ...recentRepairs.map(repair => ({
+          id: `repair-${repair.id}`,
+          type: 'repair' as const,
+          description: repair.description.length > 30 ? 
+            `${repair.description.substring(0, 30)}...` : 
+            repair.description,
+          amount: repair.totalCost,
+          customerName: repair.customer.name,
+          date: repair.createdAt,
+        })),
+        ...recentPurchases.map(purchase => ({
+          id: `purchase-${purchase.id}`,
+          type: 'purchase' as const,
+          description: `Purchased ${purchase.product.name}`,
+          amount: purchase.costPerUnit * purchase.quantity,
+          customerName: undefined,
+          date: purchase.purchaseDate,
+        })),
+      ];
+
+      // Sort by date and take top 10
+      const sortedActivities = activities
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+        .slice(0, 10);
+
+      return {
+        activities: sortedActivities,
+      };
+    }),
+
+  // Get low stock alerts (products below threshold)
+  getLowStockAlerts: protectedProcedure
+    .query(async ({ ctx }) => {
+      const lowStockThreshold = 10; // Define threshold for low stock
+
+      const lowStockProducts = await ctx.db.product.findMany({
+        where: {
+          quantity: {
+            lt: lowStockThreshold,
+          },
+        },
+        include: {
+          category: { select: { name: true } },
+          unit: { select: { name: true } },
+        },
+        orderBy: {
+          quantity: 'asc',
+        },
+        take: 20, // Limit to prevent too many alerts
+      });
+
+      const formattedLowStock = lowStockProducts.map(product => ({
+        id: product.id,
+        name: product.name,
+        currentStock: product.quantity,
+        category: product.category.name,
+        unit: product.unit.name,
+      }));
+
+      return {
+        lowStockProducts: formattedLowStock,
+      };
+    }),
 });

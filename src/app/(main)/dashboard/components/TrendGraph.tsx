@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { memo, useMemo } from "react"
 import {
   LineChart,
   Line,
@@ -56,10 +57,16 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   return null
 }
 
-export default function TrendGraph() {
+const TrendGraph = memo(function TrendGraph() {
   const { data, isLoading, error } = api.dashboard.getTrendData.useQuery({
     period: 'last30days'
   })
+
+  const chartData: TrendDataPoint[] = useMemo(() => 
+    data?.trendData?.map(item => ({
+      ...item,
+      displayDate: formatDateForDisplay(item.date)
+    })) ?? [], [data?.trendData])
 
   if (isLoading) {
     return (
@@ -93,11 +100,6 @@ export default function TrendGraph() {
       </Card>
     )
   }
-
-  const chartData: TrendDataPoint[] = data?.trendData?.map(item => ({
-    ...item,
-    displayDate: formatDateForDisplay(item.date)
-  })) ?? []
 
   if (chartData.length === 0) {
     return (
@@ -173,4 +175,6 @@ export default function TrendGraph() {
       </CardContent>
     </Card>
   )
-}
+})
+
+export default TrendGraph
