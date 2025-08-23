@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Wrench,
   Users,
+  Settings,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -42,6 +43,11 @@ const navigationItems: NavigationItem[] = [
     name: "Customers",
     href: "/customers",
     icon: Users,
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
   },
 ];
 

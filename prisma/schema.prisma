@@ -141,3 +141,16 @@ model UsedPart {
 
   @@map("used_parts")
 }
+
+// BusinessProfile model for shop settings
+model BusinessProfile {
+  id                String  @id @default(cuid())
+  shopName          String
+  address           String?
+  phoneNumber       String?
+  contactEmail      String?
+  logoUrl           String?
+  lowStockThreshold Int     @default(5)
+
+  @@map("business_profiles")
+}
