@@ -13,6 +13,30 @@ export const customerRouter = createTRPCRouter({
     return customers;
   }),
 
+  // Get total customers count
+  getTotalCount: protectedProcedure.query(async ({ ctx }) => {
+    const totalCustomers = await ctx.db.customer.count();
+    return totalCustomers;
+  }),
+
+  // Get new customers count for current month
+  getNewCustomersThisMonth: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const newCustomersThisMonth = await ctx.db.customer.count({
+      where: {
+        createdAt: {
+          gte: firstDayOfMonth,
+          lte: lastDayOfMonth,
+        },
+      },
+    });
+
+    return newCustomersThisMonth;
+  }),
+
   // Create a new customer
   create: protectedProcedure
     .input(

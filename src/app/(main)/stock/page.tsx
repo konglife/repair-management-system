@@ -57,6 +57,9 @@ export default function StockPage() {
   // tRPC queries and mutations for categories
   const { data: categories = [], refetch: refetchCategories, isLoading: categoriesLoading } = api.categories.getAll.useQuery();
   
+  // tRPC query for total stock value
+  const { data: totalValue = 0, isLoading: totalValueLoading, error: totalValueError } = api.products.getTotalValue.useQuery();
+  
   const createCategoryMutation = api.categories.create.useMutation({
     onSuccess: () => {
       refetchCategories();
@@ -436,9 +439,17 @@ export default function StockPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(0)}</div>
+            <div className="text-2xl font-bold">
+              {totalValueLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : totalValueError ? (
+                <span className="text-destructive">Error</span>
+              ) : (
+                formatCurrency(totalValue)
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Inventory value
+              {totalValueError ? "Failed to load inventory value" : "Inventory value"}
             </p>
           </CardContent>
         </Card>
@@ -480,8 +491,8 @@ export default function StockPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-4">
+      <div className="grid gap-6">
+        <div>
           {activeTab === "categories" && (
             <Card>
               <CardHeader>
@@ -562,7 +573,7 @@ export default function StockPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredCategories.map((category: { id: string; name: string }) => (
+                        filteredCategories.map((category: { id: string; name: string; _count: { products: number } }) => (
                           <TableRow key={category.id}>
                             <TableCell>
                               {editingCategory?.id === category.id ? (
@@ -598,7 +609,7 @@ export default function StockPage() {
                                 <span className="font-medium">{category.name}</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-muted-foreground">0</TableCell>
+                            <TableCell className="text-muted-foreground">{category._count?.products ?? 0}</TableCell>
                             <TableCell>
                               {editingCategory?.id === category.id ? null : (
                                 <div className="flex gap-1">
@@ -710,7 +721,7 @@ export default function StockPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredUnits.map((unit: { id: string; name: string }) => (
+                        filteredUnits.map((unit: { id: string; name: string; _count: { products: number } }) => (
                           <TableRow key={unit.id}>
                             <TableCell>
                               {editingUnit?.id === unit.id ? (
@@ -746,7 +757,7 @@ export default function StockPage() {
                                 <span className="font-medium">{unit.name}</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-muted-foreground">0</TableCell>
+                            <TableCell className="text-muted-foreground">{unit._count?.products ?? 0}</TableCell>
                             <TableCell>
                               {editingUnit?.id === unit.id ? null : (
                                 <div className="flex gap-1">
@@ -1188,33 +1199,6 @@ export default function StockPage() {
           )}
         </div>
 
-        <div className="col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Product
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setActiveTab("purchases")}
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Record Purchase
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  View Reports
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* Delete Category Confirmation Dialog */}

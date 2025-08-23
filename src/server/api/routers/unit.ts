@@ -6,6 +6,11 @@ export const unitRouter = createTRPCRouter({
   // Get all units
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const units = await ctx.db.unit.findMany({
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
       orderBy: {
         name: "asc",
       },

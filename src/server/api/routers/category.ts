@@ -6,6 +6,11 @@ export const categoryRouter = createTRPCRouter({
   // Get all categories
   getAll: protectedProcedure.query(async ({ ctx }) => {
     const categories = await ctx.db.category.findMany({
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
       orderBy: {
         name: "asc",
       },

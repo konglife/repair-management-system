@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Plus, Loader2, Edit, Eye } from "lucide-react";
+import { Users, Plus, Loader2, Edit, Eye, UserPlus } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
@@ -32,6 +32,10 @@ export default function CustomersPage() {
 
   // tRPC queries and mutations for customers
   const { data: customers = [], refetch: refetchCustomers, isLoading: customersLoading } = api.customers.getAll.useQuery();
+  
+  // Analytics queries
+  const { data: totalCustomers = 0, isLoading: totalCustomersLoading, error: totalCustomersError } = api.customers.getTotalCount.useQuery();
+  const { data: newCustomersThisMonth = 0, isLoading: newCustomersLoading, error: newCustomersError } = api.customers.getNewCustomersThisMonth.useQuery();
 
   // Filtered data for search functionality
   const filteredCustomers = useMemo(() => {
@@ -150,10 +154,37 @@ export default function CustomersPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {customersSearchTerm.trim() ? filteredCustomers.length : customers.length}
+              {totalCustomersLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : totalCustomersError ? (
+                <span className="text-destructive">Error</span>
+              ) : (
+                totalCustomers
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {customersSearchTerm.trim() ? "Filtered customers" : "Registered customers"}
+              {totalCustomersError ? "Failed to load customer count" : "Registered customers"}
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">New Customers (This Month)</CardTitle>
+            <UserPlus className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {newCustomersLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : newCustomersError ? (
+                <span className="text-destructive">Error</span>
+              ) : (
+                newCustomersThisMonth
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {newCustomersError ? "Failed to load new customers" : "Added this month"}
             </p>
           </CardContent>
         </Card>

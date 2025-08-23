@@ -17,6 +17,22 @@ export const productRouter = createTRPCRouter({
     return products;
   }),
 
+  // Get total value of all stock (sum of quantity * averageCost)
+  getTotalValue: protectedProcedure.query(async ({ ctx }) => {
+    const products = await ctx.db.product.findMany({
+      select: {
+        quantity: true,
+        averageCost: true,
+      },
+    });
+
+    const totalValue = products.reduce((sum, product) => {
+      return sum + (product.quantity * product.averageCost);
+    }, 0);
+
+    return totalValue;
+  }),
+
   // Create a new product
   create: protectedProcedure
     .input(
