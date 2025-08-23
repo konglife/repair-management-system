@@ -4,22 +4,59 @@ import { TRPCError } from "@trpc/server";
 
 export const repairRouter = createTRPCRouter({
   // Get all repairs with related data for repair history
-  getAll: protectedProcedure.query(async ({ ctx }) => {
-    const repairs = await ctx.db.repair.findMany({
-      include: {
-        customer: true,
-        usedParts: {
-          include: {
-            product: true,
+  getAll: protectedProcedure
+    .input(
+      z.object({
+        dateRange: z.enum(["today", "7days", "1month"]).optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      // Calculate date range filter
+      let dateFilter = undefined;
+      if (input?.dateRange) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (input.dateRange) {
+          case "today":
+            dateFilter = {
+              gte: startOfDay,
+            };
+            break;
+          case "7days":
+            const sevenDaysAgo = new Date(startOfDay);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            dateFilter = {
+              gte: sevenDaysAgo,
+            };
+            break;
+          case "1month":
+            const oneMonthAgo = new Date(startOfDay);
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            dateFilter = {
+              gte: oneMonthAgo,
+            };
+            break;
+        }
+      }
+      const repairs = await ctx.db.repair.findMany({
+        where: dateFilter ? {
+          createdAt: dateFilter,
+        } : undefined,
+        include: {
+          customer: true,
+          usedParts: {
+            include: {
+              product: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc", // Newest repairs first
-      },
-    });
-    return repairs;
-  }),
+        orderBy: {
+          createdAt: "desc", // Newest repairs first
+        },
+      });
+      return repairs;
+    }),
 
   // Get single repair by ID with full details
   getById: protectedProcedure
@@ -166,5 +203,72 @@ export const repairRouter = createTRPCRouter({
       });
 
       return repair;
+    }),
+
+  // Get repairs analytics with date filtering
+  getAnalytics: protectedProcedure
+    .input(
+      z.object({
+        dateRange: z.enum(["today", "7days", "1month"]).optional(),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      // Calculate date range filter (same logic as getAll)
+      let dateFilter = undefined;
+      if (input?.dateRange) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (input.dateRange) {
+          case "today":
+            dateFilter = {
+              gte: startOfDay,
+            };
+            break;
+          case "7days":
+            const sevenDaysAgo = new Date(startOfDay);
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            dateFilter = {
+              gte: sevenDaysAgo,
+            };
+            break;
+          case "1month":
+            const oneMonthAgo = new Date(startOfDay);
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            dateFilter = {
+              gte: oneMonthAgo,
+            };
+            break;
+        }
+      }
+
+      // Get repairs data for analytics calculations
+      const repairs = await ctx.db.repair.findMany({
+        where: dateFilter ? {
+          createdAt: dateFilter,
+        } : undefined,
+        include: {
+          usedParts: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      // Calculate analytics
+      const totalRepairs = repairs.length;
+      const totalRevenue = repairs.reduce((sum, repair) => sum + repair.totalCost, 0);
+      const averageRepairCost = totalRepairs > 0 ? totalRevenue / totalRepairs : 0;
+      const totalLaborRevenue = repairs.reduce((sum, repair) => sum + repair.laborCost, 0);
+      const totalPartsCost = repairs.reduce((sum, repair) => sum + repair.partsCost, 0);
+
+      return {
+        totalRepairs,
+        totalRevenue,
+        averageRepairCost,
+        totalLaborRevenue,
+        totalPartsCost,
+      };
     }),
 });

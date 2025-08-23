@@ -1,6 +1,6 @@
 "use client";
 
-import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt } from "lucide-react";
+import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "~/components/ui/CurrencyInput";
 import { SearchInput } from "~/components/ui/SearchInput";
+import { PartsAutocomplete } from "~/components/ui/PartsAutocomplete";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,11 +24,16 @@ interface UsedPart {
   partCost?: number;
 }
 
+type DateRange = "today" | "7days" | "1month" | undefined;
+
 export default function RepairsPage() {
   const router = useRouter();
   
   // Search state
   const [repairsSearchTerm, setRepairsSearchTerm] = useState("");
+  
+  // Date range filter state
+  const [dateRange, setDateRange] = useState<DateRange>(undefined);
   
   // State for Create Repair form
   const [showCreateRepairForm, setShowCreateRepairForm] = useState(false);
@@ -39,7 +45,12 @@ export default function RepairsPage() {
   const [partQuantity, setPartQuantity] = useState(1);
 
   // tRPC queries
-  const { data: repairs = [], refetch: refetchRepairs, isLoading: repairsLoading } = api.repairs.getAll.useQuery();
+  const { data: repairs = [], refetch: refetchRepairs, isLoading: repairsLoading } = api.repairs.getAll.useQuery(
+    dateRange ? { dateRange } : undefined
+  );
+  const { data: analytics, isLoading: analyticsLoading } = api.repairs.getAnalytics.useQuery(
+    dateRange ? { dateRange } : undefined
+  );
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
 
@@ -171,12 +182,7 @@ export default function RepairsPage() {
     resetForm();
   };
 
-  // Calculate dashboard statistics (using filtered data when searching)
-  const displayRepairs = repairsSearchTerm.trim() ? filteredRepairs : repairs;
-  const totalRepairAmount = displayRepairs.reduce((sum, repair) => sum + repair.totalCost, 0);
-  const totalRepairsCount = displayRepairs.length;
-  const averageRepairCost = totalRepairsCount > 0 ? totalRepairAmount / totalRepairsCount : 0;
-  const totalLaborAmount = displayRepairs.reduce((sum, repair) => sum + repair.laborCost, 0);
+  // Note: displayRepairs calculation removed as analytics now come from dedicated endpoint
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -185,17 +191,37 @@ export default function RepairsPage() {
           <h2 className="text-3xl font-bold tracking-tight">Repairs</h2>
           <p className="text-muted-foreground">Manage repair jobs and view repair history</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="date-range" className="text-sm font-medium">Filter by:</Label>
+          <Select value={dateRange || "all"} onValueChange={(value) => setDateRange(value === "all" ? undefined : value as DateRange)}>
+            <SelectTrigger className="w-40" id="date-range">
+              <SelectValue placeholder="All time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="7days">Last 7 Days</SelectItem>
+              <SelectItem value="1month">Last 1 Month</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       
       {/* Dashboard Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Repairs</CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalRepairsCount}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{analytics?.totalRepairs ?? 0}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Total repair jobs
             </p>
@@ -207,7 +233,13 @@ export default function RepairsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRepairAmount)}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalRevenue ?? 0)}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Total revenue
             </p>
@@ -219,7 +251,13 @@ export default function RepairsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(averageRepairCost)}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{formatCurrency(analytics?.averageRepairCost ?? 0)}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Per repair job
             </p>
@@ -231,9 +269,33 @@ export default function RepairsPage() {
             <Wrench className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalLaborAmount)}</div>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalLaborRevenue ?? 0)}</div>
+            )}
             <p className="text-xs text-muted-foreground">
               Total labor revenue
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Parts Cost</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {analyticsLoading ? (
+              <div className="text-2xl font-bold">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalPartsCost ?? 0)}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Parts used in repairs
             </p>
           </CardContent>
         </Card>
@@ -362,20 +424,14 @@ export default function RepairsPage() {
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
                     <Label htmlFor="product">Product/Part</Label>
-                    <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a part" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products
-                          .filter(product => product.quantity > 0) // Only show products with stock
-                          .map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - {formatCurrency(product.averageCost)} (Stock: {product.quantity})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1">
+                      <PartsAutocomplete
+                        products={products}
+                        value={selectedProductId}
+                        onValueChange={setSelectedProductId}
+                        placeholder="Search for a part..."
+                      />
+                    </div>
                   </div>
                   <div className="w-24">
                     <Label htmlFor="quantity">Quantity</Label>
