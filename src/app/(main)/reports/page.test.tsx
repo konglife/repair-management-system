@@ -1,14 +1,64 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import ReportsPage from "./page";
 
-// Mock alert to prevent popup in tests
-window.alert = jest.fn();
+// Mock the tRPC API
+const mockGenerateSalesReport = vi.fn();
+const mockGenerateRepairsReport = vi.fn();
+
+vi.mock("~/lib/api", () => ({
+  api: {
+    reports: {
+      generateSalesReport: {
+        mutate: mockGenerateSalesReport,
+      },
+      generateRepairsReport: {
+        mutate: mockGenerateRepairsReport,
+      },
+    },
+  },
+}));
+
+// Mock window methods for PDF download
+Object.defineProperty(window, 'URL', {
+  value: {
+    createObjectURL: vi.fn(() => 'mocked-url'),
+    revokeObjectURL: vi.fn(),
+  },
+});
+
+Object.defineProperty(document, 'createElement', {
+  value: vi.fn((tag) => {
+    if (tag === 'a') {
+      const mockAnchor = {
+        href: '',
+        download: '',
+        click: vi.fn(),
+      };
+      return mockAnchor;
+    }
+    return {};
+  }),
+});
+
+Object.defineProperty(document.body, 'appendChild', {
+  value: vi.fn(),
+});
+
+Object.defineProperty(document.body, 'removeChild', {
+  value: vi.fn(),
+});
+
+// Mock atob for base64 decoding
+global.atob = vi.fn(() => 'mocked-binary-data');
 
 describe("ReportsPage", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockGenerateSalesReport.mockReset();
+    mockGenerateRepairsReport.mockReset();
   });
 
   describe("Page Structure", () => {
@@ -49,10 +99,11 @@ describe("ReportsPage", () => {
       expect(screen.getByText("Monthly repairs summary with jobs completed, parts used, and revenue")).toBeInTheDocument();
     });
 
-    it("should display placeholder notice for PDF generation", () => {
+    it("should render without placeholder notice", () => {
       render(<ReportsPage />);
       
-      expect(screen.getByText("PDF generation functionality will be implemented in Story 3.4")).toBeInTheDocument();
+      // The placeholder notice should no longer be present since PDF generation is implemented
+      expect(screen.queryByText("PDF generation functionality will be implemented in Story 3.4")).not.toBeInTheDocument();
     });
   });
 
@@ -170,22 +221,27 @@ describe("ReportsPage", () => {
       expect(yearLabel.closest("div")).toHaveTextContent("*");
     });
 
-    it("should not trigger form submission when button is disabled", async () => {
-      const user = userEvent.setup();
+    it("should disable button when required fields are not selected", () => {
       render(<ReportsPage />);
       
       const generateButton = screen.getByRole("button", { name: /generate report/i });
       expect(generateButton).toBeDisabled();
-      
-      // Attempting to click disabled button should not trigger any action
-      await user.click(generateButton);
-      expect(window.alert).not.toHaveBeenCalled();
     });
 
-    it("should show placeholder message about PDF generation", () => {
+    it("should enable button when all required fields are selected", async () => {
+      const user = userEvent.setup();
       render(<ReportsPage />);
       
-      expect(screen.getByText("PDF generation functionality will be implemented in Story 3.4")).toBeInTheDocument();
+      // Select report type
+      const salesRadio = screen.getByLabelText("Sales Report");
+      await user.click(salesRadio);
+      
+      // The button should still be disabled until all fields are selected
+      // but since month and year have defaults, it should be enabled
+      await waitFor(() => {
+        const generateButton = screen.getByRole("button", { name: /generate report/i });
+        expect(generateButton).not.toBeDisabled();
+      });
     });
 
     it("should clear errors when report type is selected", async () => {
@@ -203,13 +259,203 @@ describe("ReportsPage", () => {
     });
   });
 
+  describe("PDF Generation", () => {
+    it("should generate sales report successfully", async () => {
+      const user = userEvent.setup();
+      
+      mockGenerateSalesReport.mockResolvedValue({
+        success: true,
+        data: 'mock-base64-data',
+        filename: 'sales-report-2024-03.pdf',
+        totalTransactions: 5,
+        totalRevenue: 1250.00,
+      });
+      
+      render(<ReportsPage />);
+      
+      // Select sales report
+      const salesRadio = screen.getByLabelText("Sales Report");
+      await user.click(salesRadio);
+      
+      // Submit form
+      await waitFor(() => {
+        const generateButton = screen.getByRole("button", { name: /generate report/i });
+        expect(generateButton).not.toBeDisabled();
+      });
+      
+      const generateButton = screen.getByRole("button", { name: /generate report/i });
+      await user.click(generateButton);
+      
+      // Check loading state
+      expect(screen.getByText("Generating Report...")).toBeInTheDocument();
+      
+      // Wait for success message
+      await waitFor(() => {
+        expect(screen.getByText("Report Generated Successfully")).toBeInTheDocument();
+        expect(screen.getByText(/Sales report generated successfully! 5 transactions/)).toBeInTheDocument();
+      });
+      
+      expect(mockGenerateSalesReport).toHaveBeenCalledWith({
+        month: expect.any(Number),
+        year: expect.any(Number),
+      });
+    });
+
+    it("should generate repairs report successfully", async () => {
+      const user = userEvent.setup();
+      
+      mockGenerateRepairsReport.mockResolvedValue({
+        success: true,
+        data: 'mock-base64-data',
+        filename: 'repairs-report-2024-03.pdf',
+        totalRepairs: 3,
+        totalRevenue: 850.00,
+        grossProfit: 600.00,
+      });
+      
+      render(<ReportsPage />);
+      
+      // Select repairs report
+      const repairsRadio = screen.getByLabelText("Repairs Report");
+      await user.click(repairsRadio);
+      
+      // Submit form
+      await waitFor(() => {
+        const generateButton = screen.getByRole("button", { name: /generate report/i });
+        expect(generateButton).not.toBeDisabled();
+      });
+      
+      const generateButton = screen.getByRole("button", { name: /generate report/i });
+      await user.click(generateButton);
+      
+      // Wait for success message
+      await waitFor(() => {
+        expect(screen.getByText("Report Generated Successfully")).toBeInTheDocument();
+        expect(screen.getByText(/Repairs report generated successfully! 3 repairs/)).toBeInTheDocument();
+      });
+      
+      expect(mockGenerateRepairsReport).toHaveBeenCalledWith({
+        month: expect.any(Number),
+        year: expect.any(Number),
+      });
+    });
+
+    it("should handle generation errors", async () => {
+      const user = userEvent.setup();
+      
+      mockGenerateSalesReport.mockRejectedValue(new Error('Database connection failed'));
+      
+      render(<ReportsPage />);
+      
+      // Select sales report
+      const salesRadio = screen.getByLabelText("Sales Report");
+      await user.click(salesRadio);
+      
+      // Submit form
+      await waitFor(() => {
+        const generateButton = screen.getByRole("button", { name: /generate report/i });
+        expect(generateButton).not.toBeDisabled();
+      });
+      
+      const generateButton = screen.getByRole("button", { name: /generate report/i });
+      await user.click(generateButton);
+      
+      // Wait for error message
+      await waitFor(() => {
+        expect(screen.getByText("Report Generation Failed")).toBeInTheDocument();
+        expect(screen.getByText("Database connection failed")).toBeInTheDocument();
+      });
+    });
+
+    it("should show loading state during generation", async () => {
+      const user = userEvent.setup();
+      
+      // Create a promise that we can control
+      let resolvePromise: (value: unknown) => void;
+      const pendingPromise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+      
+      mockGenerateSalesReport.mockReturnValue(pendingPromise);
+      
+      render(<ReportsPage />);
+      
+      // Select sales report
+      const salesRadio = screen.getByLabelText("Sales Report");
+      await user.click(salesRadio);
+      
+      // Submit form
+      await waitFor(() => {
+        const generateButton = screen.getByRole("button", { name: /generate report/i });
+        expect(generateButton).not.toBeDisabled();
+      });
+      
+      const generateButton = screen.getByRole("button", { name: /generate report/i });
+      await user.click(generateButton);
+      
+      // Check loading state
+      expect(screen.getByText("Generating Report...")).toBeInTheDocument();
+      expect(generateButton).toBeDisabled();
+      
+      // Resolve the promise
+      resolvePromise!({
+        success: true,
+        data: 'mock-data',
+        filename: 'test.pdf',
+        totalTransactions: 1,
+        totalRevenue: 100,
+      });
+      
+      // Loading state should be gone
+      await waitFor(() => {
+        expect(screen.queryByText("Generating Report...")).not.toBeInTheDocument();
+      });
+    });
+
+    it("should clear messages when form fields change", async () => {
+      const user = userEvent.setup();
+      
+      mockGenerateSalesReport.mockResolvedValue({
+        success: true,
+        data: 'mock-base64-data',
+        filename: 'sales-report-2024-03.pdf',
+        totalTransactions: 5,
+        totalRevenue: 1250.00,
+      });
+      
+      render(<ReportsPage />);
+      
+      // Select sales report and generate
+      const salesRadio = screen.getByLabelText("Sales Report");
+      await user.click(salesRadio);
+      
+      await waitFor(() => {
+        const generateButton = screen.getByRole("button", { name: /generate report/i });
+        expect(generateButton).not.toBeDisabled();
+      });
+      
+      const generateButton = screen.getByRole("button", { name: /generate report/i });
+      await user.click(generateButton);
+      
+      // Wait for success message
+      await waitFor(() => {
+        expect(screen.getByText("Report Generated Successfully")).toBeInTheDocument();
+      });
+      
+      // Change to repairs report - should clear success message
+      const repairsRadio = screen.getByLabelText("Repairs Report");
+      await user.click(repairsRadio);
+      
+      expect(screen.queryByText("Report Generated Successfully")).not.toBeInTheDocument();
+    });
+  });
+
   describe("Generate Report Button", () => {
-    it("should render the generate report button as disabled", () => {
+    it("should render the generate report button", () => {
       render(<ReportsPage />);
       
       const generateButton = screen.getByRole("button", { name: /generate report/i });
-      expect(generateButton).toBeDisabled();
-      expect(generateButton).toHaveClass("opacity-60");
+      expect(generateButton).toBeInTheDocument();
     });
 
     it("should display the FileText icon in the button", () => {

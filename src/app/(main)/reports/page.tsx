@@ -1,12 +1,13 @@
 "use client";
 
-import { FileText } from "lucide-react";
+import { FileText, Download, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "~/lib/api";
 
 type ReportType = "sales" | "repairs" | "";
 
@@ -18,6 +19,11 @@ export default function ReportsPage() {
   
   // Form validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Loading and feedback states
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Set default values to current month/year
   const currentDate = new Date();
@@ -75,16 +81,91 @@ export default function ReportsPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleGenerateReport = (e: React.FormEvent) => {
+  // PDF download helper function
+  const downloadPDF = (base64Data: string, filename: string) => {
+    try {
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF download error:', error);
+      throw new Error('Failed to download PDF file');
+    }
+  };
+
+  const handleGenerateReport = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
-    // Clear any previous errors
+    // Clear any previous messages and errors
     setErrors({});
-    
-    // TODO: This will be implemented in Story 3.4 - PDF generation
-    alert(`Report generation will be implemented in the next story.\n\nSelected:\n- Type: ${reportType}\n- Month: ${months.find(m => m.value === selectedMonth)?.label}\n- Year: ${selectedYear}`);
+    setSuccessMessage("");
+    setErrorMessage("");
+    setIsGenerating(true);
+
+    try {
+      const month = parseInt(selectedMonth);
+      const year = parseInt(selectedYear);
+
+      let result;
+      
+      if (reportType === "sales") {
+        result = await api.reports.generateSalesReport.mutate({ month, year });
+      } else if (reportType === "repairs") {
+        result = await api.reports.generateRepairsReport.mutate({ month, year });
+      } else {
+        throw new Error('Invalid report type');
+      }
+
+      if (result.success && result.data) {
+        // Download the PDF
+        downloadPDF(result.data, result.filename);
+        
+        // Show success message with summary
+        const monthName = months.find(m => m.value === selectedMonth)?.label;
+        if (reportType === "sales" && 'totalTransactions' in result) {
+          setSuccessMessage(
+            `Sales report generated successfully! ${result.totalTransactions} transactions, $${result.totalRevenue.toFixed(2)} total revenue for ${monthName} ${year}.`
+          );
+        } else if (reportType === "repairs" && 'totalRepairs' in result) {
+          setSuccessMessage(
+            `Repairs report generated successfully! ${result.totalRepairs} repairs, $${result.totalRevenue.toFixed(2)} revenue, $${result.grossProfit.toFixed(2)} profit for ${monthName} ${year}.`
+          );
+        }
+      } else {
+        throw new Error('Failed to generate report');
+      }
+    } catch (error) {
+      console.error('Report generation error:', error);
+      
+      let errorMsg = 'An unexpected error occurred while generating the report. Please try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('character encoding') || error.message.includes('business profile')) {
+          errorMsg = `${error.message} This may happen when your business name or contact information contains special characters. You can try updating your business profile in Settings with ASCII characters only.`;
+        } else {
+          errorMsg = error.message;
+        }
+      }
+      
+      setErrorMessage(errorMsg);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleFieldChange = (field: string, value: string) => {
@@ -92,6 +173,10 @@ export default function ReportsPage() {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
+    
+    // Clear messages when user makes changes
+    if (successMessage) setSuccessMessage("");
+    if (errorMessage) setErrorMessage("");
 
     if (field === "reportType") {
       setReportType(value as ReportType);
@@ -208,23 +293,76 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
+        {/* Feedback Messages */}
+        {successMessage && (
+          <div className="rounded-md bg-green-50 p-4 border border-green-200">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <Download className="h-5 w-5 text-green-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">Report Generated Successfully</h3>
+                <div className="mt-2 text-sm text-green-700">
+                  <p>{successMessage}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="rounded-md bg-red-50 p-4 border border-red-200">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <FileText className="h-5 w-5 text-red-400" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800">Report Generation Failed</h3>
+                <div className="mt-2 text-sm text-red-700">
+                  <p>{errorMessage}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Character encoding info */}
+        <div className="rounded-md bg-blue-50 p-4 border border-blue-200">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <FileText className="h-5 w-5 text-blue-400" />
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-800">PDF Generation Notes</h3>
+              <div className="mt-2 text-sm text-blue-700">
+                <p>
+                  PDFs are generated with your business information from Settings. 
+                  If your business name or contact details contain special characters (Thai, Arabic, etc.), 
+                  the system will attempt to render them correctly or provide safe alternatives.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Generate Button */}
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={true} // Disabled until Story 3.4 implementation
-            className="opacity-60"
+            disabled={isGenerating || !reportType || !selectedMonth || !selectedYear}
           >
-            <FileText className="h-4 w-4 mr-2" />
-            Generate Report
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Generating Report...
+              </>
+            ) : (
+              <>
+                <FileText className="h-4 w-4 mr-2" />
+                Generate Report
+              </>
+            )}
           </Button>
-        </div>
-        
-        {/* Placeholder notice */}
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            PDF generation functionality will be implemented in Story 3.4
-          </p>
         </div>
       </form>
     </div>
