@@ -64,20 +64,20 @@ describe("Sidebar", () => {
   it("shows all icons regardless of collapsed state", () => {
     const { rerender } = render(<Sidebar />);
     
-    // Check that all 5 navigation icons are present when expanded
+    // Check that all 6 navigation icons are present when expanded (Dashboard, Stock, Sales, Repairs, Customers, Reports, Settings)
     const icons = screen.getAllByRole("link").map(link => 
       link.querySelector("svg")
     );
-    expect(icons).toHaveLength(5);
+    expect(icons).toHaveLength(7);
     expect(icons.every(icon => icon !== null)).toBe(true);
     
     rerender(<Sidebar isCollapsed={true} />);
     
-    // Check that all 5 navigation icons are still present when collapsed
+    // Check that all 7 navigation icons are still present when collapsed
     const collapsedIcons = screen.getAllByRole("link").map(link => 
       link.querySelector("svg")
     );
-    expect(collapsedIcons).toHaveLength(5);
+    expect(collapsedIcons).toHaveLength(7);
     expect(collapsedIcons.every(icon => icon !== null)).toBe(true);
   });
 
