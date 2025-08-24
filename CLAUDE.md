@@ -132,3 +132,4 @@ Ensure these environment variables are configured:
 - Use `npm run test:watch` during development
 - Mock external services (database, auth) in tests
 - No need to run npm run dev because it is already running.
+- Do not use hardcoded methods.

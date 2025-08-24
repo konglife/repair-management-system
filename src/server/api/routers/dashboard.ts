@@ -422,7 +422,9 @@ export const dashboardRouter = createTRPCRouter({
   // Get low stock alerts (products below threshold)
   getLowStockAlerts: protectedProcedure
     .query(async ({ ctx }) => {
-      const lowStockThreshold = 10; // Define threshold for low stock
+      // Get the low stock threshold from business profile
+      const businessProfile = await ctx.db.businessProfile.findFirst();
+      const lowStockThreshold = businessProfile?.lowStockThreshold ?? 5; // Default to 5 if no profile exists
 
       const lowStockProducts = await ctx.db.product.findMany({
         where: {

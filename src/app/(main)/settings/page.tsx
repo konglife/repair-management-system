@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings, Loader2, Save } from "lucide-react";
+import { Settings, Loader2, Save, Package } from "lucide-react";
 import { useState, useEffect } from "react";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,11 +24,16 @@ export default function SettingsPage() {
 
   // Query for existing business profile
   const { data: businessProfile, isLoading: profileLoading, refetch } = api.settings.getBusinessProfile.useQuery();
+  
+  // Utils for query invalidation
+  const utils = api.useUtils();
 
   // Mutation for saving business profile
   const saveProfileMutation = api.settings.createOrUpdateBusinessProfile.useMutation({
-    onSuccess: () => {
-      refetch();
+    onSuccess: async () => {
+      await refetch();
+      // Invalidate dashboard queries that depend on the threshold setting
+      await utils.dashboard.getLowStockAlerts.invalidate();
       alert("Business profile saved successfully!");
     },
     onError: (error) => {
@@ -115,18 +120,19 @@ export default function SettingsPage() {
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Business Profile
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Configure your business information for reports and customer communications
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Business Profile Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Business Profile
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Configure your business information for reports and customer communications
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               {/* Shop Name */}
               <div className="space-y-2">
@@ -174,27 +180,6 @@ export default function SettingsPage() {
                   <p className="text-sm text-destructive">{errors.contactEmail}</p>
                 )}
               </div>
-
-              {/* Low Stock Threshold */}
-              <div className="space-y-2">
-                <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
-                <Input
-                  id="lowStockThreshold"
-                  type="number"
-                  min="0"
-                  max="999"
-                  value={formData.lowStockThreshold}
-                  onChange={(e) => handleInputChange("lowStockThreshold", parseInt(e.target.value) || 0)}
-                  placeholder="5"
-                  className={errors.lowStockThreshold ? "border-destructive" : ""}
-                />
-                {errors.lowStockThreshold && (
-                  <p className="text-sm text-destructive">{errors.lowStockThreshold}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Alert when product quantity falls below this number
-                </p>
-              </div>
             </div>
 
             {/* Address - Full width */}
@@ -227,23 +212,61 @@ export default function SettingsPage() {
                 URL to your company logo for use in reports and documents
               </p>
             </div>
+          </CardContent>
+        </Card>
 
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                disabled={saveProfileMutation.isPending}
-              >
-                {saveProfileMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
+        {/* Stock Settings Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Stock Settings
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Configure inventory management and stock alert thresholds
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Low Stock Threshold */}
+              <div className="space-y-2">
+                <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                <Input
+                  id="lowStockThreshold"
+                  type="number"
+                  min="0"
+                  max="999"
+                  value={formData.lowStockThreshold}
+                  onChange={(e) => handleInputChange("lowStockThreshold", parseInt(e.target.value) || 0)}
+                  placeholder="5"
+                  className={errors.lowStockThreshold ? "border-destructive" : ""}
+                />
+                {errors.lowStockThreshold && (
+                  <p className="text-sm text-destructive">{errors.lowStockThreshold}</p>
                 )}
-                Save Business Profile
-              </Button>
+                <p className="text-xs text-muted-foreground">
+                  Alert when product quantity falls below this number
+                </p>
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Submit Button */}
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            disabled={saveProfileMutation.isPending}
+          >
+            {saveProfileMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Save Settings
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
