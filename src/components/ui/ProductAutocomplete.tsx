@@ -20,6 +20,7 @@ interface ProductAutocompleteProps {
   onValueChange: (productId: string) => void;
   placeholder?: string;
   className?: string;
+  showOutOfStock?: boolean;
 }
 
 export function ProductAutocomplete({ 
@@ -27,15 +28,18 @@ export function ProductAutocomplete({
   value, 
   onValueChange, 
   placeholder = "Search for a product...",
-  className 
+  className,
+  showOutOfStock = false
 }: ProductAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Filter products with stock and by search term
+  // Filter products by stock availability and search term
   const filteredProducts = useMemo(() => {
-    const availableProducts = products.filter(product => product.quantity > 0);
+    const availableProducts = showOutOfStock 
+      ? products 
+      : products.filter(product => product.quantity > 0);
     
     if (!searchTerm.trim()) {
       return availableProducts;
@@ -45,7 +49,7 @@ export function ProductAutocomplete({
     return availableProducts.filter(product =>
       product.name.toLowerCase().includes(search)
     );
-  }, [products, searchTerm]);
+  }, [products, searchTerm, showOutOfStock]);
 
   // Get selected product
   const selectedProduct = products.find(p => p.id === value);
@@ -177,7 +181,7 @@ export function ProductAutocomplete({
               <div className="px-3 py-2 text-sm text-muted-foreground">
                 {searchTerm.trim() 
                   ? "No products found matching your search." 
-                  : "No products with stock available."
+                  : showOutOfStock ? "No products available." : "No products with stock available."
                 }
               </div>
             )}

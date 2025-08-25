@@ -1,7 +1,8 @@
 "use client";
 
-import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart } from "lucide-react";
+import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart, CalendarIcon } from "lucide-react";
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
 import { api } from "~/app/providers";
 import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "~/components/ui/CurrencyInput";
 import { SearchInput } from "~/components/ui/SearchInput";
+import { ProductAutocomplete } from "~/components/ui/ProductAutocomplete";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function StockPage() {
-  const [activeTab, setActiveTab] = useState<"categories" | "units" | "products" | "purchases">("categories");
+  const [activeTab, setActiveTab] = useState<"categories" | "units" | "products" | "purchases">("products");
   
   // Search state
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
@@ -52,6 +56,7 @@ export default function StockPage() {
   const [selectedProductForPurchase, setSelectedProductForPurchase] = useState("");
   const [purchaseQuantity, setPurchaseQuantity] = useState("");
   const [purchaseCostPerUnit, setPurchaseCostPerUnit] = useState("");
+  const [purchaseDate, setPurchaseDate] = useState<Date>(new Date());
   const [selectedProductForHistory, setSelectedProductForHistory] = useState("");
 
   // tRPC queries and mutations for categories
@@ -181,6 +186,7 @@ export default function StockPage() {
       setSelectedProductForPurchase("");
       setPurchaseQuantity("");
       setPurchaseCostPerUnit("");
+      setPurchaseDate(new Date());
       alert("Purchase recorded successfully!");
     },
     onError: (error) => {
@@ -380,7 +386,8 @@ export default function StockPage() {
     createPurchaseMutation.mutate({
       productId: selectedProductForPurchase,
       quantity,
-      costPerUnit
+      costPerUnit,
+      purchaseDate
     });
   };
 
@@ -458,22 +465,6 @@ export default function StockPage() {
       {/* Tab Navigation */}
       <div className="flex space-x-1 bg-muted p-1 rounded-lg w-fit">
         <Button
-          variant={activeTab === "categories" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("categories")}
-        >
-          <FolderOpen className="h-4 w-4 mr-2" />
-          Categories
-        </Button>
-        <Button
-          variant={activeTab === "units" ? "default" : "ghost"}
-          size="sm"
-          onClick={() => setActiveTab("units")}
-        >
-          <Ruler className="h-4 w-4 mr-2" />
-          Units
-        </Button>
-        <Button
           variant={activeTab === "products" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("products")}
@@ -488,6 +479,22 @@ export default function StockPage() {
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
           Record Purchase
+        </Button>
+        <Button
+          variant={activeTab === "categories" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("categories")}
+        >
+          <FolderOpen className="h-4 w-4 mr-2" />
+          Categories
+        </Button>
+        <Button
+          variant={activeTab === "units" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("units")}
+        >
+          <Ruler className="h-4 w-4 mr-2" />
+          Units
         </Button>
       </div>
 
@@ -1048,21 +1055,21 @@ export default function StockPage() {
                     <div className="p-4 border rounded-lg bg-muted/50">
                       <h3 className="text-lg font-medium mb-4">Record New Purchase</h3>
                       <form onSubmit={handleRecordPurchase} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div>
                             <label className="text-sm font-medium mb-2 block">Product</label>
-                            <select
+                            <ProductAutocomplete
+                              products={products.map((product: { id: string; name: string; unit?: { name: string }; salePrice?: number; quantity?: number }) => ({
+                                id: product.id,
+                                name: product.unit ? `${product.name} (${product.unit.name})` : product.name,
+                                salePrice: product.salePrice || 0,
+                                quantity: product.quantity || 0
+                              }))}
                               value={selectedProductForPurchase}
-                              onChange={(e) => setSelectedProductForPurchase(e.target.value)}
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <option value="">Select product</option>
-                              {products.map((product: { id: string; name: string; unit: { name: string } }) => (
-                                <option key={product.id} value={product.id}>
-                                  {product.name} ({product.unit?.name})
-                                </option>
-                              ))}
-                            </select>
+                              onValueChange={setSelectedProductForPurchase}
+                              placeholder="Search for a product to purchase..."
+                              showOutOfStock={true}
+                            />
                           </div>
                           <div>
                             <label className="text-sm font-medium mb-2 block">Quantity</label>
@@ -1083,6 +1090,29 @@ export default function StockPage() {
                               placeholder="Enter cost per unit"
                               min={0}
                             />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Purchase Date</label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className="w-full justify-start text-left font-normal"
+                                  type="button"
+                                >
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {purchaseDate ? format(purchaseDate, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <CalendarComponent
+                                  mode="single"
+                                  selected={purchaseDate}
+                                  onSelect={(date) => date && setPurchaseDate(date)}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </div>
                         <div className="flex gap-2">

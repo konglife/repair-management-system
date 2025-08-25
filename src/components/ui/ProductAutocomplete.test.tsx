@@ -90,6 +90,30 @@ describe('ProductAutocomplete', () => {
     });
   });
 
+  it('shows out-of-stock products when showOutOfStock is true', async () => {
+    const user = userEvent.setup();
+    
+    render(
+      <ProductAutocomplete
+        products={mockProducts}
+        value=""
+        onValueChange={mockOnValueChange}
+        showOutOfStock={true}
+      />
+    );
+
+    const searchInput = screen.getByPlaceholderText('Search for a product...');
+    await user.type(searchInput, ' '); // Type something to open dropdown
+
+    await waitFor(() => {
+      // Should show all products including out-of-stock one
+      expect(screen.getByText('iPhone 15')).toBeInTheDocument();
+      expect(screen.getByText('Samsung Galaxy S24')).toBeInTheDocument();
+      expect(screen.getByText('MacBook Air')).toBeInTheDocument();
+      expect(screen.getByText('Out of Stock Item')).toBeInTheDocument();
+    });
+  });
+
   it('calls onValueChange when product is selected', async () => {
     const user = userEvent.setup();
     

@@ -133,3 +133,7 @@ Ensure these environment variables are configured:
 - Mock external services (database, auth) in tests
 - No need to run npm run dev because it is already running.
 - Do not use hardcoded methods.
+
+## Important information about each previous version of the document
+- First version documents, doc_mvp folder
+- Second version documents, doc_2.0 folder

@@ -11,6 +11,7 @@ export const purchaseRouter = createTRPCRouter({
         productId: z.string().min(1, "Product is required"),
         quantity: z.number().int().min(1, "Quantity must be a positive integer"),
         costPerUnit: z.number().min(0, "Cost per unit must be positive"),
+        purchaseDate: z.date().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -55,6 +56,7 @@ export const purchaseRouter = createTRPCRouter({
               productId: input.productId,
               quantity: input.quantity,
               costPerUnit: input.costPerUnit,
+              ...(input.purchaseDate && { purchaseDate: input.purchaseDate }),
             },
             include: {
               product: {
