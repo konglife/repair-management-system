@@ -1,6 +1,6 @@
 "use client";
 
-import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package } from "lucide-react";
+import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package, CalendarIcon } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
@@ -12,8 +12,10 @@ import { SearchInput } from "~/components/ui/SearchInput";
 import { ProductAutocomplete } from "~/components/ui/ProductAutocomplete";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 // Type interfaces for tRPC query results
 interface Product {
@@ -79,12 +81,13 @@ export default function SalesPage() {
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [productQuantity, setProductQuantity] = useState(1);
+  const [saleDate, setSaleDate] = useState<Date | undefined>(new Date());
 
   // tRPC queries
   const { data: sales = [], refetch: refetchSales, isLoading: salesLoading } = api.sales.getAll.useQuery(
     dateRange ? { dateRange } : undefined
   );
-  const { data: analytics, isLoading: analyticsLoading } = api.sales.getAnalytics.useQuery(
+  const { data: analytics, isLoading: analyticsLoading, refetch: refetchAnalytics } = api.sales.getAnalytics.useQuery(
     dateRange ? { dateRange } : undefined
   );
   const { data: customers = [] } = api.customers.getAll.useQuery();
@@ -116,6 +119,7 @@ export default function SalesPage() {
   const createSaleMutation = api.sales.create.useMutation({
     onSuccess: () => {
       refetchSales();
+      refetchAnalytics();
       setShowCreateSaleForm(false);
       resetForm();
     },
@@ -129,6 +133,7 @@ export default function SalesPage() {
     setSaleItems([]);
     setSelectedProductId("");
     setProductQuantity(1);
+    setSaleDate(new Date());
   };
 
   const addProductToSale = () => {
@@ -202,6 +207,7 @@ export default function SalesPage() {
         productId: item.productId,
         quantity: item.quantity,
       })),
+      saleDate: saleDate,
     });
   };
 
@@ -327,6 +333,167 @@ export default function SalesPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Create Sale Form - Inline */}
+          {showCreateSaleForm && (
+            <div className="mb-6 p-6 border rounded-lg bg-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Create New Sale</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={closeCreateForm}>
+                  ×
+                </Button>
+              </div>
+              <form onSubmit={handleCreateSale}>
+                <div className="space-y-6">
+                  {/* Customer Selection */}
+                  <div>
+                    <Label htmlFor="customer">Customer *</Label>
+                    <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer: Customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} {customer.phone && `(${customer.phone})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Date Selection */}
+                  <div>
+                    <Label htmlFor="date">Date *</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={`mt-1 w-full justify-start text-left font-normal ${
+                            !saleDate && "text-muted-foreground"
+                          }`}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {saleDate ? format(saleDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={saleDate}
+                          onSelect={setSaleDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Product Selection */}
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <h4 className="font-medium">Add Products</h4>
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor="product">Product</Label>
+                        <div className="mt-1">
+                          <ProductAutocomplete
+                            products={products}
+                            value={selectedProductId}
+                            onValueChange={setSelectedProductId}
+                            placeholder="Search for a product..."
+                          />
+                        </div>
+                      </div>
+                      <div className="w-24">
+                        <Label htmlFor="quantity">Quantity</Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          min="1"
+                          value={productQuantity}
+                          onChange={(e) => setProductQuantity(Number(e.target.value))}
+                          className="mt-1"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={addProductToSale}
+                        disabled={!selectedProductId || productQuantity <= 0}
+                      >
+                        Add to Sale
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Sale Items List */}
+                  {saleItems.length > 0 && (
+                    <div className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-4">Sale Items</h4>
+                      <div className="space-y-2">
+                        {saleItems.map((item) => (
+                          <div key={item.productId} className="flex items-center justify-between p-2 bg-white rounded">
+                            <div className="flex-1">
+                              <span className="font-medium">{item.productName}</span>
+                              <span className="text-sm text-gray-500 ml-2">
+                                {formatCurrency(item.unitPrice || 0)} each
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updateProductQuantity(item.productId, Number(e.target.value))}
+                                className="w-20"
+                              />
+                              <span className="w-20 text-right font-medium">
+                                {formatCurrency(item.subtotal || 0)}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeProductFromSale(item.productId)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-medium">Total:</span>
+                          <span className="text-lg font-bold">{formatCurrency(calculateTotal())}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Form Actions */}
+                  <div className="flex justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={closeCreateForm}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={
+                        createSaleMutation.isPending || 
+                        !selectedCustomerId || 
+                        saleItems.length === 0
+                      }
+                    >
+                      {createSaleMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                      )}
+                      Create Sale
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* Search Input */}
           <div className="mb-4">
             <SearchInput
@@ -388,138 +555,6 @@ export default function SalesPage() {
         </CardContent>
       </Card>
 
-      {/* Create Sale Dialog */}
-      <Dialog open={showCreateSaleForm} onOpenChange={closeCreateForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Sale</DialogTitle>
-            <DialogDescription>
-              Select a customer and add products to create a new sale transaction.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateSale}>
-            <div className="space-y-6 py-4">
-              {/* Customer Selection */}
-              <div>
-                <Label htmlFor="customer">Customer *</Label>
-                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer: Customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} {customer.phone && `(${customer.phone})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Product Selection */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <h4 className="font-medium">Add Products</h4>
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Label htmlFor="product">Product</Label>
-                    <div className="mt-1">
-                      <ProductAutocomplete
-                        products={products}
-                        value={selectedProductId}
-                        onValueChange={setSelectedProductId}
-                        placeholder="Search for a product..."
-                      />
-                    </div>
-                  </div>
-                  <div className="w-24">
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={productQuantity}
-                      onChange={(e) => setProductQuantity(Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={addProductToSale}
-                    disabled={!selectedProductId || productQuantity <= 0}
-                  >
-                    Add to Sale
-                  </Button>
-                </div>
-              </div>
-
-              {/* Sale Items List */}
-              {saleItems.length > 0 && (
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-4">Sale Items</h4>
-                  <div className="space-y-2">
-                    {saleItems.map((item) => (
-                      <div key={item.productId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div className="flex-1">
-                          <span className="font-medium">{item.productName}</span>
-                          <span className="text-sm text-gray-500 ml-2">
-                            {formatCurrency(item.unitPrice || 0)} each
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateProductQuantity(item.productId, Number(e.target.value))}
-                            className="w-20"
-                          />
-                          <span className="w-20 text-right font-medium">
-                            {formatCurrency(item.subtotal || 0)}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeProductFromSale(item.productId)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-medium">Total:</span>
-                      <span className="text-lg font-bold">{formatCurrency(calculateTotal())}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeCreateForm}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  createSaleMutation.isPending || 
-                  !selectedCustomerId || 
-                  saleItems.length === 0
-                }
-              >
-                {createSaleMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                )}
-                Create Sale
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

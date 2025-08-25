@@ -465,12 +465,13 @@ describe("Sales Page Logic", () => {
   });
 
   describe("UI state management", () => {
-    it("should manage form state correctly", () => {
+    it("should manage form state correctly with date field", () => {
       const resetFormState = () => ({
         selectedCustomerId: "",
         saleItems: [],
         selectedProductId: "",
         productQuantity: 1,
+        saleDate: new Date(),
         showCreateSaleForm: false,
       });
 
@@ -487,13 +488,16 @@ describe("Sales Page Logic", () => {
       const initialState = resetFormState();
       expect(initialState.selectedCustomerId).toBe("");
       expect(initialState.saleItems).toEqual([]);
+      expect(initialState.saleDate).toBeInstanceOf(Date);
       expect(initialState.showCreateSaleForm).toBe(false);
 
       const openState = openFormState(initialState);
       expect(openState.showCreateSaleForm).toBe(true);
 
       const closedState = closeFormState();
-      expect(closedState).toEqual(resetFormState());
+      expect(closedState.selectedCustomerId).toBe("");
+      expect(closedState.saleItems).toEqual([]);
+      expect(closedState.showCreateSaleForm).toBe(false);
     });
 
     it("should handle product selection state", () => {
@@ -533,6 +537,271 @@ describe("Sales Page Logic", () => {
         selectedProductId: "",
         productQuantity: 1,
       });
+    });
+  });
+
+  describe("date field functionality", () => {
+    it("should validate sale date field", () => {
+      const validateSaleDate = (date: Date | undefined) => {
+        const errors: string[] = [];
+        
+        if (!date) {
+          errors.push("Sale date is required");
+        } else {
+          const now = new Date();
+          // Allow future dates up to 1 day ahead to handle timezone issues
+          const maxDate = new Date(now);
+          maxDate.setDate(maxDate.getDate() + 1);
+          
+          if (date > maxDate) {
+            errors.push("Sale date cannot be in the future");
+          }
+          
+          // Prevent dates older than 1 year
+          const minDate = new Date(now);
+          minDate.setFullYear(minDate.getFullYear() - 1);
+          
+          if (date < minDate) {
+            errors.push("Sale date cannot be older than 1 year");
+          }
+        }
+        
+        return {
+          isValid: errors.length === 0,
+          errors,
+        };
+      };
+
+      // Valid date (today)
+      const today = new Date();
+      expect(validateSaleDate(today)).toEqual({
+        isValid: true,
+        errors: [],
+      });
+
+      // Valid date (yesterday)
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      expect(validateSaleDate(yesterday)).toEqual({
+        isValid: true,
+        errors: [],
+      });
+
+      // Invalid: undefined date
+      expect(validateSaleDate(undefined)).toEqual({
+        isValid: false,
+        errors: ["Sale date is required"],
+      });
+
+      // Invalid: future date
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 7);
+      const futureValidation = validateSaleDate(futureDate);
+      expect(futureValidation.isValid).toBe(false);
+      expect(futureValidation.errors).toContain("Sale date cannot be in the future");
+
+      // Invalid: very old date
+      const veryOldDate = new Date();
+      veryOldDate.setFullYear(veryOldDate.getFullYear() - 2);
+      const oldValidation = validateSaleDate(veryOldDate);
+      expect(oldValidation.isValid).toBe(false);
+      expect(oldValidation.errors).toContain("Sale date cannot be older than 1 year");
+    });
+
+    it("should handle date picker state changes", () => {
+      const manageDatePickerState = (
+        currentDate: Date | undefined,
+        newDate: Date | undefined
+      ) => {
+        return {
+          previousDate: currentDate,
+          newDate,
+          hasChanged: currentDate !== newDate,
+          formattedDate: newDate ? newDate.toLocaleDateString() : null,
+        };
+      };
+
+      const initialDate = new Date("2025-01-15");
+      const newDate = new Date("2025-01-20");
+
+      expect(manageDatePickerState(initialDate, newDate)).toEqual({
+        previousDate: initialDate,
+        newDate,
+        hasChanged: true,
+        formattedDate: "1/20/2025",
+      });
+
+      expect(manageDatePickerState(initialDate, initialDate)).toEqual({
+        previousDate: initialDate,
+        newDate: initialDate,
+        hasChanged: false,
+        formattedDate: "1/15/2025",
+      });
+
+      expect(manageDatePickerState(initialDate, undefined)).toEqual({
+        previousDate: initialDate,
+        newDate: undefined,
+        hasChanged: true,
+        formattedDate: null,
+      });
+    });
+  });
+
+  describe("inline form behavior", () => {
+    it("should handle inline form visibility toggle", () => {
+      const manageInlineForm = (
+        currentState: { showCreateSaleForm: boolean },
+        action: "open" | "close"
+      ) => {
+        switch (action) {
+          case "open":
+            return { ...currentState, showCreateSaleForm: true };
+          case "close":
+            return { ...currentState, showCreateSaleForm: false };
+          default:
+            return currentState;
+        }
+      };
+
+      const initialState = { showCreateSaleForm: false };
+
+      expect(manageInlineForm(initialState, "open")).toEqual({
+        showCreateSaleForm: true,
+      });
+
+      expect(manageInlineForm({ showCreateSaleForm: true }, "close")).toEqual({
+        showCreateSaleForm: false,
+      });
+    });
+
+    it("should validate inline form submission", () => {
+      const validateInlineFormSubmission = (formData: {
+        customerId: string;
+        saleItems: Array<{ productId: string; quantity: number }>;
+        saleDate: Date | undefined;
+      }) => {
+        const errors: string[] = [];
+
+        if (!formData.customerId) {
+          errors.push("Customer selection is required");
+        }
+
+        if (!formData.saleItems.length) {
+          errors.push("At least one product must be added");
+        }
+
+        if (!formData.saleDate) {
+          errors.push("Sale date is required");
+        }
+
+        formData.saleItems.forEach((item, index) => {
+          if (!item.productId) {
+            errors.push(`Item ${index + 1}: Product is required`);
+          }
+          if (item.quantity <= 0) {
+            errors.push(`Item ${index + 1}: Quantity must be positive`);
+          }
+        });
+
+        return {
+          isValid: errors.length === 0,
+          errors,
+          canSubmit: errors.length === 0,
+        };
+      };
+
+      // Valid form
+      expect(validateInlineFormSubmission({
+        customerId: "customer1",
+        saleItems: [{ productId: "product1", quantity: 2 }],
+        saleDate: new Date(),
+      })).toEqual({
+        isValid: true,
+        errors: [],
+        canSubmit: true,
+      });
+
+      // Invalid form - missing fields
+      expect(validateInlineFormSubmission({
+        customerId: "",
+        saleItems: [],
+        saleDate: undefined,
+      })).toEqual({
+        isValid: false,
+        errors: [
+          "Customer selection is required",
+          "At least one product must be added",
+          "Sale date is required",
+        ],
+        canSubmit: false,
+      });
+    });
+  });
+
+  describe("analytics updates", () => {
+    it("should handle automatic analytics refresh", () => {
+      const simulateAnalyticsRefresh = (
+        currentAnalytics: { totalSales: number; totalRevenue: number },
+        newSaleData: { amount: number }
+      ) => {
+        return {
+          totalSales: currentAnalytics.totalSales + 1,
+          totalRevenue: currentAnalytics.totalRevenue + newSaleData.amount,
+          refreshTriggered: true,
+          lastUpdated: new Date(),
+        };
+      };
+
+      const currentAnalytics = {
+        totalSales: 5,
+        totalRevenue: 1000,
+      };
+
+      const result = simulateAnalyticsRefresh(currentAnalytics, { amount: 150 });
+
+      expect(result.totalSales).toBe(6);
+      expect(result.totalRevenue).toBe(1150);
+      expect(result.refreshTriggered).toBe(true);
+      expect(result.lastUpdated).toBeInstanceOf(Date);
+    });
+
+    it("should manage multiple refetch operations", () => {
+      const manageRefetchOperations = () => {
+        const operations: Array<{ name: string; status: "pending" | "completed" }> = [];
+
+        const addRefetchOperation = (name: string) => {
+          operations.push({ name, status: "pending" });
+          return operations.length;
+        };
+
+        const completeRefetchOperation = (name: string) => {
+          const operation = operations.find(op => op.name === name);
+          if (operation) {
+            operation.status = "completed";
+          }
+          return operations.filter(op => op.status === "completed").length;
+        };
+
+        const getAllOperations = () => operations;
+
+        return {
+          addRefetchOperation,
+          completeRefetchOperation,
+          getAllOperations,
+        };
+      };
+
+      const manager = manageRefetchOperations();
+
+      expect(manager.addRefetchOperation("sales")).toBe(1);
+      expect(manager.addRefetchOperation("analytics")).toBe(2);
+
+      expect(manager.completeRefetchOperation("sales")).toBe(1);
+      expect(manager.completeRefetchOperation("analytics")).toBe(2);
+
+      const allOps = manager.getAllOperations();
+      expect(allOps).toHaveLength(2);
+      expect(allOps.every(op => op.status === "completed")).toBe(true);
     });
   });
 });

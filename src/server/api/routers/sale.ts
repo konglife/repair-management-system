@@ -128,6 +128,7 @@ export const saleRouter = createTRPCRouter({
             quantity: z.number().int().positive(),
           })
         ).min(1, "At least one item is required"),
+        saleDate: z.date().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -202,6 +203,7 @@ export const saleRouter = createTRPCRouter({
             customerId: input.customerId,
             totalAmount,
             totalCost,
+            createdAt: input.saleDate,
             saleItems: {
               create: saleItemsData,
             },
