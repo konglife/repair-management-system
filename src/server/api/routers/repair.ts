@@ -107,6 +107,7 @@ export const repairRouter = createTRPCRouter({
         customerId: z.string().cuid("Invalid customer ID"),
         description: z.string().min(1, "Job description is required"),
         totalCost: z.number().positive("Total cost must be positive"),
+        repairDate: z.date().optional(),
         usedParts: z.array(
           z.object({
             productId: z.string().cuid("Invalid product ID"),
@@ -187,6 +188,7 @@ export const repairRouter = createTRPCRouter({
             totalCost: input.totalCost,
             partsCost,
             laborCost,
+            ...(input.repairDate && { createdAt: input.repairDate }),
             usedParts: {
               create: usedPartsData,
             },

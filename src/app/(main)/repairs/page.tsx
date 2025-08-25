@@ -1,8 +1,9 @@
 "use client";
 
-import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package } from "lucide-react";
+import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package, CalendarIcon } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { api } from "~/app/providers";
 import { formatCurrency } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,9 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "~/lib/utils";
 
 // Type interfaces for tRPC query results
 interface Product {
@@ -83,12 +87,13 @@ export default function RepairsPage() {
   const [usedParts, setUsedParts] = useState<UsedPart[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [partQuantity, setPartQuantity] = useState(1);
+  const [repairDate, setRepairDate] = useState<Date | undefined>(undefined);
 
   // tRPC queries
   const { data: repairs = [], refetch: refetchRepairs, isLoading: repairsLoading } = api.repairs.getAll.useQuery(
     dateRange ? { dateRange } : undefined
   );
-  const { data: analytics, isLoading: analyticsLoading } = api.repairs.getAnalytics.useQuery(
+  const { data: analytics, refetch: refetchAnalytics, isLoading: analyticsLoading } = api.repairs.getAnalytics.useQuery(
     dateRange ? { dateRange } : undefined
   );
   const { data: customers = [] } = api.customers.getAll.useQuery();
@@ -116,6 +121,7 @@ export default function RepairsPage() {
   const createRepairMutation = api.repairs.create.useMutation({
     onSuccess: () => {
       refetchRepairs();
+      refetchAnalytics();
       setShowCreateRepairForm(false);
       resetForm();
     },
@@ -131,6 +137,7 @@ export default function RepairsPage() {
     setUsedParts([]);
     setSelectedProductId("");
     setPartQuantity(1);
+    setRepairDate(undefined);
   };
 
   const addPartToRepair = () => {
@@ -206,6 +213,7 @@ export default function RepairsPage() {
       customerId: selectedCustomerId,
       description: repairDescription,
       totalCost: totalCost,
+      repairDate: repairDate,
       usedParts: usedParts.map(part => ({
         productId: part.productId,
         quantity: part.quantity,
@@ -420,7 +428,7 @@ export default function RepairsPage() {
 
       {/* Create Repair Dialog */}
       <Dialog open={showCreateRepairForm} onOpenChange={closeCreateForm}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+        <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Create New Repair Job</DialogTitle>
             <DialogDescription>
@@ -428,39 +436,87 @@ export default function RepairsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateRepair}>
-            <div className="space-y-6 py-4">
-              {/* Customer Selection */}
-              <div>
-                <Label htmlFor="customer">Customer *</Label>
-                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer: Customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name} {customer.phone && `(${customer.phone})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-8 py-4">
+              {/* Basic Information Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                  <div>
+                    <Label htmlFor="customer">Customer *</Label>
+                    <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select a customer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customers.map((customer: Customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name} {customer.phone && `(${customer.phone})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Job Description *</Label>
+                    <Input
+                      id="description"
+                      value={repairDescription}
+                      onChange={(e) => setRepairDescription(e.target.value)}
+                      placeholder="Describe the repair job..."
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label>Repair Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full mt-1 justify-start text-left font-normal",
+                            !repairDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {repairDate ? format(repairDate, "PPP") : <span>Pick a date (optional)</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={repairDate}
+                          onSelect={setRepairDate}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">Cost Information</h3>
+                  <div>
+                    <Label htmlFor="totalCost">Total Repair Cost *</Label>
+                    <CurrencyInput
+                      value={totalCost}
+                      onChange={(value) => setTotalCost(value ?? 0)}
+                      placeholder="Enter total repair cost charged to customer"
+                      className="mt-1"
+                      min={0}
+                    />
+                    {totalCost > 0 && usedParts.length > 0 && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Labor Cost: {formatCurrency(calculateLaborCost())}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Job Description */}
-              <div>
-                <Label htmlFor="description">Job Description *</Label>
-                <Input
-                  id="description"
-                  value={repairDescription}
-                  onChange={(e) => setRepairDescription(e.target.value)}
-                  placeholder="Describe the repair job..."
-                  className="mt-1"
-                />
-              </div>
-
-              {/* Parts Selection */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <h4 className="font-medium">Add Parts Used</h4>
+              {/* Parts Management Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Parts Management</h3>
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h4 className="font-medium">Add Parts Used</h4>
                 <div className="flex gap-4 items-end">
                   <div className="flex-1">
                     <Label htmlFor="product">Product/Part</Label>
@@ -538,22 +594,6 @@ export default function RepairsPage() {
                   </div>
                 </div>
               )}
-
-              {/* Total Cost */}
-              <div>
-                <Label htmlFor="totalCost">Total Repair Cost *</Label>
-                <CurrencyInput
-                  value={totalCost}
-                  onChange={(value) => setTotalCost(value ?? 0)}
-                  placeholder="Enter total repair cost charged to customer"
-                  className="mt-1"
-                  min={0}
-                />
-                {totalCost > 0 && usedParts.length > 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Labor Cost: {formatCurrency(calculateLaborCost())}
-                  </p>
-                )}
               </div>
             </div>
             <DialogFooter>
