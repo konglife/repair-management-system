@@ -7,7 +7,10 @@
       "Bash(npx tsc:*)",
       "Bash(npm test:*)",
       "Bash(rm:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Read(c:\\Dev\\repair-management-system\\.bmad-core/**)",
+      "Bash(md-tree:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
