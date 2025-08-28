@@ -1,10 +1,9 @@
-version: 4.40.0
-installed_at: '2025-08-19T13:54:42.365Z'
+version: 4.41.0
+installed_at: '2025-08-28T14:18:21.706Z'
 install_type: full
 agent: null
 ides_setup:
   - claude-code
-  - github-copilot
 expansion_packs: []
 files:
   - path: .bmad-core\working-in-the-brownfield.md
@@ -13,14 +12,11 @@ files:
   - path: .bmad-core\user-guide.md
     hash: e633affe88d4ff20
     modified: false
-  - path: .bmad-core\install-manifest.yaml
-    hash: 8a60cf3fad04a368
-    modified: false
   - path: .bmad-core\enhanced-ide-development-workflow.md
     hash: 39beb3516c070e2b
     modified: false
   - path: .bmad-core\core-config.yaml
-    hash: 94ce5b2faad48235
+    hash: 073cf6d2527c545d
     modified: false
   - path: .bmad-core\workflows\greenfield-ui.yaml
     hash: defde5d6bdcedd49
@@ -84,24 +80,6 @@ files:
     modified: false
   - path: .bmad-core\templates\architecture-tmpl.yaml
     hash: e66f63be1af30585
-    modified: false
-  - path: .bmad-core\data\test-priorities-matrix.md
-    hash: 1dd5698a46ab054e
-    modified: false
-  - path: .bmad-core\data\test-levels-framework.md
-    hash: f814f8efed0e96e1
-    modified: false
-  - path: .bmad-core\data\technical-preferences.md
-    hash: a829f3172a10b396
-    modified: false
-  - path: .bmad-core\data\elicitation-methods.md
-    hash: 8c3ca9b84c8784c9
-    modified: false
-  - path: .bmad-core\data\brainstorming-techniques.md
-    hash: 62b0bf50648906b0
-    modified: false
-  - path: .bmad-core\data\bmad-kb.md
-    hash: 57f0e9ae0e54b8e3
     modified: false
   - path: .bmad-core\tasks\validate-next-story.md
     hash: a5a382fe9a8d9443
@@ -172,6 +150,24 @@ files:
   - path: .bmad-core\tasks\advanced-elicitation.md
     hash: d39118bf32237a21
     modified: false
+  - path: .bmad-core\data\test-priorities-matrix.md
+    hash: 1dd5698a46ab054e
+    modified: false
+  - path: .bmad-core\data\test-levels-framework.md
+    hash: f814f8efed0e96e1
+    modified: false
+  - path: .bmad-core\data\technical-preferences.md
+    hash: a829f3172a10b396
+    modified: false
+  - path: .bmad-core\data\elicitation-methods.md
+    hash: 8c3ca9b84c8784c9
+    modified: false
+  - path: .bmad-core\data\brainstorming-techniques.md
+    hash: 62b0bf50648906b0
+    modified: false
+  - path: .bmad-core\data\bmad-kb.md
+    hash: 57f0e9ae0e54b8e3
+    modified: false
   - path: .bmad-core\checklists\story-draft-checklist.md
     hash: 0bc8a90678dba318
     modified: false
@@ -189,21 +185,6 @@ files:
     modified: false
   - path: .bmad-core\checklists\architect-checklist.md
     hash: 15ef7d01b0e31c3f
-    modified: false
-  - path: .bmad-core\bmad-core\user-guide.md
-    hash: e3b0c44298fc1c14
-    modified: false
-  - path: .bmad-core\agent-teams\team-no-ui.yaml
-    hash: 00cbffc4106cbe1e
-    modified: false
-  - path: .bmad-core\agent-teams\team-ide-minimal.yaml
-    hash: 424972103dfde87d
-    modified: false
-  - path: .bmad-core\agent-teams\team-fullstack.yaml
-    hash: 14c7a2d8bc7ceb6f
-    modified: false
-  - path: .bmad-core\agent-teams\team-all.yaml
-    hash: db5b0ff0a9c9c2e8
     modified: false
   - path: .bmad-core\agents\ux-expert.md
     hash: a99c4d3c839db162
@@ -234,4 +215,16 @@ files:
     modified: false
   - path: .bmad-core\agents\analyst.md
     hash: 4b50870da75956b0
+    modified: false
+  - path: .bmad-core\agent-teams\team-no-ui.yaml
+    hash: 00cbffc4106cbe1e
+    modified: false
+  - path: .bmad-core\agent-teams\team-ide-minimal.yaml
+    hash: 424972103dfde87d
+    modified: false
+  - path: .bmad-core\agent-teams\team-fullstack.yaml
+    hash: 14c7a2d8bc7ceb6f
+    modified: false
+  - path: .bmad-core\agent-teams\team-all.yaml
+    hash: db5b0ff0a9c9c2e8
     modified: false

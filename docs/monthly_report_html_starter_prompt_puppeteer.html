@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>รายงานสรุปข้อมูลรายเดือน</title>
+
+  <!-- Google Font: Prompt -->
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* พิมพ์ลง A4 สวย ๆ */
+    @page { size: A4; margin: 14mm 15mm 16mm 15mm; }
+
+    :root{
+      --ink:#1f2937;         /* เทาเข้ม */
+      --muted:#6b7280;       /* เทากลาง */
+      --border:#e5e7eb;      /* เส้น */
+      --panel:#fafafa;       /* กล่องข้อมูลร้าน */
+      --thead:#f9fafb;       /* พื้นหัวตาราง */
+    }
+
+    html, body { margin:0; padding:0; }
+    body{
+      font-family:'Prompt', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:var(--ink);
+      font-size:12px; line-height:1.5;
+      background:white;
+    }
+
+    /* Header */
+    .title{ font-size:22px; font-weight:700; margin:12px 0 6px; }
+    .sub{ color:var(--muted); margin-bottom:14px; }
+    .shop{
+      margin:10px 0 18px; padding:10px 12px; background:var(--panel);
+      border:1px solid var(--border); border-radius:8px;
+    }
+
+    /* Section */
+    .section-title{ font-weight:700; margin:8px 0 10px; font-size:14px; }
+    .hr{ height:1px; background:var(--border); margin:14px 0; }
+
+    /* Overview (สองคอลัมน์) */
+    .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .stat{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+           border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:#fff; }
+    .label{ font-weight:500; }
+    .value{ font-weight:700; }
+
+    /* Tables */
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ border:1px solid var(--border); padding:6px 8px; }
+    th{ background:var(--thead); text-align:left; font-weight:700; }
+    td{ vertical-align:top; }
+    .nowrap{ white-space:nowrap; }
+    .right{ text-align:right; }
+
+    /* กันตัดกลางหน้า */
+    .no-break{ page-break-inside:avoid; }
+
+    /* หมายเหตุ */
+    .note{ color:var(--muted); font-size:11px; margin-top:6px; }
+
+    /* ซ่อนองค์ประกอบที่ไม่ต้องการตอนพิมพ์ (กรณีใช้หน้าเดียวกันบนเว็บ) */
+    @media print {
+      .no-print { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="title">รายงานสรุปข้อมูลรายเดือน</div>
+  <div class="sub">Report Period: 8/1/2025 - 8/31/2025</div>
+
+  <div class="shop">
+    <div>ชื่อร้าน (ข้อมูลจากตั้งค่าของระบบ)</div>
+    <div style="margin-top:2px">27/14 หมู่ 1 ต.บางทอง อ.ท้ายเหมือง จ.พังงา 82120 · 089-973-2275</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div class="section-title">ภาพรวม</div>
+  <div class="grid2 no-break">
+    <div>
+      <div class="stat"><div class="label">Expenses (ค่าใช้จ่าย):</div><div class="value">฿835,000</div></div>
+      <div class="stat"><div class="label">Total Repairs (จำนวนงานซ่อม):</div><div class="value">42 งาน</div></div>
+      <div class="stat"><div class="label">Total Sales (จำนวนงานขาย):</div><div class="value">18 งาน</div></div>
+      <div class="stat"><div class="label">Sales Profit (กำไรงานขาย):</div><div class="value">฿854,000</div></div>
+    </div>
+    <div>
+      <div class="stat"><div class="label">Repair Income (รายได้จากงานซ่อม):</div><div class="value">฿126,000</div></div>
+      <div class="stat"><div class="label">Sales Income (รายได้จากงานขาย):</div><div class="value">฿89,000</div></div>
+      <div class="stat"><div class="label">Repair Profit (กำไรงานซ่อม):</div><div class="value">฿91,000</div></div>
+      <div class="stat"><div class="label">Gross Profit (กำไรขั้นต้น):</div><div class="value">฿145,000</div></div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+
+  <!-- SALES TABLE -->
+  <div class="section-title">ตารางรายละเอียดจากงานขาย</div>
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th class="nowrap">Date</th>
+        <th class="right">Total Cost</th>
+        <th class="right">Net Total</th>
+        <th class="right">Total Amount</th>
+        <th class="right">Gross Profit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="nowrap">2025-08-01</td>
+        <td class="right">฿2,500</td>
+        <td class="right">฿5,000</td>
+        <td class="right">10 ชิ้น</td>
+        <td class="right">฿2,500</td>
+      </tr>
+      <tr>
+        <td class="nowrap">2025-08-08</td>
+        <td class="right">฿7,800</td>
+        <td class="right">฿12,500</td>
+        <td class="right">5 ชิ้น</td>
+        <td class="right">฿4,700</td>
+      </tr>
+      <tr>
+        <td class="nowrap">2025-08-12</td>
+        <td class="right">฿15,000</td>
+        <td class="right">฿25,000</td>
+        <td class="right">8 ชิ้น</td>
+        <td class="right">฿10,000</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="hr"></div>
+
+  <!-- REPAIR TABLE -->
+  <div class="section-title">ตารางรายละเอียดจากงานซ่อม</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="nowrap">Date</th>
+        <th>Description</th>
+        <th class="right">Parts Cost</th>
+        <th class="right">Labor Cost</th>
+        <th class="right">Total Cost</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="nowrap">2025-08-02</td>
+        <td>เปลี่ยนแบตเตอรี่รถมอเตอร์ไซค์</td>
+        <td class="right">฿1,200</td>
+        <td class="right">฿500</td>
+        <td class="right">฿1,700</td>
+      </tr>
+      <tr>
+        <td class="nowrap">2025-08-05</td>
+        <td>ซ่อมแผงวงจรทีวี</td>
+        <td class="right">฿800</td>
+        <td class="right">฿1,500</td>
+        <td class="right">฿2,300</td>
+      </tr>
+      <tr>
+        <td class="nowrap">2025-08-11</td>
+        <td>ล้างและปรับแต่งคาร์บูเรเตอร์</td>
+        <td class="right">฿400</td>
+        <td class="right">฿1,000</td>
+        <td class="right">฿1,400</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">* ค่าเงินแสดงเป็นบาท (฿)</div>
+
+  <!-- หมายเหตุ: ถ้าใช้คู่กับ Puppeteer แนะนำให้ตั้ง displayHeaderFooter ในฝั่งโค้ด เพื่อแสดงเลขหน้า -->
+</body>
+</html>
