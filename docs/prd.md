@@ -42,7 +42,7 @@ The previous goal of generating a PDF proved to be overly complex for the immedi
 - **FR1**: When a user clicks the "Generate Report" button on the `/reports` page, the application must navigate them to a new report summary page.
 - **FR2**: The new report page must accept `startDate` and `endDate` parameters (e.g., via URL query params) to fetch the correct data.
 - **FR3**: The report summary page must display sales and repair data corresponding to the selected date range.
-- **FR4**: The layout of the report page must adhere to the format specified in the `monthly_report_html_starter_prompt_puppeteer.html` reference file.
+- **FR4**: The layout of the report page must adhere to the format specified in the `monthly_report_html_starter_prompt.html` reference file.
 - **FR5**: The page must correctly render all text, including Thai characters and vowels.
 
 ### Non-Functional Requirements
@@ -60,7 +60,7 @@ The previous goal of generating a PDF proved to be overly complex for the immedi
 
 - **Existing UI Integration**: The primary change on the `/reports` page is the functionality of the "Generate Report" button.
 - **New Screens**: A new dynamic page route will be created, for example, at `/reports/summary`. This page will contain the full report view.
-- **Design Reference**: The layout and styling of the new report page must be based on the provided example file: **`monthly_report_html_starter_prompt_puppeteer.html`**.
+- **Design Reference**: The layout and styling of the new report page must be based on the provided example file: **`monthly_report_html_starter_prompt.html`**.
 
 ---
 
@@ -119,7 +119,7 @@ This enhancement will be consolidated into a single epic focused on replacing th
 
 **Acceptance Criteria**:
 1.  A new `ReportView` component is created in the `src/components/reports/` directory.
-2.  The component's structure and styling are implemented using Tailwind CSS to match the `monthly_report_html_starter_prompt_puppeteer.html` file.
+2.  The component's structure and styling are implemented using Tailwind CSS to match the `monthly_report_html_starter_prompt.html` file.
 3.  The component can accept summary data (e.g., sales, repairs, overview metrics) as props and render it correctly using mock data.
 
 #### Story 1.4: Integrate Data Fetching on the Report Page

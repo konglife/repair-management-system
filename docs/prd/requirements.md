@@ -4,7 +4,7 @@
 - **FR1**: When a user clicks the "Generate Report" button on the `/reports` page, the application must navigate them to a new report summary page.
 - **FR2**: The new report page must accept `startDate` and `endDate` parameters (e.g., via URL query params) to fetch the correct data.
 - **FR3**: The report summary page must display sales and repair data corresponding to the selected date range.
-- **FR4**: The layout of the report page must adhere to the format specified in the `monthly_report_html_starter_prompt_puppeteer.html` reference file.
+- **FR4**: The layout of the report page must adhere to the format specified in the `monthly_report_html_starter_prompt.html` reference file.
 - **FR5**: The page must correctly render all text, including Thai characters and vowels.
 
 ### Non-Functional Requirements
@@ -17,4 +17,4 @@
 - **CR2**: The changes should not negatively impact the functionality of any other part of the application.
 
 ---
-
+

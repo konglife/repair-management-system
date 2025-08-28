@@ -36,7 +36,7 @@ This enhancement will be consolidated into a single epic focused on replacing th
 
 **Acceptance Criteria**:
 1.  A new `ReportView` component is created in the `src/components/reports/` directory.
-2.  The component's structure and styling are implemented using Tailwind CSS to match the `monthly_report_html_starter_prompt_puppeteer.html` file.
+2.  The component's structure and styling are implemented using Tailwind CSS to match the `monthly_report_html_starter_prompt.html` file.
 3.  The component can accept summary data (e.g., sales, repairs, overview metrics) as props and render it correctly using mock data.
 
 #### Story 1.4: Integrate Data Fetching on the Report Page
