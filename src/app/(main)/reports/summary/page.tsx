@@ -1,61 +1,69 @@
 "use client";
 
-import { FileText, Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ReportView from "@/components/reports/ReportView";
+import { api } from "~/lib/trpc";
 
 export default function ReportSummaryPage() {
   const searchParams = useSearchParams();
-  
+
   // Read query parameters
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");
-  
-  // Show loading state while waiting for data
-  const isLoading = true; // Will be connected to actual data fetching later
-  
+
+  // Use tRPC query to fetch data when dates are available
+  const { data, isLoading, error } = api.reports.getMonthlySummary.useQuery(
+    {
+      startDate: startDate || "",
+      endDate: endDate || "",
+    },
+    {
+      enabled: !!(startDate && endDate), // Only run query when both dates are present
+    }
+  );
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Summary Report</h2>
-          <p className="text-muted-foreground">
-            {startDate && endDate 
-              ? `Report for ${startDate} to ${endDate}`
-              : "Date range not specified"
-            }
+      {!startDate || !endDate ? (
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Summary Report</h2>
+          <p className="text-gray-600">
+            Date range not specified. Please provide startDate and endDate parameters.
           </p>
         </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Report Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex flex-col items-center gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Loading report data...
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-medium">Report data will display here</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Data fetching implementation will be added in future stories
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      ) : isLoading ? (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 mt-4">Loading Report...</h2>
+          <p className="text-gray-600">
+            Fetching data for {startDate} to {endDate}
+          </p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-red-800 mb-4">Error Loading Report</h2>
+            <p className="text-red-600 mb-4">
+              {error.message || "Failed to load report data. Please try again."}
+            </p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : data ? (
+        <ReportView data={data} />
+      ) : (
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">No Data Available</h2>
+          <p className="text-gray-600">
+            No report data found for the specified date range.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

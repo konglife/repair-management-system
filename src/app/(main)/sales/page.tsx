@@ -4,7 +4,7 @@ import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Pack
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
-import { formatCurrency } from "~/lib/utils";
+import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,7 +103,7 @@ export default function SalesPage() {
       
       // Search by date (various formats)
       const saleDate = new Date(sale.createdAt);
-      const dateString = saleDate.toLocaleDateString().toLowerCase();
+      const dateString = formatDisplayDate(sale.createdAt).toLowerCase();
       const dateMatch = dateString.includes(searchTerm);
       
       // Search by total amount (both number and formatted currency)
@@ -207,7 +207,7 @@ export default function SalesPage() {
         productId: item.productId,
         quantity: item.quantity,
       })),
-      saleDate: saleDate,
+      saleDate: saleDate ? new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate(), 12, 0, 0) : undefined,
     });
   };
 
@@ -531,7 +531,7 @@ export default function SalesPage() {
                   filteredSales.map((sale: SaleWithRelations) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-medium">
-                        {new Date(sale.createdAt).toLocaleDateString()}
+                        {formatDisplayDate(sale.createdAt)}
                       </TableCell>
                       <TableCell>{sale.customer.name}</TableCell>
                       <TableCell>{sale.saleItems.length} item(s)</TableCell>

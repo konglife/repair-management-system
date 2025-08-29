@@ -5,7 +5,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { api } from "~/app/providers";
-import { formatCurrency } from "~/lib/utils";
+import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,13 +72,13 @@ type DateRange = "today" | "7days" | "1month" | undefined;
 
 export default function RepairsPage() {
   const router = useRouter();
-  
+
   // Search state
   const [repairsSearchTerm, setRepairsSearchTerm] = useState("");
-  
+
   // Date range filter state
   const [dateRange, setDateRange] = useState<DateRange>(undefined);
-  
+
   // State for Create Repair form
   const [showCreateRepairForm, setShowCreateRepairForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -106,13 +106,13 @@ export default function RepairsPage() {
     return repairs.filter((repair: { customer: { name: string }; description: string; status?: string }) => {
       // Search by customer name
       const customerNameMatch = repair.customer.name.toLowerCase().includes(searchTerm);
-      
+
       // Search by device/description
       const descriptionMatch = repair.description.toLowerCase().includes(searchTerm);
-      
+
       // Search by status if available (optional field)
       const statusMatch = repair.status?.toLowerCase().includes(searchTerm);
-      
+
       return customerNameMatch || descriptionMatch || statusMatch;
     });
   }, [repairs, repairsSearchTerm]);
@@ -148,7 +148,7 @@ export default function RepairsPage() {
 
     // Check if part is already in the repair
     const existingPartIndex = usedParts.findIndex(part => part.productId === selectedProductId);
-    
+
     if (existingPartIndex >= 0) {
       // Update existing part quantity
       const updatedParts = [...usedParts];
@@ -213,7 +213,7 @@ export default function RepairsPage() {
       customerId: selectedCustomerId,
       description: repairDescription,
       totalCost: totalCost,
-      repairDate: repairDate,
+      repairDate: repairDate ? new Date(repairDate.getFullYear(), repairDate.getMonth(), repairDate.getDate(), 12, 0, 0) : undefined,
       usedParts: usedParts.map(part => ({
         productId: part.productId,
         quantity: part.quantity,
@@ -254,7 +254,7 @@ export default function RepairsPage() {
           </Select>
         </div>
       </div>
-      
+
       {/* Dashboard Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
@@ -400,7 +400,7 @@ export default function RepairsPage() {
                   filteredRepairs.map((repair: RepairWithRelations) => (
                     <TableRow key={repair.id}>
                       <TableCell className="font-medium">
-                        {new Date(repair.createdAt).toLocaleDateString()}
+                        {formatDisplayDate(repair.createdAt)}
                       </TableCell>
                       <TableCell>{repair.customer.name}</TableCell>
                       <TableCell className="max-w-xs truncate">{repair.description}</TableCell>
@@ -517,83 +517,83 @@ export default function RepairsPage() {
                 <h3 className="text-lg font-semibold border-b pb-2">Parts Management</h3>
                 <div className="border rounded-lg p-4 space-y-4">
                   <h4 className="font-medium">Add Parts Used</h4>
-                <div className="flex gap-4 items-end">
-                  <div className="flex-1">
-                    <Label htmlFor="product">Product/Part</Label>
-                    <div className="mt-1">
-                      <PartsAutocomplete
-                        products={products}
-                        value={selectedProductId}
-                        onValueChange={setSelectedProductId}
-                        placeholder="Search for a part..."
+                  <div className="flex gap-4 items-end">
+                    <div className="flex-1">
+                      <Label htmlFor="product">Product/Part</Label>
+                      <div className="mt-1">
+                        <PartsAutocomplete
+                          products={products}
+                          value={selectedProductId}
+                          onValueChange={setSelectedProductId}
+                          placeholder="Search for a part..."
+                        />
+                      </div>
+                    </div>
+                    <div className="w-24">
+                      <Label htmlFor="quantity">Quantity</Label>
+                      <Input
+                        id="quantity"
+                        type="number"
+                        min="1"
+                        value={partQuantity}
+                        onChange={(e) => setPartQuantity(Number(e.target.value))}
+                        className="mt-1"
                       />
                     </div>
+                    <Button
+                      type="button"
+                      onClick={addPartToRepair}
+                      disabled={!selectedProductId || partQuantity <= 0}
+                    >
+                      Add Part
+                    </Button>
                   </div>
-                  <div className="w-24">
-                    <Label htmlFor="quantity">Quantity</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      min="1"
-                      value={partQuantity}
-                      onChange={(e) => setPartQuantity(Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={addPartToRepair}
-                    disabled={!selectedProductId || partQuantity <= 0}
-                  >
-                    Add Part
-                  </Button>
                 </div>
-              </div>
 
-              {/* Used Parts List */}
-              {usedParts.length > 0 && (
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-4">Parts Used</h4>
-                  <div className="space-y-2">
-                    {usedParts.map((part) => (
-                      <div key={part.productId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div className="flex-1">
-                          <span className="font-medium">{part.productName}</span>
-                          <span className="text-sm text-gray-500 ml-2">
-                            {formatCurrency(part.costAtTime || 0)} each
-                          </span>
+                {/* Used Parts List */}
+                {usedParts.length > 0 && (
+                  <div className="border rounded-lg p-4">
+                    <h4 className="font-medium mb-4">Parts Used</h4>
+                    <div className="space-y-2">
+                      {usedParts.map((part) => (
+                        <div key={part.productId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <div className="flex-1">
+                            <span className="font-medium">{part.productName}</span>
+                            <span className="text-sm text-gray-500 ml-2">
+                              {formatCurrency(part.costAtTime || 0)} each
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              value={part.quantity}
+                              onChange={(e) => updatePartQuantity(part.productId, Number(e.target.value))}
+                              className="w-20"
+                            />
+                            <span className="w-20 text-right font-medium">
+                              {formatCurrency(part.partCost || 0)}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removePartFromRepair(part.productId)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="1"
-                            value={part.quantity}
-                            onChange={(e) => updatePartQuantity(part.productId, Number(e.target.value))}
-                            className="w-20"
-                          />
-                          <span className="w-20 text-right font-medium">
-                            {formatCurrency(part.partCost || 0)}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removePartFromRepair(part.productId)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-medium">Parts Cost:</span>
+                        <span className="text-lg font-medium">{formatCurrency(calculatePartsCost())}</span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-medium">Parts Cost:</span>
-                      <span className="text-lg font-medium">{formatCurrency(calculatePartsCost())}</span>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
               </div>
             </div>
             <DialogFooter>
@@ -603,8 +603,8 @@ export default function RepairsPage() {
               <Button
                 type="submit"
                 disabled={
-                  createRepairMutation.isPending || 
-                  !selectedCustomerId || 
+                  createRepairMutation.isPending ||
+                  !selectedCustomerId ||
                   !repairDescription ||
                   totalCost <= 0 ||
                   usedParts.length === 0

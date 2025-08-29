@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { memo, useMemo } from "react"
 import { api } from "~/lib/trpc"
-import { formatCurrency } from "~/lib/utils"
+import { formatCurrency, formatDisplayDate } from "~/lib/utils"
 import { Activity, ShoppingCart, Wrench, Package } from "lucide-react"
 
 interface RecentActivity {
@@ -39,17 +39,15 @@ const formatActivityDate = (date: Date) => {
   if (minutes < 60) return `${minutes}m ago`
   if (hours < 24) return `${hours}h ago`
   if (days < 7) return `${days}d ago`
-  
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric' 
-  })
+
+  // Use consistent date formatting for older dates
+  return formatDisplayDate(date)
 }
 
 const RecentActivities = memo(function RecentActivities() {
   const { data, isLoading, error } = api.dashboard.getRecentActivities.useQuery()
 
-  const activities: RecentActivity[] = useMemo(() => 
+  const activities: RecentActivity[] = useMemo(() =>
     data?.activities || [], [data?.activities])
 
   if (isLoading) {

@@ -4,7 +4,7 @@ import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart, 
 import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { api } from "~/app/providers";
-import { formatCurrency } from "~/lib/utils";
+import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,8 +153,7 @@ export default function StockPage() {
       const productNameMatch = purchase.product?.name.toLowerCase().includes(searchTerm);
       
       // Search by date (various formats)
-      const purchaseDate = new Date(purchase.purchaseDate);
-      const dateString = purchaseDate.toLocaleDateString().toLowerCase();
+      const dateString = formatDisplayDate(purchase.purchaseDate).toLowerCase();
       const dateMatch = dateString.includes(searchTerm);
       
       // Search by quantity
@@ -387,7 +386,7 @@ export default function StockPage() {
       productId: selectedProductForPurchase,
       quantity,
       costPerUnit,
-      purchaseDate
+      purchaseDate: new Date(purchaseDate.getFullYear(), purchaseDate.getMonth(), purchaseDate.getDate(), 12, 0, 0)
     });
   };
 
@@ -1211,7 +1210,7 @@ export default function StockPage() {
                                   </TableCell>
                                 )}
                                 <TableCell>
-                                  {new Date(purchase.purchaseDate).toLocaleDateString()}
+                                  {formatDisplayDate(purchase.purchaseDate)}
                                 </TableCell>
                                 <TableCell>{purchase.quantity}</TableCell>
                                 <TableCell>{formatCurrency(purchase.costPerUnit)}</TableCell>

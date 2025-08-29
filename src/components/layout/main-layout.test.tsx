@@ -30,6 +30,7 @@ describe("MainLayout", () => {
       isCollapsed: false,
       isLoaded: true,
       toggleSidebar: mockToggleSidebar,
+      setIsCollapsed: jest.fn(),
     });
     mockToggleSidebar.mockClear();
   });
@@ -53,6 +54,7 @@ describe("MainLayout", () => {
       isCollapsed: false,
       isLoaded: false,
       toggleSidebar: mockToggleSidebar,
+      setIsCollapsed: jest.fn(),
     });
     
     render(
@@ -129,6 +131,7 @@ describe("MainLayout", () => {
       isCollapsed: true,
       isLoaded: true,
       toggleSidebar: mockToggleSidebar,
+      setIsCollapsed: jest.fn(),
     });
     
     rerender(
