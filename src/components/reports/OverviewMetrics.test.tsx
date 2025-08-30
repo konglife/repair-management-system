@@ -77,6 +77,24 @@ describe('OverviewMetrics', () => {
     expect(gridContainer).toBeInTheDocument();
   });
 
+  it('should not have card styling elements', () => {
+    const { container } = render(<OverviewMetricsComponent overview={mockOverview} />);
+    
+    // Verify no card styling classes are present
+    expect(container.querySelector('.border')).not.toBeInTheDocument();
+    expect(container.querySelector('.rounded-lg')).not.toBeInTheDocument();
+    expect(container.querySelector('.bg-white')).not.toBeInTheDocument();
+    expect(container.querySelector('.p-3')).not.toBeInTheDocument();
+  });
+
+  it('should have clean list format with proper spacing', () => {
+    const { container } = render(<OverviewMetricsComponent overview={mockOverview} />);
+    
+    // Verify the clean list format with space-y-2 spacing
+    const columns = container.querySelectorAll('.space-y-2');
+    expect(columns).toHaveLength(2); // Left and right columns
+  });
+
   it('should have proper semantic heading structure', () => {
     render(<OverviewMetricsComponent overview={mockOverview} />);
 

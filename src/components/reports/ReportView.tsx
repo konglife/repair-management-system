@@ -109,8 +109,7 @@ const mockData: SummaryData = {
 const ReportView: React.FC<ReportViewProps> = ({ data = mockData }) => {
   // Handle API response structure differences
   // API returns 'purchaseRecordsData' but component expects 'purchaseData'
-  const apiData = data as SummaryData & { purchaseRecordsData?: PurchaseRecordDetail[] };
-  const purchaseData: PurchaseRecordDetail[] = apiData.purchaseRecordsData || data.purchaseData || [];
+  const purchaseData: PurchaseRecordDetail[] = data.purchaseRecordsData || data.purchaseData || [];
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white">

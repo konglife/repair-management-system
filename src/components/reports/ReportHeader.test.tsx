@@ -14,30 +14,7 @@ describe('ReportHeader', () => {
     endDate: '2025-08-31'
   };
 
-  it('should render report title correctly', () => {
-    render(
-      <ReportHeader 
-        shopInfo={mockShopInfo} 
-        reportPeriod={mockReportPeriod} 
-      />
-    );
-
-    expect(screen.getByText('รายงานสรุปข้อมูลรายเดือน')).toBeInTheDocument();
-  });
-
-  it('should render formatted report period', () => {
-    render(
-      <ReportHeader 
-        shopInfo={mockShopInfo} 
-        reportPeriod={mockReportPeriod} 
-      />
-    );
-
-    expect(screen.getByText(/Report Period:/)).toBeInTheDocument();
-    expect(screen.getByText(/01\/08\/2025 - 31\/08\/2025/)).toBeInTheDocument();
-  });
-
-  it('should render shop information correctly', () => {
+  it('should render shop name correctly', () => {
     render(
       <ReportHeader 
         shopInfo={mockShopInfo} 
@@ -46,11 +23,9 @@ describe('ReportHeader', () => {
     );
 
     expect(screen.getByText('ร้านซ่อมของ Test Shop')).toBeInTheDocument();
-    expect(screen.getByText(/123 Test Street, Test City 12345/)).toBeInTheDocument();
-    expect(screen.getByText(/089-123-4567/)).toBeInTheDocument();
   });
 
-  it('should have proper semantic structure', () => {
+  it('should render report title correctly', () => {
     render(
       <ReportHeader 
         shopInfo={mockShopInfo} 
@@ -58,11 +33,47 @@ describe('ReportHeader', () => {
       />
     );
 
-    const heading = screen.getByRole('heading', { level: 1 });
-    expect(heading).toHaveTextContent('รายงานสรุปข้อมูลรายเดือน');
+    expect(screen.getByText('Summary Report')).toBeInTheDocument();
   });
 
-  it('should apply correct CSS classes for styling', () => {
+  it('should render formatted report period correctly', () => {
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+      />
+    );
+
+    expect(screen.getByText(/01\/08\/2025 to 31\/08\/2025/)).toBeInTheDocument();
+  });
+
+  it('should render shop address correctly', () => {
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+      />
+    );
+
+    expect(screen.getByText('123 Test Street, Test City 12345')).toBeInTheDocument();
+  });
+
+  it('should have proper semantic structure with two headings', () => {
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+      />
+    );
+
+    const shopNameHeading = screen.getByRole('heading', { level: 1 });
+    expect(shopNameHeading).toHaveTextContent('ร้านซ่อมของ Test Shop');
+
+    const reportTitleHeading = screen.getByRole('heading', { level: 2 });
+    expect(reportTitleHeading).toHaveTextContent('Summary Report');
+  });
+
+  it('should have centered text layout', () => {
     const { container } = render(
       <ReportHeader 
         shopInfo={mockShopInfo} 
@@ -70,7 +81,21 @@ describe('ReportHeader', () => {
       />
     );
 
-    const shopPanel = container.querySelector('.bg-gray-50.border.border-gray-200.rounded-lg');
-    expect(shopPanel).toBeInTheDocument();
+    const centeredContainer = container.querySelector('.text-center');
+    expect(centeredContainer).toBeInTheDocument();
+  });
+
+  it('should not have card styling elements', () => {
+    const { container } = render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+      />
+    );
+
+    // Verify no card styling is present
+    expect(container.querySelector('.bg-gray-50')).not.toBeInTheDocument();
+    expect(container.querySelector('.border')).not.toBeInTheDocument();
+    expect(container.querySelector('.rounded-lg')).not.toBeInTheDocument();
   });
 });

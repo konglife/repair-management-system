@@ -59,7 +59,8 @@ export interface SummaryData {
   overview: OverviewMetrics;
   salesData: SalesData[];
   repairsData: RepairsData[];
-  purchaseData: PurchaseRecordDetail[];
+  purchaseData?: PurchaseRecordDetail[];
+  purchaseRecordsData?: PurchaseRecordDetail[];
 }
 
 // Component Props interfaces
