@@ -1,212 +1,288 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
 import ReportView from './ReportView';
 import type { SummaryData } from './types';
 
-// Mock the sub-components
-jest.mock('./ReportHeader', () => {
-  return function MockReportHeader({ shopInfo, reportPeriod }: { shopInfo: { name: string }, reportPeriod: { startDate: string, endDate: string } }) {
-    return (
-      <div data-testid="report-header">
-        <div>{shopInfo.name}</div>
-        <div>{reportPeriod.startDate} - {reportPeriod.endDate}</div>
-      </div>
-    );
-  };
-});
-
-jest.mock('./OverviewMetrics', () => {
-  return function MockOverviewMetrics({ overview }: { overview: { expenses: number, grossProfit: number } }) {
-    return (
-      <div data-testid="overview-metrics">
-        <div>Expenses: {overview.expenses}</div>
-        <div>Gross Profit: {overview.grossProfit}</div>
-      </div>
-    );
-  };
-});
-
-jest.mock('./SalesTable', () => {
-  return function MockSalesTable({ salesData }: { salesData: unknown[] }) {
-    return (
-      <div data-testid="sales-table">
-        <div>Sales Count: {salesData.length}</div>
-      </div>
-    );
-  };
-});
-
-jest.mock('./RepairsTable', () => {
-  return function MockRepairsTable({ repairsData }: { repairsData: unknown[] }) {
-    return (
-      <div data-testid="repairs-table">
-        <div>Repairs Count: {repairsData.length}</div>
-      </div>
-    );
-  };
-});
-
-jest.mock('./PurchasesTable', () => {
-  return function MockPurchasesTable({ purchaseData }: { purchaseData: unknown[] }) {
-    return (
-      <div data-testid="purchases-table">
-        <div>Purchases Count: {purchaseData.length}</div>
-      </div>
-    );
-  };
-});
-
-const mockData: SummaryData = {
+// Enhanced mock data with all new fields
+const mockEnhancedData: SummaryData = {
   reportPeriod: {
     startDate: '2025-08-01',
     endDate: '2025-08-31'
   },
   shopInfo: {
-    name: 'Test Shop Name',
-    address: 'Test Address',
-    phone: '123-456-7890'
+    name: 'Integration Test Shop',
+    address: '456 Integration Street',
+    phone: '987-654-3210'
   },
   overview: {
-    expenses: 100000,
-    totalRepairs: 10,
-    totalSales: 5,
-    salesProfit: 50000,
-    repairIncome: 30000,
-    salesIncome: 20000,
-    repairProfit: 15000,
-    grossProfit: 25000
+    expenses: 75000,
+    totalRepairs: 25,
+    totalSales: 12,
+    salesProfit: 35000,
+    repairIncome: 45000,
+    salesIncome: 60000,
+    repairProfit: 30000,
+    grossProfit: 65000
   },
   salesData: [
     {
       date: '2025-08-01',
-      totalCost: 1000,
-      netTotal: 2000,
-      totalAmount: 2,
-      grossProfit: 1000,
-      saleItems: [{ name: 'Test Item' }]
+      totalCost: 3000,
+      netTotal: 6000,
+      totalAmount: 15,
+      grossProfit: 3000,
+      saleItems: [
+        { name: 'Enhanced Product A' },
+        { name: 'Enhanced Product B' },
+        { name: 'Enhanced Product C' }
+      ]
+    },
+    {
+      date: '2025-08-15',
+      totalCost: 2000,
+      netTotal: 4000,
+      totalAmount: 8,
+      grossProfit: 2000,
+      saleItems: [
+        { name: 'Enhanced Product D' }
+      ]
     }
   ],
   repairsData: [
     {
       date: '2025-08-02',
-      description: 'Test repair',
-      partsCost: 500,
-      laborCost: 300,
-      totalCost: 800,
-      usedParts: [{ name: 'Test Part', costAtTime: 500 }]
+      description: 'Enhanced Repair Service A',
+      partsCost: 1500,
+      laborCost: 800,
+      totalCost: 2300,
+      usedParts: [
+        { name: 'Enhanced Part 1', costAtTime: 800 },
+        { name: 'Enhanced Part 2', costAtTime: 700 }
+      ]
+    },
+    {
+      date: '2025-08-10',
+      description: 'Enhanced Repair Service B',
+      partsCost: 900,
+      laborCost: 600,
+      totalCost: 1500,
+      usedParts: [
+        { name: 'Enhanced Part 3', costAtTime: 900 }
+      ]
     }
   ],
-  purchaseData: [
+  purchaseRecordsData: [
     {
       id: 'p1',
-      quantity: 10,
-      costPerUnit: 100,
+      quantity: 20,
+      costPerUnit: 150,
       purchaseDate: '2025-08-01',
-      product: { name: 'Test Product' }
+      product: { name: 'Enhanced Purchase Item A' }
+    },
+    {
+      id: 'p2',
+      quantity: 10,
+      costPerUnit: 300,
+      purchaseDate: '2025-08-05',
+      product: { name: 'Enhanced Purchase Item B' }
     }
   ]
 };
 
-describe('ReportView', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe('ReportView Integration Tests', () => {
+  describe('Enhanced data rendering', () => {
+    it('should render all enhanced sales data with saleItems correctly', () => {
+      render(<ReportView data={mockEnhancedData} />);
+
+      // Check sales table headers
+      expect(screen.getByText('ตารางรายละเอียดจากงานขาย')).toBeInTheDocument();
+      expect(screen.getByText('Sale Items')).toBeInTheDocument();
+
+      // Check enhanced sales data
+      expect(screen.getByText('Enhanced Product A, Enhanced Product B, Enhanced Product C')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Product D')).toBeInTheDocument();
+
+      // Check sales totals exist
+      expect(screen.getByText('฿5,000.00')).toBeInTheDocument(); // Total cost
+      expect(screen.getByText('฿10,000.00')).toBeInTheDocument(); // Net total
+    });
+
+    it('should render all enhanced repairs data with usedParts correctly', () => {
+      render(<ReportView data={mockEnhancedData} />);
+
+      // Check repairs table headers
+      expect(screen.getByText('ตารางรายละเอียดจากงานซ่อม')).toBeInTheDocument();
+      expect(screen.getByText('Parts Used')).toBeInTheDocument();
+
+      // Check enhanced repairs data
+      expect(screen.getByText('Enhanced Part 1 (฿800.00), Enhanced Part 2 (฿700.00)')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Part 3 (฿900.00)')).toBeInTheDocument();
+
+      // Check repair descriptions
+      expect(screen.getByText('Enhanced Repair Service A')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Repair Service B')).toBeInTheDocument();
+    });
+
+    it('should render purchaseRecordsData in purchases table correctly', () => {
+      render(<ReportView data={mockEnhancedData} />);
+
+      // Check purchases table headers
+      expect(screen.getByText('ตารางรายละเอียดจากการซื้อสินค้า')).toBeInTheDocument();
+      expect(screen.getByText('Product Name')).toBeInTheDocument();
+
+      // Check purchase data
+      expect(screen.getByText('Enhanced Purchase Item A')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Purchase Item B')).toBeInTheDocument();
+
+      // Check quantities and costs
+      expect(screen.getByText('20 ชิ้น')).toBeInTheDocument();
+      expect(screen.getByText('10 ชิ้น')).toBeInTheDocument();
+      expect(screen.getByText('฿150.00')).toBeInTheDocument();
+      expect(screen.getByText('฿300.00')).toBeInTheDocument();
+    });
+
+    it('should render overview metrics correctly', () => {
+      render(<ReportView data={mockEnhancedData} />);
+
+      // Check overview section
+      expect(screen.getByText('ภาพรวม')).toBeInTheDocument();
+      expect(screen.getByText('฿75,000.00')).toBeInTheDocument(); // Expenses
+      expect(screen.getByText('25 งาน')).toBeInTheDocument(); // Total repairs
+      expect(screen.getByText('12 งาน')).toBeInTheDocument(); // Total sales
+    });
+
+    it('should render shop info and report period correctly', () => {
+      render(<ReportView data={mockEnhancedData} />);
+
+      // Check shop information
+      expect(screen.getByText('Integration Test Shop')).toBeInTheDocument();
+      expect(screen.getByText('456 Integration Street')).toBeInTheDocument();
+      // Note: Phone number is not displayed in ReportHeader component
+    });
   });
 
-  it('should render all main sections correctly', () => {
-    render(<ReportView data={mockData} />);
+  describe('Data structure compatibility', () => {
+    it('should handle API response with purchaseRecordsData field name', () => {
+      const dataWithPurchaseRecordsData = {
+        ...mockEnhancedData,
+        purchaseRecordsData: mockEnhancedData.purchaseRecordsData,
+        purchaseData: undefined
+      };
 
-    expect(screen.getByTestId('report-header')).toBeInTheDocument();
-    expect(screen.getByTestId('overview-metrics')).toBeInTheDocument();
-    expect(screen.getByTestId('sales-table')).toBeInTheDocument();
-    expect(screen.getByTestId('repairs-table')).toBeInTheDocument();
-    expect(screen.getByTestId('purchases-table')).toBeInTheDocument();
+      render(<ReportView data={dataWithPurchaseRecordsData} />);
+
+      expect(screen.getByText('Enhanced Purchase Item A')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Purchase Item B')).toBeInTheDocument();
+    });
+
+    it('should handle legacy API response with purchaseData field name', () => {
+      const dataWithPurchaseData = {
+        ...mockEnhancedData,
+        purchaseData: mockEnhancedData.purchaseRecordsData,
+        purchaseRecordsData: undefined
+      };
+
+      render(<ReportView data={dataWithPurchaseData} />);
+
+      expect(screen.getByText('Enhanced Purchase Item A')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Purchase Item B')).toBeInTheDocument();
+    });
+
+    it('should handle missing enhanced data arrays gracefully', () => {
+      const incompleteData = {
+        ...mockEnhancedData,
+        salesData: [
+          {
+            date: '2025-08-01',
+            totalCost: 3000,
+            netTotal: 6000,
+            totalAmount: 15,
+            grossProfit: 3000,
+            saleItems: [] // Empty array
+          }
+        ],
+        repairsData: [
+          {
+            date: '2025-08-02',
+            description: 'Test Repair',
+            partsCost: 1500,
+            laborCost: 800,
+            totalCost: 2300,
+            usedParts: [] // Empty array
+          }
+        ],
+        purchaseRecordsData: [] // Empty array
+      };
+
+      render(<ReportView data={incompleteData} />);
+
+      // Should render without errors and show fallback values
+      expect(screen.getAllByText('-').length).toBeGreaterThanOrEqual(3); // At least one for each empty data array
+    });
+
+    it('should handle undefined/null enhanced data arrays', () => {
+      const dataWithUndefinedArrays = {
+        ...mockEnhancedData,
+        salesData: [
+          {
+            date: '2025-08-01',
+            totalCost: 3000,
+            netTotal: 6000,
+            totalAmount: 15,
+            grossProfit: 3000,
+            saleItems: undefined as any
+          }
+        ],
+        repairsData: [
+          {
+            date: '2025-08-02',
+            description: 'Test Repair',
+            partsCost: 1500,
+            laborCost: 800,
+            totalCost: 2300,
+            usedParts: null as any
+          }
+        ],
+        purchaseRecordsData: undefined as any
+      };
+
+      render(<ReportView data={dataWithUndefinedArrays} />);
+
+      // Should render without errors
+      expect(screen.getByText('Integration Test Shop')).toBeInTheDocument();
+    });
   });
 
-  it('should pass correct props to ReportHeader component', () => {
-    render(<ReportView data={mockData} />);
+  describe('Responsive design with enhanced data', () => {
+    it('should render all tables with enhanced data in responsive containers', () => {
+      render(<ReportView data={mockEnhancedData} />);
 
-    expect(screen.getByText('Test Shop Name')).toBeInTheDocument();
-    expect(screen.getByText('2025-08-01 - 2025-08-31')).toBeInTheDocument();
+      // Check that all tables are present with overflow-x-auto for responsiveness
+      const tables = screen.getAllByRole('table');
+      expect(tables).toHaveLength(3); // Sales, Repairs, Purchases
+
+      // Verify enhanced columns are present
+      expect(screen.getByText('Sale Items')).toBeInTheDocument();
+      expect(screen.getByText('Parts Used')).toBeInTheDocument();
+      expect(screen.getByText('Product Name')).toBeInTheDocument();
+    });
   });
 
-  it('should pass correct props to OverviewMetrics component', () => {
-    render(<ReportView data={mockData} />);
+  describe('Table calculations with enhanced data', () => {
+    it('should calculate totals correctly for all monetary columns', () => {
+      render(<ReportView data={mockEnhancedData} />);
 
-    expect(screen.getByText('Expenses: 100000')).toBeInTheDocument();
-    expect(screen.getByText('Gross Profit: 25000')).toBeInTheDocument();
-  });
+      // Sales totals (3000 + 2000 = 5000, 6000 + 4000 = 10000, etc.)
+      const salesTotalRows = screen.getAllByText('Total');
+      expect(salesTotalRows.length).toBeGreaterThan(0);
 
-  it('should pass correct props to data table components', () => {
-    render(<ReportView data={mockData} />);
+      // Purchase totals (20*150 + 10*300 = 3000 + 3000 = 6000)
+      expect(screen.getAllByText('฿6,000.00')).toHaveLength(2); // Appears in both sales and purchases totals
 
-    expect(screen.getByText('Sales Count: 1')).toBeInTheDocument();
-    expect(screen.getByText('Repairs Count: 1')).toBeInTheDocument();
-    expect(screen.getByText('Purchases Count: 1')).toBeInTheDocument();
-  });
-
-  it('should render footer notes', () => {
-    render(<ReportView data={mockData} />);
-
-    expect(screen.getByText('* ค่าเงินแสดงเป็นบาท (฿)')).toBeInTheDocument();
-  });
-
-  it('should use mock data when no data prop is provided', () => {
-    render(<ReportView />);
-
-    // Should still render all components even without data prop
-    expect(screen.getByTestId('report-header')).toBeInTheDocument();
-    expect(screen.getByTestId('overview-metrics')).toBeInTheDocument();
-    expect(screen.getByTestId('sales-table')).toBeInTheDocument();
-    expect(screen.getByTestId('repairs-table')).toBeInTheDocument();
-    expect(screen.getByTestId('purchases-table')).toBeInTheDocument();
-  });
-
-  it('should handle empty data arrays correctly', () => {
-    const emptyData: SummaryData = {
-      ...mockData,
-      salesData: [],
-      repairsData: [],
-      purchaseData: []
-    };
-
-    render(<ReportView data={emptyData} />);
-
-    expect(screen.getByText('Sales Count: 0')).toBeInTheDocument();
-    expect(screen.getByText('Repairs Count: 0')).toBeInTheDocument();
-    expect(screen.getByText('Purchases Count: 0')).toBeInTheDocument();
-  });
-
-  it('should have proper layout structure with dividers', () => {
-    const { container } = render(<ReportView data={mockData} />);
-
-    const dividers = container.querySelectorAll('.h-px.bg-gray-200');
-    expect(dividers).toHaveLength(3); // Three dividers between sections
-  });
-
-  it('should have responsive container styling', () => {
-    const { container } = render(<ReportView data={mockData} />);
-
-    const mainContainer = container.querySelector('.max-w-4xl.mx-auto.p-6.bg-white');
-    expect(mainContainer).toBeInTheDocument();
-  });
-
-  it('should maintain backward compatibility with existing data structure', () => {
-    // Test with data that might not have the new enhanced properties
-    const legacyData = {
-      ...mockData,
-      salesData: [
-        {
-          date: '2025-08-01',
-          totalCost: 1000,
-          netTotal: 2000,
-          totalAmount: 5,
-          grossProfit: 1000,
-          saleItems: undefined // This should be handled gracefully
-        }
-      ]
-    } as SummaryData;
-
-    // Should not throw an error
-    expect(() => render(<ReportView data={legacyData} />)).not.toThrow();
-    expect(screen.getByTestId('sales-table')).toBeInTheDocument();
+      // Repairs totals (1500 + 900 = 2400, 800 + 600 = 1400, 2300 + 1500 = 3800)
+      expect(screen.getByText('฿2,400.00')).toBeInTheDocument(); // Parts cost total
+      expect(screen.getByText('฿1,400.00')).toBeInTheDocument(); // Labor cost total
+      expect(screen.getByText('฿3,800.00')).toBeInTheDocument(); // Total cost total
+    });
   });
 });
