@@ -33,6 +33,7 @@ interface SalesData {
   netTotal: number;
   totalAmount: number;
   grossProfit: number;
+  saleItems: { name: string }[];
 }
 
 interface RepairsData {
@@ -41,6 +42,15 @@ interface RepairsData {
   partsCost: number;
   laborCost: number;
   totalCost: number;
+  usedParts: { name: string, costAtTime: number }[];
+}
+
+interface PurchaseRecordDetail {
+  id: string;
+  quantity: number;
+  costPerUnit: number;
+  purchaseDate: Date;
+  product: { name: string };
 }
 
 interface SummaryData {
@@ -52,6 +62,7 @@ interface SummaryData {
   overview: OverviewMetrics;
   salesData: SalesData[];
   repairsData: RepairsData[];
+  purchaseRecordsData: PurchaseRecordDetail[];
 }
 
 export const reportsRouter = createTRPCRouter({
@@ -135,6 +146,9 @@ export const reportsRouter = createTRPCRouter({
               gte: start,
               lte: end
             }
+          },
+          include: {
+            product: true
           }
         });
         const expenses = purchaseRecords.reduce((sum, record) => sum + (record.quantity * record.costPerUnit), 0);
@@ -160,7 +174,8 @@ export const reportsRouter = createTRPCRouter({
             totalCost: sale.totalCost,
             netTotal: sale.totalAmount,
             totalAmount,
-            grossProfit
+            grossProfit,
+            saleItems: sale.saleItems.map(item => ({ name: item.product.name }))
           };
         });
 
@@ -170,7 +185,11 @@ export const reportsRouter = createTRPCRouter({
           description: repair.description,
           partsCost: repair.partsCost,
           laborCost: repair.laborCost,
-          totalCost: repair.totalCost
+          totalCost: repair.totalCost,
+          usedParts: repair.usedParts.map(part => ({ 
+            name: part.product.name, 
+            costAtTime: part.costAtTime 
+          }))
         }));
 
         return {
@@ -181,7 +200,14 @@ export const reportsRouter = createTRPCRouter({
           shopInfo,
           overview,
           salesData,
-          repairsData
+          repairsData,
+          purchaseRecordsData: purchaseRecords.map(record => ({
+            id: record.id,
+            quantity: record.quantity,
+            costPerUnit: record.costPerUnit,
+            purchaseDate: record.purchaseDate,
+            product: { name: record.product.name }
+          }))
         };
 
       } catch (error) {
