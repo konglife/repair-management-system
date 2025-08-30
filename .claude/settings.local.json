@@ -12,7 +12,8 @@
       "Bash(md-tree:*)",
       "Bash(npm uninstall:*)",
       "Bash(mkdir:*)",
-      "Read(c:\\Dev\\repair-management-system\\.claude\\commands\\BMad\\tasks/**)"
+      "Read(c:\\Dev\\repair-management-system\\.claude\\commands\\BMad\\tasks/**)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []

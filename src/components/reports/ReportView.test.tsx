@@ -1,10 +1,61 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import ReportView from './ReportView';
+import type { SummaryData } from './types';
 
-// Mock data for testing
-const mockData = {
+// Mock the sub-components
+jest.mock('./ReportHeader', () => {
+  return function MockReportHeader({ shopInfo, reportPeriod }: { shopInfo: { name: string }, reportPeriod: { startDate: string, endDate: string } }) {
+    return (
+      <div data-testid="report-header">
+        <div>{shopInfo.name}</div>
+        <div>{reportPeriod.startDate} - {reportPeriod.endDate}</div>
+      </div>
+    );
+  };
+});
+
+jest.mock('./OverviewMetrics', () => {
+  return function MockOverviewMetrics({ overview }: { overview: { expenses: number, grossProfit: number } }) {
+    return (
+      <div data-testid="overview-metrics">
+        <div>Expenses: {overview.expenses}</div>
+        <div>Gross Profit: {overview.grossProfit}</div>
+      </div>
+    );
+  };
+});
+
+jest.mock('./SalesTable', () => {
+  return function MockSalesTable({ salesData }: { salesData: unknown[] }) {
+    return (
+      <div data-testid="sales-table">
+        <div>Sales Count: {salesData.length}</div>
+      </div>
+    );
+  };
+});
+
+jest.mock('./RepairsTable', () => {
+  return function MockRepairsTable({ repairsData }: { repairsData: unknown[] }) {
+    return (
+      <div data-testid="repairs-table">
+        <div>Repairs Count: {repairsData.length}</div>
+      </div>
+    );
+  };
+});
+
+jest.mock('./PurchasesTable', () => {
+  return function MockPurchasesTable({ purchaseData }: { purchaseData: unknown[] }) {
+    return (
+      <div data-testid="purchases-table">
+        <div>Purchases Count: {purchaseData.length}</div>
+      </div>
+    );
+  };
+});
+
+const mockData: SummaryData = {
   reportPeriod: {
     startDate: '2025-08-01',
     endDate: '2025-08-31'
@@ -30,7 +81,8 @@ const mockData = {
       totalCost: 1000,
       netTotal: 2000,
       totalAmount: 2,
-      grossProfit: 1000
+      grossProfit: 1000,
+      saleItems: [{ name: 'Test Item' }]
     }
   ],
   repairsData: [
@@ -39,117 +91,122 @@ const mockData = {
       description: 'Test repair',
       partsCost: 500,
       laborCost: 300,
-      totalCost: 800
+      totalCost: 800,
+      usedParts: [{ name: 'Test Part', costAtTime: 500 }]
+    }
+  ],
+  purchaseData: [
+    {
+      id: 'p1',
+      quantity: 10,
+      costPerUnit: 100,
+      purchaseDate: '2025-08-01',
+      product: { name: 'Test Product' }
     }
   ]
 };
 
-describe('ReportView Component', () => {
-  test('renders with mock data when no props provided', () => {
-    render(<ReportView />);
-    
-    // Check if main title is rendered
-    expect(screen.getByText('รายงานสรุปข้อมูลรายเดือน')).toBeInTheDocument();
-    
-    // Check if overview section is rendered
-    expect(screen.getByText('ภาพรวม')).toBeInTheDocument();
-    
-    // Check if tables are rendered
-    expect(screen.getByText('ตารางรายละเอียดจากงานขาย')).toBeInTheDocument();
-    expect(screen.getByText('ตารางรายละเอียดจากงานซ่อม')).toBeInTheDocument();
+describe('ReportView', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('renders with provided prop data', () => {
+  it('should render all main sections correctly', () => {
     render(<ReportView data={mockData} />);
-    
-    // Check if shop info is rendered correctly
+
+    expect(screen.getByTestId('report-header')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-metrics')).toBeInTheDocument();
+    expect(screen.getByTestId('sales-table')).toBeInTheDocument();
+    expect(screen.getByTestId('repairs-table')).toBeInTheDocument();
+    expect(screen.getByTestId('purchases-table')).toBeInTheDocument();
+  });
+
+  it('should pass correct props to ReportHeader component', () => {
+    render(<ReportView data={mockData} />);
+
     expect(screen.getByText('Test Shop Name')).toBeInTheDocument();
-    expect(screen.getByText(/Test Address/)).toBeInTheDocument();
-    expect(screen.getByText(/123-456-7890/)).toBeInTheDocument();
-    
-    // Check if overview metrics are rendered
-    expect(screen.getByText('10 งาน')).toBeInTheDocument(); // Total Repairs
-    expect(screen.getByText('5 งาน')).toBeInTheDocument(); // Total Sales
+    expect(screen.getByText('2025-08-01 - 2025-08-31')).toBeInTheDocument();
   });
 
-  test('formats currency values correctly', () => {
+  it('should pass correct props to OverviewMetrics component', () => {
     render(<ReportView data={mockData} />);
-    
-    // Check if currency formatting is applied
-    expect(screen.getByText('฿100,000')).toBeInTheDocument(); // Expenses
-    expect(screen.getByText('฿50,000')).toBeInTheDocument(); // Sales Profit
+
+    expect(screen.getByText('Expenses: 100000')).toBeInTheDocument();
+    expect(screen.getByText('Gross Profit: 25000')).toBeInTheDocument();
   });
 
-  test('formats dates consistently', () => {
+  it('should pass correct props to data table components', () => {
     render(<ReportView data={mockData} />);
-    
-    // Check if dates are formatted (Thai locale shows Buddhist year)
-    const dateElements = screen.getAllByText(/1\/8\/2568/);
-    expect(dateElements.length).toBeGreaterThan(0);
+
+    expect(screen.getByText('Sales Count: 1')).toBeInTheDocument();
+    expect(screen.getByText('Repairs Count: 1')).toBeInTheDocument();
+    expect(screen.getByText('Purchases Count: 1')).toBeInTheDocument();
   });
 
-  test('renders sales table with correct data', () => {
+  it('should render footer notes', () => {
     render(<ReportView data={mockData} />);
-    
-    // Check sales table headers (using getAllByText for duplicates)
-    expect(screen.getAllByText('Date').length).toBe(2); // Both tables have Date
-    expect(screen.getAllByText('Total Cost').length).toBe(2); // Both tables have Total Cost
-    expect(screen.getByText('Net Total')).toBeInTheDocument();
-    expect(screen.getByText('Total Amount')).toBeInTheDocument();
-    expect(screen.getByText('Gross Profit')).toBeInTheDocument();
-    
-    // Check sales data (using getAllByText for duplicates)
-    expect(screen.getAllByText('฿1,000').length).toBe(2); // Total cost and gross profit
-    expect(screen.getByText('฿2,000')).toBeInTheDocument();
-    expect(screen.getByText('2 ชิ้น')).toBeInTheDocument();
-  });
 
-  test('renders repairs table with correct data', () => {
-    render(<ReportView data={mockData} />);
-    
-    // Check repairs table headers
-    expect(screen.getByText('Description')).toBeInTheDocument();
-    expect(screen.getByText('Parts Cost')).toBeInTheDocument();
-    expect(screen.getByText('Labor Cost')).toBeInTheDocument();
-    expect(screen.getAllByText('Total Cost').length).toBe(2); // Both tables have Total Cost
-    
-    // Check repairs data
-    expect(screen.getByText('Test repair')).toBeInTheDocument();
-    expect(screen.getByText('฿500')).toBeInTheDocument();
-    expect(screen.getByText('฿300')).toBeInTheDocument();
-    expect(screen.getByText('฿800')).toBeInTheDocument();
-  });
-
-  test('applies responsive layout classes', () => {
-    const { container } = render(<ReportView data={mockData} />);
-    
-    // Check if responsive grid classes are applied
-    const gridElement = container.querySelector('.grid.grid-cols-1.md\\:grid-cols-2');
-    expect(gridElement).toBeInTheDocument();
-    
-    // Check if overflow-x-auto is applied to tables
-    const tableContainers = container.querySelectorAll('.overflow-x-auto');
-    expect(tableContainers.length).toBe(2); // Two tables
-  });
-
-  test('renders notes section', () => {
-    render(<ReportView data={mockData} />);
-    
-    // Check if notes are rendered
     expect(screen.getByText('* ค่าเงินแสดงเป็นบาท (฿)')).toBeInTheDocument();
   });
 
-  test('handles empty data arrays gracefully', () => {
-    const emptyData = {
+  it('should use mock data when no data prop is provided', () => {
+    render(<ReportView />);
+
+    // Should still render all components even without data prop
+    expect(screen.getByTestId('report-header')).toBeInTheDocument();
+    expect(screen.getByTestId('overview-metrics')).toBeInTheDocument();
+    expect(screen.getByTestId('sales-table')).toBeInTheDocument();
+    expect(screen.getByTestId('repairs-table')).toBeInTheDocument();
+    expect(screen.getByTestId('purchases-table')).toBeInTheDocument();
+  });
+
+  it('should handle empty data arrays correctly', () => {
+    const emptyData: SummaryData = {
       ...mockData,
       salesData: [],
-      repairsData: []
+      repairsData: [],
+      purchaseData: []
     };
-    
+
     render(<ReportView data={emptyData} />);
-    
-    // Should still render table headers
-    expect(screen.getByText('ตารางรายละเอียดจากงานขาย')).toBeInTheDocument();
-    expect(screen.getByText('ตารางรายละเอียดจากงานซ่อม')).toBeInTheDocument();
+
+    expect(screen.getByText('Sales Count: 0')).toBeInTheDocument();
+    expect(screen.getByText('Repairs Count: 0')).toBeInTheDocument();
+    expect(screen.getByText('Purchases Count: 0')).toBeInTheDocument();
+  });
+
+  it('should have proper layout structure with dividers', () => {
+    const { container } = render(<ReportView data={mockData} />);
+
+    const dividers = container.querySelectorAll('.h-px.bg-gray-200');
+    expect(dividers).toHaveLength(3); // Three dividers between sections
+  });
+
+  it('should have responsive container styling', () => {
+    const { container } = render(<ReportView data={mockData} />);
+
+    const mainContainer = container.querySelector('.max-w-4xl.mx-auto.p-6.bg-white');
+    expect(mainContainer).toBeInTheDocument();
+  });
+
+  it('should maintain backward compatibility with existing data structure', () => {
+    // Test with data that might not have the new enhanced properties
+    const legacyData = {
+      ...mockData,
+      salesData: [
+        {
+          date: '2025-08-01',
+          totalCost: 1000,
+          netTotal: 2000,
+          totalAmount: 5,
+          grossProfit: 1000,
+          saleItems: undefined // This should be handled gracefully
+        }
+      ]
+    } as SummaryData;
+
+    // Should not throw an error
+    expect(() => render(<ReportView data={legacyData} />)).not.toThrow();
+    expect(screen.getByTestId('sales-table')).toBeInTheDocument();
   });
 });
