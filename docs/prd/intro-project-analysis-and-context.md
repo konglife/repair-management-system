@@ -2,7 +2,7 @@
 
 ### Existing Project Overview
 
-The current project (v2.0.0) is a full-stack application for managing a repair and sales business, built with Next.js, tRPC, Prisma, and Tailwind CSS. The existing `reports` page allows users to select a date range but currently lacks a dedicated view for the generated summary.
+The current project (v2.1.0) is a full-stack application for managing a repair and sales business, built with Next.js, tRPC, Prisma, and Tailwind CSS. The existing `/reports/summary` page displays a comprehensive business overview including sales, repairs, and financial metrics within a specified date range.
 
 ### Enhancement Scope Definition
 
@@ -10,7 +10,7 @@ The current project (v2.0.0) is a full-stack application for managing a repair a
 - [x] Major Feature Modification
 
 #### Enhancement Description
-This enhancement will introduce a new feature where generating a report no longer creates a PDF file. Instead, it will navigate the user to a new, dedicated web page that displays the summary report directly in the browser. This report page will be styled according to a provided HTML template. All previous PDF-generation logic will be removed.
+This enhancement (v2.2.0) will significantly upgrade the `/reports/summary` page by adding more detailed tables for sales, repairs, and purchase records. It will also introduce summary rows for financial columns and a complete UI redesign of the "Overview" section to present the information in a more professional and document-like format.
 
 #### Impact Assessment
 - [x] Moderate Impact (some existing code changes)
@@ -18,19 +18,16 @@ This enhancement will introduce a new feature where generating a report no longe
 ### Goals and Background Context
 
 #### Goals
-- To provide users with an immediate, in-app view of their business summary report without needing to download a file.
-- To create a report view with a flexible and aesthetically pleasing layout, similar to a well-designed web page.
-- To simplify the technical architecture by removing the complexities of server-side PDF generation.
-- To completely remove the `pdf-lib` dependency and all related code from the project.
-
-#### Background Context
-The previous goal of generating a PDF proved to be overly complex for the immediate need. A direct, in-browser report page offers a more streamlined user experience and significantly simplifies the development and maintenance workflow. This pivot allows for faster delivery of the core feature: viewing a formatted business summary.
+- To provide richer, more detailed data tables for sales, repairs, and purchase records.
+- To enhance data readability by adding summary totals to financial columns.
+- To significantly improve the user interface of the "Overview" section, giving it a more polished and professional appearance.
+- To implement these changes with minimal impact on the existing, stable parts of the system.
 
 ### Change Log
 
 | Change | Date | Version | Description | Author |
 | :--- | :--- | :--- | :--- | :--- |
-| Revision | 2025-08-28 | 2.1.0 | Pivoted from PDF generation to an HTML report page. | PM |
+| Initial Draft | 2025-08-29 | 2.2.0 | Initial PRD for report page enhancements. | John (PM) |
 
 ---
 
