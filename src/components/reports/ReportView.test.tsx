@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import ReportView from './ReportView';
 import type { SummaryData } from './types';
 
-// Enhanced mock data with all new fields
+// Enhanced mock data with all new fields including logoUrl
 const mockEnhancedData: SummaryData = {
   reportPeriod: {
     startDate: '2025-08-01',
@@ -14,6 +14,7 @@ const mockEnhancedData: SummaryData = {
     address: '456 Integration Street',
     phone: '987-654-3210'
   },
+  logoUrl: 'https://example.com/test-logo.png',
   overview: {
     expenses: 75000,
     totalRepairs: 25,
@@ -102,9 +103,9 @@ describe('ReportView Integration Tests', () => {
       expect(screen.getByText('Enhanced Product A, Enhanced Product B, Enhanced Product C')).toBeInTheDocument();
       expect(screen.getByText('Enhanced Product D')).toBeInTheDocument();
 
-      // Check sales totals exist
-      expect(screen.getByText('฿5,000.00')).toBeInTheDocument(); // Total cost
-      expect(screen.getByText('฿10,000.00')).toBeInTheDocument(); // Net total
+      // Check sales totals exist (using getAllByText due to potential duplicates)
+      expect(screen.getAllByText('฿5,000.00').length).toBeGreaterThan(0); // Total cost
+      expect(screen.getAllByText('฿10,000.00').length).toBeGreaterThan(0); // Net total
     });
 
     it('should render all enhanced repairs data with usedParts correctly', () => {

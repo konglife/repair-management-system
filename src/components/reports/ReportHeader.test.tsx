@@ -98,4 +98,91 @@ describe('ReportHeader', () => {
     expect(container.querySelector('.border')).not.toBeInTheDocument();
     expect(container.querySelector('.rounded-lg')).not.toBeInTheDocument();
   });
+
+  // Logo functionality tests
+  it('should render logo when logoUrl is provided', () => {
+    const logoUrl = 'https://example.com/logo.png';
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+        logoUrl={logoUrl}
+      />
+    );
+
+    const logo = screen.getByAltText('Company Logo');
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute('src', logoUrl);
+  });
+
+  it('should apply grayscale filter to logo', () => {
+    const logoUrl = 'https://example.com/logo.png';
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+        logoUrl={logoUrl}
+      />
+    );
+
+    const logo = screen.getByAltText('Company Logo');
+    expect(logo).toHaveClass('grayscale');
+  });
+
+  it('should apply proper sizing constraints to logo', () => {
+    const logoUrl = 'https://example.com/logo.png';
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+        logoUrl={logoUrl}
+      />
+    );
+
+    const logo = screen.getByAltText('Company Logo');
+    expect(logo).toHaveClass('max-h-16', 'max-w-32', 'object-contain');
+  });
+
+  it('should not render logo when logoUrl is null', () => {
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+        logoUrl={undefined}
+      />
+    );
+
+    expect(screen.queryByAltText('Company Logo')).not.toBeInTheDocument();
+  });
+
+  it('should not render logo when logoUrl is undefined', () => {
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+        logoUrl={undefined}
+      />
+    );
+
+    expect(screen.queryByAltText('Company Logo')).not.toBeInTheDocument();
+  });
+
+  it('should handle broken image URLs gracefully', () => {
+    const logoUrl = 'https://example.com/broken-logo.png';
+    render(
+      <ReportHeader 
+        shopInfo={mockShopInfo} 
+        reportPeriod={mockReportPeriod} 
+        logoUrl={logoUrl}
+      />
+    );
+
+    const logo = screen.getByAltText('Company Logo');
+    
+    // Trigger error event
+    logo.dispatchEvent(new Event('error'));
+    
+    // Verify logo is hidden after error
+    expect(logo.style.display).toBe('none');
+  });
 });

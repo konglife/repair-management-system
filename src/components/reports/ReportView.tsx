@@ -62,7 +62,7 @@ const mockData: SummaryData = {
       partsCost: 1200,
       laborCost: 500,
       totalCost: 1700,
-      usedParts: [{ name: 'แบตเตอรี่ 12V', costAtTime: 1200 }]
+      usedParts: [{ name: 'แบตเตอรี่ 12V', costAtTime: 1200, quantity: 1 }]
     },
     {
       date: '2025-08-05',
@@ -70,7 +70,7 @@ const mockData: SummaryData = {
       partsCost: 800,
       laborCost: 1500,
       totalCost: 2300,
-      usedParts: [{ name: 'คาปาซิเตอร์', costAtTime: 400 }, { name: 'ไอซี', costAtTime: 400 }]
+      usedParts: [{ name: 'คาปาซิเตอร์', costAtTime: 400, quantity: 1 }, { name: 'ไอซี', costAtTime: 400, quantity: 1 }]
     },
     {
       date: '2025-08-11',
@@ -78,7 +78,7 @@ const mockData: SummaryData = {
       partsCost: 400,
       laborCost: 1000,
       totalCost: 1400,
-      usedParts: [{ name: 'ยางซีลคาร์บู', costAtTime: 200 }, { name: 'น้ำมันหล่อลื่น', costAtTime: 200 }]
+      usedParts: [{ name: 'ยางซีลคาร์บู', costAtTime: 200, quantity: 1 }, { name: 'น้ำมันหล่อลื่น', costAtTime: 200, quantity: 1 }]
     }
   ],
   purchaseData: [
@@ -116,7 +116,8 @@ const ReportView: React.FC<ReportViewProps> = ({ data = mockData }) => {
       {/* Header Section */}
       <ReportHeader 
         shopInfo={data.shopInfo} 
-        reportPeriod={data.reportPeriod} 
+        reportPeriod={data.reportPeriod}
+        logoUrl={data.logoUrl}
       />
 
       {/* Overview Section */}

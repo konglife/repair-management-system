@@ -52,10 +52,11 @@ export interface PurchaseRecordDetail {
   product: { name: string };
 }
 
-// Enhanced interface with purchaseData array
+// Enhanced interface with purchaseData array and logoUrl
 export interface SummaryData {
   reportPeriod: ReportPeriod;
   shopInfo: ShopInformation;
+  logoUrl?: string;
   overview: OverviewMetrics;
   salesData: SalesData[];
   repairsData: RepairsData[];
@@ -67,6 +68,7 @@ export interface SummaryData {
 export interface ReportHeaderProps {
   shopInfo: ShopInformation;
   reportPeriod: ReportPeriod;
+  logoUrl?: string;
 }
 
 export interface OverviewMetricsProps {

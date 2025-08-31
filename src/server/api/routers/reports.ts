@@ -59,6 +59,7 @@ interface SummaryData {
     endDate: string;
   };
   shopInfo: ShopInformation;
+  logoUrl?: string;
   overview: OverviewMetrics;
   salesData: SalesData[];
   repairsData: RepairsData[];
@@ -199,6 +200,7 @@ export const reportsRouter = createTRPCRouter({
             endDate
           },
           shopInfo,
+          logoUrl: businessProfile?.logoUrl || undefined,
           overview,
           salesData,
           repairsData,
