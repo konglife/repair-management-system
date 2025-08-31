@@ -84,14 +84,17 @@ export default function SalesPage() {
   const [saleDate, setSaleDate] = useState<Date | undefined>(new Date());
 
   // tRPC queries
-  const { data: sales = [], refetch: refetchSales, isLoading: salesLoading } = api.sales.getAll.useQuery(
+  const { data: sales = [], isLoading: salesLoading } = api.sales.getAll.useQuery(
     dateRange ? { dateRange } : undefined
   );
-  const { data: analytics, isLoading: analyticsLoading, refetch: refetchAnalytics } = api.sales.getAnalytics.useQuery(
+  const { data: analytics, isLoading: analyticsLoading } = api.sales.getAnalytics.useQuery(
     dateRange ? { dateRange } : undefined
   );
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
+  
+  // Utils for query invalidation
+  const utils = api.useUtils();
 
   // Filtered data for search functionality
   const filteredSales = useMemo(() => {
@@ -102,7 +105,6 @@ export default function SalesPage() {
       const customerNameMatch = sale.customer.name.toLowerCase().includes(searchTerm);
       
       // Search by date (various formats)
-      const saleDate = new Date(sale.createdAt);
       const dateString = formatDisplayDate(sale.createdAt).toLowerCase();
       const dateMatch = dateString.includes(searchTerm);
       
@@ -117,11 +119,12 @@ export default function SalesPage() {
 
   // tRPC mutations
   const createSaleMutation = api.sales.create.useMutation({
-    onSuccess: () => {
-      refetchSales();
-      refetchAnalytics();
+    onSuccess: async () => {
+      await utils.sales.getAll.invalidate();
+      await utils.sales.getAnalytics.invalidate();
       setShowCreateSaleForm(false);
       resetForm();
+      alert("Sale created successfully!");
     },
     onError: (error) => {
       alert(`Failed to create sale: ${error.message}`);

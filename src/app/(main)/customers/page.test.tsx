@@ -3,11 +3,24 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import CustomersPage from './page'
 import { api } from '~/app/providers'
 
+// Mock Next.js router
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
+}))
+
 // Mock the tRPC API
 jest.mock('~/app/providers', () => ({
   api: {
     customers: {
       getAll: {
+        useQuery: jest.fn(),
+      },
+      getTotalCount: {
+        useQuery: jest.fn(),
+      },
+      getNewCustomersThisMonth: {
         useQuery: jest.fn(),
       },
       create: {
@@ -17,6 +30,7 @@ jest.mock('~/app/providers', () => ({
         useMutation: jest.fn(),
       },
     },
+    useUtils: jest.fn(),
   },
 }))
 
@@ -51,8 +65,19 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => {
 describe('CustomersPage', () => {
   const mockGetAllQuery = {
     data: mockCustomers,
-    refetch: jest.fn(),
     isLoading: false,
+  }
+
+  const mockTotalCountQuery = {
+    data: 2,
+    isLoading: false,
+    error: null,
+  }
+
+  const mockNewCustomersQuery = {
+    data: 1,
+    isLoading: false,
+    error: null,
   }
 
   const mockCreateMutation = {
@@ -65,11 +90,28 @@ describe('CustomersPage', () => {
     isPending: false,
   }
 
+  const mockUtils = {
+    customers: {
+      getAll: {
+        invalidate: jest.fn(),
+      },
+      getTotalCount: {
+        invalidate: jest.fn(),
+      },
+      getNewCustomersThisMonth: {
+        invalidate: jest.fn(),
+      },
+    },
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
     ;(api.customers.getAll.useQuery as jest.Mock).mockReturnValue(mockGetAllQuery)
+    ;(api.customers.getTotalCount.useQuery as jest.Mock).mockReturnValue(mockTotalCountQuery)
+    ;(api.customers.getNewCustomersThisMonth.useQuery as jest.Mock).mockReturnValue(mockNewCustomersQuery)
     ;(api.customers.create.useMutation as jest.Mock).mockReturnValue(mockCreateMutation)
     ;(api.customers.update.useMutation as jest.Mock).mockReturnValue(mockUpdateMutation)
+    ;(api.useUtils as jest.Mock).mockReturnValue(mockUtils)
   })
 
   describe('Page Structure', () => {
@@ -771,6 +813,176 @@ describe('CustomersPage', () => {
           onSuccess: expect.any(Function),
           onError: expect.any(Function),
         })
+      })
+    })
+  })
+
+  describe('Utils Invalidation Pattern', () => {
+    // Mock alert function
+    const mockAlert = jest.fn()
+    beforeAll(() => {
+      global.alert = mockAlert
+    })
+
+    afterAll(() => {
+      global.alert = undefined as unknown as typeof alert
+    })
+
+    beforeEach(() => {
+      mockAlert.mockClear()
+    })
+
+    describe('Create Customer Invalidation', () => {
+      it('calls utils invalidation methods on successful customer creation', async () => {
+        const mockOnSuccess = jest.fn()
+        ;(api.customers.create.useMutation as jest.Mock).mockImplementation((options) => {
+          mockOnSuccess.mockImplementation(options.onSuccess)
+          return { mutate: jest.fn(), isPending: false }
+        })
+
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Simulate successful creation
+        await mockOnSuccess()
+
+        expect(mockUtils.customers.getAll.invalidate).toHaveBeenCalled()
+        expect(mockUtils.customers.getTotalCount.invalidate).toHaveBeenCalled()
+        expect(mockUtils.customers.getNewCustomersThisMonth.invalidate).toHaveBeenCalled()
+      })
+
+      it('shows success toast notification on customer creation', async () => {
+        const mockOnSuccess = jest.fn()
+        ;(api.customers.create.useMutation as jest.Mock).mockImplementation((options) => {
+          mockOnSuccess.mockImplementation(options.onSuccess)
+          return { mutate: jest.fn(), isPending: false }
+        })
+
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Simulate successful creation
+        await mockOnSuccess()
+
+        expect(mockAlert).toHaveBeenCalledWith('Customer created successfully!')
+      })
+
+      it('mutation configuration includes invalidation calls', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        expect(api.customers.create.useMutation).toHaveBeenCalledWith({
+          onSuccess: expect.any(Function),
+          onError: expect.any(Function),
+        })
+      })
+    })
+
+    describe('Update Customer Invalidation', () => {
+      it('calls utils invalidation methods on successful customer update', async () => {
+        const mockOnSuccess = jest.fn()
+        ;(api.customers.update.useMutation as jest.Mock).mockImplementation((options) => {
+          mockOnSuccess.mockImplementation(options.onSuccess)
+          return { mutate: jest.fn(), isPending: false }
+        })
+
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Simulate successful update
+        await mockOnSuccess()
+
+        expect(mockUtils.customers.getAll.invalidate).toHaveBeenCalled()
+      })
+
+      it('shows success toast notification on customer update', async () => {
+        const mockOnSuccess = jest.fn()
+        ;(api.customers.update.useMutation as jest.Mock).mockImplementation((options) => {
+          mockOnSuccess.mockImplementation(options.onSuccess)
+          return { mutate: jest.fn(), isPending: false }
+        })
+
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Simulate successful update
+        await mockOnSuccess()
+
+        expect(mockAlert).toHaveBeenCalledWith('Customer updated successfully!')
+      })
+
+      it('update mutation does not invalidate analytics queries unnecessarily', async () => {
+        const mockOnSuccess = jest.fn()
+        ;(api.customers.update.useMutation as jest.Mock).mockImplementation((options) => {
+          mockOnSuccess.mockImplementation(options.onSuccess)
+          return { mutate: jest.fn(), isPending: false }
+        })
+
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Simulate successful update
+        await mockOnSuccess()
+
+        // Update should only invalidate getAll, not analytics queries
+        expect(mockUtils.customers.getAll.invalidate).toHaveBeenCalled()
+        expect(mockUtils.customers.getTotalCount.invalidate).not.toHaveBeenCalled()
+        expect(mockUtils.customers.getNewCustomersThisMonth.invalidate).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('Utils Integration', () => {
+      it('verifies utils hook is called during component initialization', () => {
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        expect(api.useUtils).toHaveBeenCalled()
+      })
+
+      it('verifies invalidation methods are async functions', async () => {
+        mockUtils.customers.getAll.invalidate.mockResolvedValue(undefined)
+        mockUtils.customers.getTotalCount.invalidate.mockResolvedValue(undefined)
+        mockUtils.customers.getNewCustomersThisMonth.invalidate.mockResolvedValue(undefined)
+
+        const mockOnSuccess = jest.fn()
+        ;(api.customers.create.useMutation as jest.Mock).mockImplementation((options) => {
+          mockOnSuccess.mockImplementation(options.onSuccess)
+          return { mutate: jest.fn(), isPending: false }
+        })
+
+        render(
+          <TestWrapper>
+            <CustomersPage />
+          </TestWrapper>
+        )
+
+        // Simulate successful creation and wait for async operations
+        await mockOnSuccess()
+
+        expect(mockUtils.customers.getAll.invalidate).toHaveBeenCalled()
+        expect(mockUtils.customers.getTotalCount.invalidate).toHaveBeenCalled()
+        expect(mockUtils.customers.getNewCustomersThisMonth.invalidate).toHaveBeenCalled()
       })
     })
   })

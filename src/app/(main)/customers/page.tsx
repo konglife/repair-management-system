@@ -31,11 +31,14 @@ export default function CustomersPage() {
   const [editCustomerAddress, setEditCustomerAddress] = useState("");
 
   // tRPC queries and mutations for customers
-  const { data: customers = [], refetch: refetchCustomers, isLoading: customersLoading } = api.customers.getAll.useQuery();
+  const { data: customers = [], isLoading: customersLoading } = api.customers.getAll.useQuery();
   
   // Analytics queries
   const { data: totalCustomers = 0, isLoading: totalCustomersLoading, error: totalCustomersError } = api.customers.getTotalCount.useQuery();
   const { data: newCustomersThisMonth = 0, isLoading: newCustomersLoading, error: newCustomersError } = api.customers.getNewCustomersThisMonth.useQuery();
+  
+  // Utils for query invalidation
+  const utils = api.useUtils();
 
   // Filtered data for search functionality
   const filteredCustomers = useMemo(() => {
@@ -56,12 +59,15 @@ export default function CustomersPage() {
   }, [customers, customersSearchTerm]);
   
   const createCustomerMutation = api.customers.create.useMutation({
-    onSuccess: () => {
-      refetchCustomers();
+    onSuccess: async () => {
+      await utils.customers.getAll.invalidate();
+      await utils.customers.getTotalCount.invalidate();
+      await utils.customers.getNewCustomersThisMonth.invalidate();
       setShowCreateCustomerForm(false);
       setNewCustomerName("");
       setNewCustomerPhone("");
       setNewCustomerAddress("");
+      alert("Customer created successfully!");
     },
     onError: (error) => {
       alert(`Failed to create customer: ${error.message}`);
@@ -69,13 +75,14 @@ export default function CustomersPage() {
   });
 
   const updateCustomerMutation = api.customers.update.useMutation({
-    onSuccess: () => {
-      refetchCustomers();
+    onSuccess: async () => {
+      await utils.customers.getAll.invalidate();
       setShowEditCustomerForm(false);
       setEditingCustomer(null);
       setEditCustomerName("");
       setEditCustomerPhone("");
       setEditCustomerAddress("");
+      alert("Customer updated successfully!");
     },
     onError: (error) => {
       alert(`Failed to update customer: ${error.message}`);
