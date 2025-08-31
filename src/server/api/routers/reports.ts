@@ -42,7 +42,7 @@ interface RepairsData {
   partsCost: number;
   laborCost: number;
   totalCost: number;
-  usedParts: { name: string, costAtTime: number }[];
+  usedParts: { name: string, costAtTime: number, quantity: number }[];
 }
 
 interface PurchaseRecordDetail {
@@ -188,7 +188,8 @@ export const reportsRouter = createTRPCRouter({
           totalCost: repair.totalCost,
           usedParts: repair.usedParts.map(part => ({ 
             name: part.product.name, 
-            costAtTime: part.costAtTime 
+            costAtTime: part.costAtTime,
+            quantity: part.quantity
           }))
         }));
 

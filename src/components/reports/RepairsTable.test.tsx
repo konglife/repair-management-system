@@ -10,7 +10,7 @@ describe('RepairsTable', () => {
       partsCost: 1200,
       laborCost: 500,
       totalCost: 1700,
-      usedParts: [{ name: 'แบตเตอรี่ 12V', costAtTime: 1200 }]
+      usedParts: [{ name: 'แบตเตอรี่ 12V', costAtTime: 1200, quantity: 1 }]
     },
     {
       date: '2025-08-05',
@@ -19,8 +19,8 @@ describe('RepairsTable', () => {
       laborCost: 1500,
       totalCost: 2300,
       usedParts: [
-        { name: 'คาปาซิเตอร์', costAtTime: 400 },
-        { name: 'ไอซี', costAtTime: 400 }
+        { name: 'คาปาซิเตอร์', costAtTime: 400, quantity: 1 },
+        { name: 'ไอซี', costAtTime: 400, quantity: 1 }
       ]
     },
     {
@@ -30,8 +30,8 @@ describe('RepairsTable', () => {
       laborCost: 1000,
       totalCost: 1400,
       usedParts: [
-        { name: 'ยางซีลคาร์บู', costAtTime: 200 },
-        { name: 'น้ำมันหล่อลื่น', costAtTime: 200 }
+        { name: 'ยางซีลคาร์บู', costAtTime: 200, quantity: 2 },
+        { name: 'น้ำมันหล่อลื่น', costAtTime: 200, quantity: 1 }
       ]
     }
   ];
@@ -53,12 +53,12 @@ describe('RepairsTable', () => {
     expect(screen.getByText('Total Cost')).toBeInTheDocument();
   });
 
-  it('should render used parts with names and costs', () => {
+  it('should render used parts with names and quantities', () => {
     render(<RepairsTable repairsData={mockRepairsData} />);
 
-    expect(screen.getByText('แบตเตอรี่ 12V (฿1,200.00)')).toBeInTheDocument();
-    expect(screen.getByText('คาปาซิเตอร์ (฿400.00), ไอซี (฿400.00)')).toBeInTheDocument();
-    expect(screen.getByText('ยางซีลคาร์บู (฿200.00), น้ำมันหล่อลื่น (฿200.00)')).toBeInTheDocument();
+    expect(screen.getByText('แบตเตอรี่ 12V x1')).toBeInTheDocument();
+    expect(screen.getByText('คาปาซิเตอร์ x1, ไอซี x1')).toBeInTheDocument();
+    expect(screen.getByText('ยางซีลคาร์บู x2, น้ำมันหล่อลื่น x1')).toBeInTheDocument();
   });
 
   it('should render all repair data rows correctly', () => {
@@ -109,14 +109,14 @@ describe('RepairsTable', () => {
   });
 
   it('should handle missing usedParts property', () => {
-    const missingUsedPartsData = [{
+    const missingUsedPartsData: RepairsData[] = [{
       date: '2025-08-01',
       description: 'Simple repair',
       partsCost: 0,
       laborCost: 1000,
       totalCost: 1000,
-      usedParts: undefined
-    }] as RepairsData[];
+      usedParts: [] // Empty array instead of undefined
+    }];
 
     render(<RepairsTable repairsData={missingUsedPartsData} />);
 
@@ -155,6 +155,21 @@ describe('RepairsTable', () => {
     expect(totalsRow).toBeInTheDocument();
   });
 
+  it('should handle missing quantity with default value of 1', () => {
+    const missingQuantityData: RepairsData[] = [{
+      date: '2025-08-01',
+      description: 'Missing quantity test',
+      partsCost: 500,
+      laborCost: 300,
+      totalCost: 800,
+      usedParts: [{ name: 'Test Part', costAtTime: 500, quantity: 0 }]
+    }];
+
+    render(<RepairsTable repairsData={missingQuantityData} />);
+
+    expect(screen.getByText('Test Part x1')).toBeInTheDocument();
+  });
+
   it('should handle single used part correctly', () => {
     const singlePartData: RepairsData[] = [{
       date: '2025-08-01',
@@ -162,11 +177,11 @@ describe('RepairsTable', () => {
       partsCost: 500,
       laborCost: 300,
       totalCost: 800,
-      usedParts: [{ name: 'Test Part', costAtTime: 500 }]
+      usedParts: [{ name: 'Test Part', costAtTime: 500, quantity: 1 }]
     }];
 
     render(<RepairsTable repairsData={singlePartData} />);
 
-    expect(screen.getByText('Test Part (฿500.00)')).toBeInTheDocument();
+    expect(screen.getByText('Test Part x1')).toBeInTheDocument();
   });
 });

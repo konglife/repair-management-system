@@ -39,7 +39,7 @@ export interface RepairsData {
   partsCost: number;
   laborCost: number;
   totalCost: number;
-  usedParts: { name: string; costAtTime: number }[];
+  usedParts: { name: string; costAtTime: number; quantity: number }[];
 }
 
 // New interface for purchase records data

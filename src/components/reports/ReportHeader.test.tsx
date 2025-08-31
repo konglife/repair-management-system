@@ -33,10 +33,10 @@ describe('ReportHeader', () => {
       />
     );
 
-    expect(screen.getByText('Summary Report')).toBeInTheDocument();
+    expect(screen.getByText(/Summary Report/)).toBeInTheDocument();
   });
 
-  it('should render formatted report period correctly', () => {
+  it('should render formatted report period with hyphen correctly', () => {
     render(
       <ReportHeader 
         shopInfo={mockShopInfo} 
@@ -44,7 +44,7 @@ describe('ReportHeader', () => {
       />
     );
 
-    expect(screen.getByText(/01\/08\/2025 to 31\/08\/2025/)).toBeInTheDocument();
+    expect(screen.getByText(/Summary Report 01\/08\/2025 - 31\/08\/2025/)).toBeInTheDocument();
   });
 
   it('should render shop address correctly', () => {
@@ -70,7 +70,7 @@ describe('ReportHeader', () => {
     expect(shopNameHeading).toHaveTextContent('ร้านซ่อมของ Test Shop');
 
     const reportTitleHeading = screen.getByRole('heading', { level: 2 });
-    expect(reportTitleHeading).toHaveTextContent('Summary Report');
+    expect(reportTitleHeading).toHaveTextContent(/Summary Report 01\/08\/2025 - 31\/08\/2025/);
   });
 
   it('should have centered text layout', () => {

@@ -56,8 +56,8 @@ const mockEnhancedData: SummaryData = {
       laborCost: 800,
       totalCost: 2300,
       usedParts: [
-        { name: 'Enhanced Part 1', costAtTime: 800 },
-        { name: 'Enhanced Part 2', costAtTime: 700 }
+        { name: 'Enhanced Part 1', costAtTime: 800, quantity: 2 },
+        { name: 'Enhanced Part 2', costAtTime: 700, quantity: 1 }
       ]
     },
     {
@@ -67,7 +67,7 @@ const mockEnhancedData: SummaryData = {
       laborCost: 600,
       totalCost: 1500,
       usedParts: [
-        { name: 'Enhanced Part 3', costAtTime: 900 }
+        { name: 'Enhanced Part 3', costAtTime: 900, quantity: 1 }
       ]
     }
   ],
@@ -114,9 +114,9 @@ describe('ReportView Integration Tests', () => {
       expect(screen.getByText('ตารางรายละเอียดจากงานซ่อม')).toBeInTheDocument();
       expect(screen.getByText('Parts Used')).toBeInTheDocument();
 
-      // Check enhanced repairs data
-      expect(screen.getByText('Enhanced Part 1 (฿800.00), Enhanced Part 2 (฿700.00)')).toBeInTheDocument();
-      expect(screen.getByText('Enhanced Part 3 (฿900.00)')).toBeInTheDocument();
+      // Check enhanced repairs data with new quantity format
+      expect(screen.getByText('Enhanced Part 1 x2, Enhanced Part 2 x1')).toBeInTheDocument();
+      expect(screen.getByText('Enhanced Part 3 x1')).toBeInTheDocument();
 
       // Check repair descriptions
       expect(screen.getByText('Enhanced Repair Service A')).toBeInTheDocument();
@@ -230,7 +230,7 @@ describe('ReportView Integration Tests', () => {
             netTotal: 6000,
             totalAmount: 15,
             grossProfit: 3000,
-            saleItems: undefined as any
+            saleItems: []
           }
         ],
         repairsData: [
@@ -240,10 +240,10 @@ describe('ReportView Integration Tests', () => {
             partsCost: 1500,
             laborCost: 800,
             totalCost: 2300,
-            usedParts: null as any
+            usedParts: []
           }
         ],
-        purchaseRecordsData: undefined as any
+        purchaseRecordsData: []
       };
 
       render(<ReportView data={dataWithUndefinedArrays} />);

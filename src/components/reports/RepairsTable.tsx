@@ -45,7 +45,7 @@ const RepairsTable: React.FC<RepairsTableProps> = ({ repairsData }) => {
                 <td className="border border-gray-200 px-3 py-2">
                   {repair.usedParts && Array.isArray(repair.usedParts) && repair.usedParts.length > 0
                     ? repair.usedParts.map(part => 
-                        `${part.name || 'Unknown Part'} (${formatCurrency(part.costAtTime || 0)})`
+                        `${part.name || 'Unknown Part'} x${part.quantity || 1}`
                       ).join(', ')
                     : '-'}
                 </td>

@@ -10,10 +10,9 @@ const ReportHeader: React.FC<ReportHeaderProps> = ({ shopInfo, reportPeriod }) =
       <div className="text-center mb-4">
         <h1 className="text-xl font-bold mb-1">{shopInfo.name}</h1>
         <p className="text-sm">{shopInfo.address}</p>
-        <h2 className="text-lg font-bold mt-3">Summary Report</h2>
-        <p className="text-sm">
-          {formatReportDate(reportPeriod.startDate)} to {formatReportDate(reportPeriod.endDate)}
-        </p>
+        <h2 className="text-lg font-bold mt-3">
+          Summary Report {formatReportDate(reportPeriod.startDate)} - {formatReportDate(reportPeriod.endDate)}
+        </h2>
       </div>
     </div>
   );
