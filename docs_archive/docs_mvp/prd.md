@@ -104,7 +104,7 @@ The application will be a Responsive Web App, designed for optimal use on a Desk
 * Modern tools should be considered as options in the architecture design, such as:
     * **Authentication:** Clerk
     * **ORM:** Prisma
-    * **Database:** Neon DB (Serverless Postgres) or an equivalent database.
+    * **Database:** vercel DB (Postgres) or an equivalent database.
 
 ## 5. Epic List
 
