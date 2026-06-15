@@ -16,7 +16,7 @@
 -   **Framework:** Next.js
 -   **Language:** TypeScript
 -   **API:** tRPC
--   **Database:** PostgreSQL (with Prisma)
+-   **Database:** Prisma Postgres (Vercel)
 -   **Authentication:** Clerk
 -   **Styling:** Tailwind CSS
 -   **UI Components:** shadcn/ui
@@ -25,7 +25,7 @@
 
 ### Prerequisites (สิ่งที่ต้องมี)
 
--   Node.js (v20 or later)
+-   Node.js (v22 or later)
 -   npm or yarn
 -   PostgreSQL Database
 
@@ -33,7 +33,7 @@
 
 1.  Clone a copy of the repository:
     ```bash
-    git clone [https://github.com/konglife/repair-management-system.git](https://github.com/konglife/repair-management-system.git)
+    git clone https://github.com/konglife/repair-management-system.git
     ```
 2.  Navigate to the project directory:
     ```bash
