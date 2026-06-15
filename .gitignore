@@ -41,7 +41,4 @@ yarn-error.log*
 next-env.d.ts
 .env*.local
 
-/.bmad-core/
-/web-bundles/
-/.claude/
 /.github/
