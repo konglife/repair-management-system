@@ -27,7 +27,7 @@ This is a repair shop back-office management system built as a modern full-stack
 ### Tech Stack
 - **Framework**: Next.js 15.4.x with App Router
 - **Language**: TypeScript 5.x
-- **Database**: PostgreSQL (NeonDB for production)
+- **Database**: Prisma Postgres (Vercel) — แยกฐานข้อมูลระหว่าง production (สาขา main) กับ preview (สาขา develop)
 - **ORM**: Prisma 6.14.x
 - **API Layer**: tRPC 11.4.x for type-safe APIs
 - **Authentication**: Clerk (to be implemented)
@@ -122,7 +122,7 @@ The application supports the complete repair shop workflow from inventory manage
 ## Environment Setup
 
 Ensure these environment variables are configured:
-- `DATABASE_URL` - PostgreSQL connection string
+- `DATABASE_URL` - Prisma Postgres (Vercel) connection string — แยกสำหรับ production และ preview
 - Authentication keys (Clerk - to be implemented)
 
 ## Testing Notes
