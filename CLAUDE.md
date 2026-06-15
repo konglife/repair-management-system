@@ -167,6 +167,15 @@ The API follows domain-driven router organization:
 - Prettier formatting (run with `npm run format`)
 - Path aliases: `~/*` for `src/*`, `@/*` for `src/*`
 
+### Commit Conventions
+- ทุก commit ลงท้ายด้วย trailer นี้ (เพื่อให้ github.com/claude ขึ้นเป็น contributor):
+  ```
+  Co-Authored-By: claude <81847+claude@users.noreply.github.com>
+  ```
+  - ใช้ email นี้ (GitHub-native noreply ของบัญชี `claude` ID 81847) **ห้าม** ใช้ `noreply@anthropic.com` (มีบั๊ก misattribution — ถูกคนอื่น claim)
+  - commit-level attribution (avatar บนหน้า commit) ขึ้นทันทีที่ push; sidebar **Contributors** ขึ้นหลัง commit นั้นถูก merge เข้า `main`
+- ภาษา commit message: ไทย (ตามสไตล์ repo)
+
 ## Business Context
 
 This system replaces manual bookkeeping for a repair shop with goals to:
