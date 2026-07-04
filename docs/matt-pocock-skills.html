@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matt Pocock Skills — Lifecycle Flow</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181b24;
+    --surface-2: #1e2230;
+    --surface-hover: #232838;
+    --border: #2a2f3c;
+    --border-light: #353b4d;
+    --ink: #e4e7ef;
+    --muted: #8b9bb4;
+    --dim: #5c6a85;
+    --accent: #7c6cff;
+    --accent-soft: rgba(124, 108, 255, 0.12);
+    --accent-border: rgba(124, 108, 255, 0.3);
+    --green: #3ddc84;
+    --green-soft: rgba(61, 220, 132, 0.1);
+    --orange: #ff9f43;
+    --orange-soft: rgba(255, 159, 67, 0.1);
+    --blue: #4dabf7;
+    --blue-soft: rgba(77, 171, 247, 0.1);
+    --pink: #f368e0;
+    --pink-soft: rgba(243, 104, 224, 0.1);
+    --red: #ff6b6b;
+    --red-soft: rgba(255, 107, 107, 0.1);
+    --teal: #2dd4bf;
+    --teal-soft: rgba(45, 212, 191, 0.1);
+    --yellow: #fde047;
+    --yellow-soft: rgba(253, 224, 71, 0.1);
+    --cyan: #22d3ee;
+    --cyan-soft: rgba(34, 211, 238, 0.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  .header {
+    padding: 56px 48px 40px;
+    text-align: center;
+    background: linear-gradient(180deg, #14171f 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .header .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-border);
+    padding: 4px 14px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .header .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 620px;
+    margin: 0 auto;
+  }
+  .header .stats {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat-label { font-size: 11px; color: var(--dim); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* ── Legend (type badges) ── */
+  .type-legend {
+    max-width: 1200px; margin: 0 auto;
+    padding: 24px 48px 0;
+    display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
+    font-size: 12px; color: var(--dim);
+  }
+  .type-legend .tag-demo { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* ── Router card (ask-matt) ── */
+  .router-card {
+    max-width: 1200px; margin: 0 auto; padding: 28px 48px 0;
+  }
+  .router-box {
+    background: linear-gradient(135deg, rgba(124,108,255,0.14), rgba(77,171,247,0.08));
+    border: 1px solid var(--accent-border);
+    border-radius: 14px; padding: 20px 24px;
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  .router-box .r-icon { font-size: 30px; }
+  .router-box .r-title { font-size: 16px; font-weight: 700; }
+  .router-box .r-sub { font-size: 13px; color: var(--muted); }
+  .router-box .r-cmd {
+    font-family: 'SF Mono', monospace; font-size: 13px; font-weight: 700;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 12px; border-radius: 8px; margin-left: auto;
+  }
+
+  /* ── Flow Overview ── */
+  .flow-overview { padding: 36px 48px 16px; max-width: 1200px; margin: 0 auto; }
+  .flow-overview h2 {
+    font-size: 13px; font-weight: 600; color: var(--dim);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px;
+  }
+  .flow-chain { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; font-weight: 500; }
+  .flow-pill {
+    padding: 6px 14px; border-radius: 8px; white-space: nowrap;
+    cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
+  }
+  .flow-pill:hover { transform: translateY(-1px); filter: brightness(1.2); }
+  .flow-arrow { color: var(--dim); font-size: 14px; user-select: none; }
+
+  /* ── Phase Section ── */
+  .phase-section { max-width: 1200px; margin: 0 auto; padding: 32px 48px; }
+
+  .phase-header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .phase-num {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; flex-shrink: 0; font-variant-numeric: tabular-nums;
+  }
+  .phase-title { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .phase-desc-th { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+  /* Phase example box */
+  .phase-example {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--phase-color, var(--accent));
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .phase-example .ex-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--phase-color, var(--accent));
+    margin-bottom: 6px; display: block;
+  }
+  .phase-example code {
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--ink);
+  }
+
+  /* ── Cards ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .card:hover {
+    background: var(--surface-hover);
+    border-color: var(--card-color, var(--accent));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--card-color, var(--accent));
+    opacity: 0.2; transition: opacity 0.15s;
+  }
+  .card:hover::before { opacity: 1; }
+  .card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .card-name {
+    font-size: 14px; font-weight: 700;
+    font-family: 'SF Mono', 'Cascadia Code', monospace;
+    color: var(--card-color, var(--accent));
+  }
+  .type-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+    font-family: system-ui, sans-serif;
+  }
+  .type-badge.user { background: var(--accent-soft); color: var(--accent); }
+  .type-badge.model { background: rgba(255,255,255,0.05); color: var(--dim); }
+  .card-command {
+    font-size: 10px; color: var(--dim);
+    font-family: monospace; margin-left: auto;
+    background: rgba(255,255,255,0.04); padding: 2px 7px; border-radius: 4px;
+  }
+  .card-desc-th {
+    font-size: 13px; color: var(--muted); line-height: 1.55;
+  }
+  .card-hint {
+    font-size: 11px; color: var(--dim); margin-top: 8px;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ── Phase Colors ── */
+  .phase-setup    { --card-color: var(--accent); --phase-color: var(--accent); }
+  .phase-planning { --card-color: var(--blue); --phase-color: var(--blue); }
+  .phase-spec     { --card-color: var(--teal); --phase-color: var(--teal); }
+  .phase-dev      { --card-color: var(--green); --phase-color: var(--green); }
+  .phase-debug    { --card-color: var(--red); --phase-color: var(--red); }
+  .phase-review   { --card-color: var(--orange); --phase-color: var(--orange); }
+  .phase-handoff  { --card-color: var(--cyan); --phase-color: var(--cyan); }
+  .phase-utility  { --card-color: var(--pink); --phase-color: var(--pink); }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+    display: none; align-items: flex-start; justify-content: center;
+    z-index: 100; padding: 40px 20px; overflow-y: auto;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    max-width: 680px; width: 100%;
+    padding: 0; overflow: hidden;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    animation: modalIn 0.2s ease-out;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-banner { height: 4px; background: var(--modal-color, var(--accent)); }
+  .modal-body { padding: 28px 32px; }
+  .modal-close {
+    float: right; cursor: pointer; font-size: 22px; color: var(--dim);
+    line-height: 1; padding: 0; background: none; border: none;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--ink); }
+  .modal-name {
+    font-size: 20px; font-weight: 800;
+    font-family: 'SF Mono', monospace;
+    color: var(--modal-color, var(--accent));
+    margin-bottom: 6px;
+  }
+  .modal-command {
+    font-size: 12px; color: var(--dim); font-family: monospace;
+    margin-bottom: 6px;
+  }
+  .modal-type {
+    font-size: 11px; color: var(--muted); margin-bottom: 20px;
+  }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--dim); margin-bottom: 8px;
+  }
+  .modal-section p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+  .modal-example {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px;
+    font-size: 13px; color: var(--ink); line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  .modal-example code {
+    font-family: 'SF Mono', monospace; font-size: 12px;
+    background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px;
+    color: var(--green);
+  }
+  .modal-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .modal-tag {
+    font-size: 11px; padding: 3px 10px; border-radius: 100px;
+    background: rgba(255,255,255,0.05); color: var(--dim);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Flow Diagram ── */
+  .flow-diagram { max-width: 1200px; margin: 0 auto; padding: 16px 48px 48px; }
+  .flow-diagram h2 {
+    font-size: 13px; font-weight: 600; color: var(--dim);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px;
+  }
+  /* ── Dependency Map ── */
+  .dep-map { max-width: 1200px; margin: 0 auto; padding: 0 48px 48px; }
+  .dep-map > h2 { font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+  .dep-subtitle { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+  .dep-svg-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; overflow-x: auto;
+  }
+  .dep-svg-box svg { display: block; margin: 0 auto; }
+  .flow-diagram-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px; overflow-x: auto;
+  }
+  .flow-line {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .flow-node {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    white-space: nowrap; border: 1px solid var(--border); background: var(--bg);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .flow-node:hover { transform: translateY(-1px); filter: brightness(1.3); }
+  .flow-arrow-down { text-align: center; color: var(--dim); font-size: 16px; margin: 2px 0; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; padding: 40px;
+    border-top: 1px solid var(--border);
+    color: var(--dim); font-size: 13px;
+  }
+
+  @media (max-width: 640px) {
+    .header { padding: 36px 20px 24px; }
+    .phase-section { padding: 24px 20px; }
+    .flow-diagram { padding: 0 20px 24px; }
+    .flow-overview { padding: 28px 20px 12px; }
+    .type-legend, .router-card { padding-left: 20px; padding-right: 20px; }
+    .cards { grid-template-columns: 1fr; }
+    .phase-desc-th { display: none; }
+    .flow-diagram-box { padding: 20px; }
+    .modal-body { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<div class="header">
+  <div class="badge">Skill Collection</div>
+  <h1>Matt Pocock's Engineering Skills</h1>
+  <p class="subtitle">24 สกิล (12 เรียกเอง + 12 agent หยิบเอง) ครอบคลุมทั้ง Software Development Lifecycle — ตั้งแต่วางแผน สร้าง ตรวจสอบ จนถึงส่งมอบ</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">24</div><div class="stat-label">Skills</div></div>
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Phases</div></div>
+    <div class="stat"><div class="stat-num">1</div><div class="stat-label">Main Flow</div></div>
+  </div>
+</div>
+
+<!-- ── Type Legend ── -->
+<div class="type-legend">
+  <span class="tag-demo"><span class="type-badge user">USER</span> พิมพ์ <code style="font-family:monospace;color:var(--ink);">/&lt;ชื่อ&gt;</code> เรียกเอง</span>
+  <span class="tag-demo"><span class="type-badge model">MODEL</span> agent หยิบใช้เองเมื่องานเข้าเงื่อนไข</span>
+</div>
+
+<!-- ── Router (ask-matt) ── -->
+<div class="router-card">
+  <div class="router-box" onclick="openModal('ask-matt')" style="cursor:pointer;">
+    <span class="r-icon">🧭</span>
+    <div>
+      <div class="r-title">ไม่จำได้ว่าจะใช้ skill ไหน? เริ่มที่ตัวนี้</div>
+      <div class="r-sub"><code style="color:var(--accent);">/ask-matt</code> คือ router — บอกสถานการณ์แล้วมันจะชี้ flow ที่ควรเดิน</div>
+    </div>
+    <span class="r-cmd">/ask-matt</span>
+  </div>
+</div>
+
+<!-- ── Quick Flow ── -->
+<div class="flow-overview">
+  <h2>Main Flow — ไอเดีย → ส่งมอบ (เส้นทางหลัก)</h2>
+  <div class="flow-chain" id="flow-chain">
+    <span class="flow-pill" style="background:var(--blue-soft);color:var(--blue);" onclick="scrollToPhase('planning')">Planning</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-pill" style="background:var(--teal-soft);color:var(--teal);" onclick="scrollToPhase('spec')">Spec → Issues</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-pill" style="background:var(--green-soft);color:var(--green);" onclick="scrollToPhase('dev')">Dev (TDD)</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-pill" style="background:var(--orange-soft);color:var(--orange);" onclick="scrollToPhase('review')">Review</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-pill" style="background:var(--cyan-soft);color:var(--cyan);" onclick="scrollToPhase('handoff')">Handoff</span>
+  </div>
+  <div style="font-size:12px;color:var(--dim);margin-top:12px;">
+    on-ramps: มีบั๊ก/request พอก → <code style="color:var(--teal);">/triage</code> · ของพังดื้อ → <code style="color:var(--red);">/diagnosing-bugs</code> · ปรับสถาปัตยกรรม → <code style="color:var(--orange);">/improve-codebase-architecture</code>
+  </div>
+</div>
+
+<!-- ════════ 01 SETUP ════════ -->
+<div class="phase-section phase-setup" id="phase-setup">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--accent-soft);color:var(--accent);">01</div>
+    <div class="phase-title">Setup — ติดตั้งเบื้องต้น</div>
+    <div class="phase-desc-th">ทำครั้งเดียวต่อ repo (repo นี้อาจมีบางตัวแล้ว)</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    ก่อนใช้ engineering skills ครั้งแรก รัน <code>/setup-matt-pocock-skills</code> ให้ agent รู้จัก issue tracker (GitHub/local), triage labels, และที่เก็บ CONTEXT.md/ADR — สำหรับ repo นี้ (Vercel + 2 DB) อาจเลือก GitHub issue tracker เพราะมี remote อยู่แล้ว จากนั้น <code>/setup-pre-commit</code> ลง Husky ให้ format/typecheck/test อัตโนมัติทุก commit และ <code>/git-guardrails-claude-code</code> บล็อก <code>git push</code>/<code>reset --hard</code> กัน agent เผลอทำลายงาน (เข้ากับกฎเหล็กของ repo ที่ห้าม push <code>main</code> เป๊ะ)
+  </div>
+  <div class="cards">
+    <div class="card phase-setup" onclick="openModal('setup-matt-pocock-skills')">
+      <div class="card-head"><span class="card-name">setup-matt-pocock-skills</span><span class="type-badge user">USER</span><span class="card-command">/setup-matt-pocock-skills</span></div>
+      <p class="card-desc-th">ตั้งค่า issue tracker, triage labels, และเลย์เอาต์ domain docs ที่ skill อื่นถือว่ามีอยู่แล้ว</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-setup" onclick="openModal('setup-pre-commit')">
+      <div class="card-head"><span class="card-name">setup-pre-commit</span><span class="type-badge model">MODEL</span><span class="card-command">/setup-pre-commit</span></div>
+      <p class="card-desc-th">ติดตั้ง Husky + lint-staged (Prettier), type checking, และ test runner ใน pre-commit hook</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-setup" onclick="openModal('git-guardrails-claude-code')">
+      <div class="card-head"><span class="card-name">git-guardrails-claude-code</span><span class="type-badge model">MODEL</span><span class="card-command">/git-guardrails-claude-code</span></div>
+      <p class="card-desc-th">บล็อก git command อันตราย (push, reset --hard, clean -fd, branch -D) ก่อนทำงานใน Claude Code</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 02 PLANNING ════════ -->
+<div class="phase-section phase-planning" id="phase-planning">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--blue-soft);color:var(--blue);">02</div>
+    <div class="phase-title">Planning &amp; Design — ลับแผนให้คม</div>
+    <div class="phase-desc-th">ก่อนเขียนโค้ดเลย</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    อยากทำฟีเจอร์ "แจ้งเตือนเมื่องานซ่อมเสร็จ" แต่ยังไม่ชัด — รัน <code>/grill-with-docs</code> (เรียก <code>/grilling</code> + <code>/domain-modeling</code>) เพื่อให้ agent ถามทีละข้อ: ส่งทางไหน (LINE/SMS)? ใครเป็นคนส่ง? เก็บ log กี่วัน? คำศัพท์ "งานซ่อมเสร็จ" คือ status <code>COMPLETED</code> หรือ <code>READY_FOR_PICKUP</code>? แต่ละคำตอบถูกบันทึกลง <code>CONTEXT.md</code> ทันที ถ้าสงสัยว่า state model ของ Repair จะซับซ้อนเกินไป ใช้ <code>/prototype</code> ทำ terminal app โต้ตอบทิ้งเพื่อทดสอบก่อนตัดสินใจ ส่วน <code>/codebase-design</code> ใช้ตอนออกแบบ interface ให้เป็น deep module
+  </div>
+  <div class="cards">
+    <div class="card phase-planning" onclick="openModal('grill-me')">
+      <div class="card-head"><span class="card-name">grill-me</span><span class="type-badge user">USER</span><span class="card-command">/grill-me</span></div>
+      <p class="card-desc-th">Wrapper สั้น — รัน <code>/grilling</code> เพื่อสัมภาษณ์ไล่คำถาม (stateless, ไม่สร้าง docs)</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-planning" onclick="openModal('grill-with-docs')">
+      <div class="card-head"><span class="card-name">grill-with-docs</span><span class="type-badge user">USER</span><span class="card-command">/grill-with-docs</span></div>
+      <p class="card-desc-th">Wrapper — รัน <code>/grilling</code> + <code>/domain-modeling</code> พร้อมสร้าง CONTEXT.md + ADR ไว้เป็นหลักฐาน</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-planning" onclick="openModal('grilling')">
+      <div class="card-head"><span class="card-name">grilling</span><span class="type-badge model">MODEL</span><span class="card-command">/grilling</span></div>
+      <p class="card-desc-th">Engine หลัก — สอบสวนแผนทีละคำถาม พร้อมเสนอคำตอบแนะนำ ถามได้จากโค้ดก็ดูเอง</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-planning" onclick="openModal('domain-modeling')">
+      <div class="card-head"><span class="card-name">domain-modeling</span><span class="type-badge model">MODEL</span><span class="card-command">/domain-modeling</span></div>
+      <p class="card-desc-th">สร้าง+ลับคม domain glossary ใน CONTEXT.md และเขียน ADRเมื่อตัดสินใจของจริงที่ยากพลิกกลับ</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-planning" onclick="openModal('codebase-design')">
+      <div class="card-head"><span class="card-name">codebase-design</span><span class="type-badge model">MODEL</span><span class="card-command">/codebase-design</span></div>
+      <p class="card-desc-th">คำศัพท์+หลักคิดสำหรับออกแบบ deep module — interface เล็ก logic เยอะ วาง seam ให้ถูกที่</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-planning" onclick="openModal('prototype')">
+      <div class="card-head"><span class="card-name">prototype</span><span class="type-badge model">MODEL</span><span class="card-command">/prototype</span></div>
+      <p class="card-desc-th">สร้าง throwaway prototype ทดสอบดีไซน์ก่อนทำจริง — แยก logic (terminal) กับ UI (หลาย variation)</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 03 SPEC ════════ -->
+<div class="phase-section phase-spec" id="phase-spec">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--teal-soft);color:var(--teal);">03</div>
+    <div class="phase-title">Spec → Issues — แปลงแผนเป็นงาน</div>
+    <div class="phase-desc-th">จากแผนสู่ตั๋วที่หยิบทำได้</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    หลัง grill-with-docs เสร็จ แผนแจ้งเตือนซ่อมเสร็จชัดแล้ว — รัน <code>/to-prd</code> สรุปเป็น PRD (Problem, Solution, User Stories, Implementation/Testing Decisions, Out of Scope) แล้ว publish ขึ้น issue tracker พร้อม label <code>ready-for-agent</code> จากนั้น <code>/to-issues</code> แบ่ง PRD ออกเป็น vertical slices ที่ทำอิสระ เช่น Issue #1: schema ฟิลด์ notification, Issue #2: tRPC <code>repairs.markComplete</code>, Issue #3: ส่ง LINE + log ส่วน <code>/triage</code> ใช้กับ issue ที่ <strong>มาจากภายนอก</strong> (bug report, feature request) ไม่ใช่ issue ที่ <code>/to-issues</code> สร้างเอง (อันนั้น agent-ready แล้ว)
+  </div>
+  <div class="cards">
+    <div class="card phase-spec" onclick="openModal('to-prd')">
+      <div class="card-head"><span class="card-name">to-prd</span><span class="type-badge user">USER</span><span class="card-command">/to-prd</span></div>
+      <p class="card-desc-th">สังเคราะห์บทสนทนาเป็น PRD + publish ขึ้น issue tracker (ไม่สัมภาษณ์ แค่สรุป)</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-spec" onclick="openModal('to-issues')">
+      <div class="card-head"><span class="card-name">to-issues</span><span class="type-badge user">USER</span><span class="card-command">/to-issues</span></div>
+      <p class="card-desc-th">แบ่ง PRD เป็น tracer-bullet vertical slices — แต่ละ issue ตัดผ่านทุก layer end-to-end ทำได้อิสระ</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-spec" onclick="openModal('triage')">
+      <div class="card-head"><span class="card-name">triage</span><span class="type-badge user">USER</span><span class="card-command">/triage</span></div>
+      <p class="card-desc-th">ย้าย issue/PR ภายนอก ผ่าน state machine — แบ่งหมวด ตรวจ claim ใช้ <code>/grilling</code>+<code>/domain-modeling</code> เขียน agent brief</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 04 DEV ════════ -->
+<div class="phase-section phase-dev" id="phase-dev">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--green-soft);color:var(--green);">04</div>
+    <div class="phase-title">Development — เขียนโค้ด</div>
+    <div class="phase-desc-th">TDD vertical slices</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    รับ Issue #2 (<code>repairs.markComplete</code>) มาทำ — รัน <code>/implement</code> ซึ่งจะขับ <code>/tdd</code> เป็น vertical tracer bullets: เขียน test เดียวก่อน "เรียก markComplete แล้ว status เป็น COMPLETED + สร้าง notification row" → ดู RED → เขียนโค้ดน้อยที่สุดให้ผ่าน → GREEN → ทำตัวถัดไปทีละตัว ใช้ <code>/codebase-design</code> หา seam ที่จะ test (ผ่าน tRPC procedure = public interface) รัน typecheck บ่อยๆ เสร็จแล้ว <code>/implement</code> เรียก <code>/code-review</code> ให้ ถ้า rebase ชน <code>/resolving-merge-conflicts</code> ไล่ทุก hunk อย่าเข้าใจผิด
+  </div>
+  <div class="cards">
+    <div class="card phase-dev" onclick="openModal('implement')">
+      <div class="card-head"><span class="card-name">implement</span><span class="type-badge user">USER</span><span class="card-command">/implement</span></div>
+      <p class="card-desc-th">ทำงานจาก PRD/issue — ขับ <code>/tdd</code> ตาม seam ที่ตกลงไว้ รัน typecheck บ่อย เสร็จเรียก <code>/code-review</code></p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-dev" onclick="openModal('tdd')">
+      <div class="card-head"><span class="card-name">tdd</span><span class="type-badge model">MODEL</span><span class="card-command">/tdd</span></div>
+      <p class="card-desc-th">TDD vertical tracer bullets — test → impl ทีละตัว ไม่ใช่ horizontal ต่อห้ามเขียน test รวดเดียวแล้วค่อย implement</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-dev" onclick="openModal('resolving-merge-conflicts')">
+      <div class="card-head"><span class="card-name">resolving-merge-conflicts</span><span class="type-badge model">MODEL</span><span class="card-command">/resolving-merge-conflicts</span></div>
+      <p class="card-desc-th">เมื่อ merge/rebase ชน — อ่าน intent ทั้งสองฝั่ง → resolve ทุก hunk → รัน typecheck/test → commit (ห้าม --abort)</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 05 DEBUG ════════ -->
+<div class="phase-section phase-debug" id="phase-debug">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--red-soft);color:var(--red);">05</div>
+    <div class="phase-title">Debug &amp; Fix — หา root cause</div>
+    <div class="phase-desc-th">ไม่ใช่แค่อาการ</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    ขายสินค้าแล้วบางครั้ง stock หักผิด — รัน <code>/diagnosing-bugs</code> หัวใจอยู่ที่ Phase 1: <strong>สร้าง feedback loop ที่ไป RED บนบั๊กนี้ให้ได้ก่อน</strong> (เช่น integration test ที่ยิง <code>sales.create</code> แล้ว assert stock ผิด) ห้ามตั้งสมมติฐายก่อนมี loop เมื่อ loop แดง → minimise → ตั้ง 3–5 สมมติฐาน → instrument ทีละตัวแปร → แก้ + เขียน regression test ถ้าหา "ไม่มี seam ที่ดีพอจะล็อกบั๊ก" post-mortem จะส่งต่อไป <code>/improve-codebase-architecture</code>
+  </div>
+  <div class="cards">
+    <div class="card phase-debug" onclick="openModal('diagnosing-bugs')">
+      <div class="card-head"><span class="card-name">diagnosing-bugs</span><span class="type-badge model">MODEL</span><span class="card-command">/diagnosing-bugs</span></div>
+      <p class="card-desc-th">วงจร debug หา root cause: สร้าง feedback loop ที่แดง → reproduce/minimise → hypothesise → instrument → fix → regression-test</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 06 REVIEW ════════ -->
+<div class="phase-section phase-review" id="phase-review">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--orange-soft);color:var(--orange);">06</div>
+    <div class="phase-title">Review &amp; Improve — ตรวจและปรับสถาปัตยกรรม</div>
+    <div class="phase-desc-th">หลังเขียนเสร็จ / ตอนว่าง</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    PR ทำเสร็จก่อน merge — รัน <code>/code-review</code> รีวิว 2 แกนขนาน: <strong>Standards</strong> (โค้ดตรงมาตรฐาน repo + code smells) กับ <strong>Spec</strong> (ตรงที่ issue ขอไหม ขอขาดไหม เกินไหม) ถ้าเจอว่าโค้ดเริ่มรก เช่น logic คำนวณต้นทุนเฉลี่ยกระจายอยู่หลายที่ รัน <code>/improve-codebase-architecture</code> มันจะสแกนหา "deepening opportunities" แล้วสร้างรายงาน HTML (Tailwind+Mermaid) ให้เลือกว่าจะปรับตัวไหน แล้ว grill ผ่านตัวนั้น
+  </div>
+  <div class="cards">
+    <div class="card phase-review" onclick="openModal('code-review')">
+      <div class="card-head"><span class="card-name">code-review</span><span class="type-badge model">MODEL</span><span class="card-command">/code-review</span></div>
+      <p class="card-desc-th">รีวิว diff 2 แกนขนาน: Standards (มาตรฐาน+smells) vs Spec (ตรง issue/PRD ไหม) รายงานแยกกันไม่กลบกัน</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-review" onclick="openModal('improve-codebase-architecture')">
+      <div class="card-head"><span class="card-name">improve-codebase-architecture</span><span class="type-badge user">USER</span><span class="card-command">/improve-codebase-architecture</span></div>
+      <p class="card-desc-th">สแกนหา "deepening opportunities" สร้างรายงาน HTML (Tailwind+Mermaid) แล้ว grill ตัวที่เลือก</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 07 HANDOFF ════════ -->
+<div class="phase-section phase-handoff" id="phase-handoff">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--cyan-soft);color:var(--cyan);">07</div>
+    <div class="phase-title">Handoff — ข้ามเซสชัน</div>
+    <div class="phase-desc-th">ส่งไม้ต่อ / แยกเธรด</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    เซสชันยาวใกล้ smart zone หรือต้องแตกไปทำ <code>/prototype</code> แยก — รัน <code>/handoff</code> agent จะย่อทุกอย่างเป็นเอกสารใน temp dir: ทำอะไรเสร็จ, ค้างอะไร, ตัดสินใจอะไร, next steps, suggested skills และอ้างอิง artifacts (PRD/ADR/commit) แทนที่จะทำซ้ำ — เปิดเซสชันใหม่โหลดไฟล์นี้แล้วทำต่อได้เลย ต่างจาก <code>/compact</code> built-in ตรง <code>/handoff</code> = fork เปิดเธรดใหม่, <code>/compact</code> = สรุปในเธรดเดิม
+  </div>
+  <div class="cards">
+    <div class="card phase-handoff" onclick="openModal('handoff')">
+      <div class="card-head"><span class="card-name">handoff</span><span class="type-badge user">USER</span><span class="card-command">/handoff</span></div>
+      <p class="card-desc-th">ย่อ conversation เป็นเอกสารส่งต่อให้ agent/session ใหม่ — อ้างอิง artifacts ไม่ทำซ้ำ ลบข้อมูล sensitive</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ 08 UTILITY ════════ -->
+<div class="phase-section phase-utility" id="phase-utility">
+  <div class="phase-header">
+    <div class="phase-num" style="background:var(--pink-soft);color:var(--pink);">08</div>
+    <div class="phase-title">Learning &amp; Utility — เครื่องมือรอบด้าน</div>
+    <div class="phase-desc-th">ใช้ตลอด ไม่ติด phase</div>
+  </div>
+  <div class="phase-example">
+    <span class="ex-label">ตัวอย่างการใช้งานจริง</span>
+    <code>/teach</code> "สอนกูเรื่อง Prisma transaction" — agent สร้าง MISSION.md + lessons/*.html สวยๆ (Tufte style) ใช้ ./assets/ ซ้ำก่อน บันทึก progress ใน learning-records/ / <code>/writing-great-skills</code> เมื่ออยากเขียน/แก้ skill ของตัวเอง / <code>/migrate-to-shoehorn</code> แปลง <code>as</code> assertion ใน test เป็น <code>fromPartial()</code> ปลอดภัยกว่า / <code>/scaffold-exercises</code> สร้างโครงแบบฝึกหัด (เน้นสอน)
+  </div>
+  <div class="cards">
+    <div class="card phase-utility" onclick="openModal('teach')">
+      <div class="card-head"><span class="card-name">teach</span><span class="type-badge user">USER</span><span class="card-command">/teach</span></div>
+      <p class="card-desc-th">สอน skill/concept หลายเซสชัน — MISSION.md, lessons/*.html, ./assets/ (reuse-first), learning-records/</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-utility" onclick="openModal('writing-great-skills')">
+      <div class="card-head"><span class="card-name">writing-great-skills</span><span class="type-badge user">USER</span><span class="card-command">/writing-great-skills</span></div>
+      <p class="card-desc-th">Reference เขียน skill ให้ดี — predictability, leading words, progressive disclosure, pruning, failure modes</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-utility" onclick="openModal('migrate-to-shoehorn')">
+      <div class="card-head"><span class="card-name">migrate-to-shoehorn</span><span class="type-badge model">MODEL</span><span class="card-command">/migrate-to-shoehorn</span></div>
+      <p class="card-desc-th">แปลง <code>as</code> type assertions ใน test เป็น @total-typescript/shoehorn (<code>fromPartial</code>/<code>fromAny</code>)</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+    <div class="card phase-utility" onclick="openModal('scaffold-exercises')">
+      <div class="card-head"><span class="card-name">scaffold-exercises</span><span class="type-badge model">MODEL</span><span class="card-command">/scaffold-exercises</span></div>
+      <p class="card-desc-th">สร้างโครงแบบฝึกหัด — sections/problems/solutions/explainers ที่ผ่าน linting</p>
+      <div class="card-hint">คลิกเพื่อดูรายละเอียด →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ FLOW DIAGRAM ════════ -->
+<div class="flow-diagram">
+  <h2>Main Development Flow — โฟลว์หลัก (idea → ship)</h2>
+  <div class="flow-diagram-box">
+    <div class="flow-line">
+      <span class="flow-node" style="border-color:var(--blue);color:var(--blue);" onclick="openModal('grill-with-docs')">grill-with-docs</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--blue);color:var(--blue);" onclick="openModal('prototype')">prototype</span>
+      <span style="color:var(--dim);font-size:12px;">(detour)</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--teal);color:var(--teal);" onclick="openModal('to-prd')">to-prd</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--teal);color:var(--teal);" onclick="openModal('to-issues')">to-issues</span>
+    </div>
+    <div class="flow-arrow-down">↓ แต่ละ issue → เปิดเซสชันใหม่</div>
+    <div class="flow-line">
+      <span class="flow-node" style="border-color:var(--green);color:var(--green);" onclick="openModal('implement')">implement</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--green);color:var(--green);" onclick="openModal('tdd')">tdd</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--orange);color:var(--orange);" onclick="openModal('code-review')">code-review</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--cyan);color:var(--cyan);" onclick="openModal('handoff')">handoff</span>
+    </div>
+    <div class="flow-arrow-down">↓ on-ramps (เข้ามาแล้วไปรวม flow)</div>
+    <div class="flow-line">
+      <span class="flow-node" style="border-color:var(--teal);color:var(--teal);" onclick="openModal('triage')">triage</span>
+      <span style="color:var(--dim);font-size:12px;">(bug/request ภายนอก)</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--green);color:var(--green);" onclick="openModal('implement')">implement</span>
+      <span class="flow-arrow">&nbsp;&nbsp;|&nbsp;&nbsp;</span>
+      <span class="flow-node" style="border-color:var(--red);color:var(--red);" onclick="openModal('diagnosing-bugs')">diagnosing-bugs</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node" style="border-color:var(--orange);color:var(--orange);" onclick="openModal('improve-codebase-architecture')">improve-architecture</span>
+    </div>
+    <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--dim);">
+      <strong style="color:var(--muted);">Vocabulary ใต้ทุก skill:</strong>
+      <code style="color:var(--blue);">/grilling</code>
+      <code style="color:var(--blue);margin-left:6px;">/domain-modeling</code>
+      <code style="color:var(--blue);margin-left:6px;">/codebase-design</code>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ DEPENDENCY MAP ════════ -->
+<div class="dep-map">
+  <h2>Skill Dependencies — wrapper เรียก engine อะไร</h2>
+  <p class="dep-subtitle">กฎ: user-invoked เรียก model-invoked เท่านั้น ไม่มีย้อนกลับ</p>
+  <div class="dep-svg-box">
+    <svg viewBox="0 0 900 460" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:900px;">
+      <defs>
+        <marker id="arrow-dep" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#5c6a85"/>
+        </marker>
+        <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#4dabf7"/>
+        </marker>
+        <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#3ddc84"/>
+        </marker>
+      </defs>
+
+      <!-- ── ENGINE NODES (bottom row) ── -->
+      <rect x="80" y="360" width="170" height="54" rx="8" fill="rgba(77,171,247,0.12)" stroke="#4dabf7" stroke-width="1.5"/>
+      <text x="165" y="384" text-anchor="middle" fill="#4dabf7" font-size="14" font-weight="600" font-family="system-ui,sans-serif">grilling</text>
+      <text x="165" y="402" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="system-ui,sans-serif">engine — ถามทีละข้อ</text>
+
+      <rect x="365" y="360" width="170" height="54" rx="8" fill="rgba(77,171,247,0.12)" stroke="#4dabf7" stroke-width="1.5"/>
+      <text x="450" y="384" text-anchor="middle" fill="#4dabf7" font-size="14" font-weight="600" font-family="system-ui,sans-serif">codebase-design</text>
+      <text x="450" y="402" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="system-ui,sans-serif">vocab — module, depth, seam</text>
+
+      <rect x="650" y="360" width="170" height="54" rx="8" fill="rgba(77,171,247,0.12)" stroke="#4dabf7" stroke-width="1.5"/>
+      <text x="735" y="384" text-anchor="middle" fill="#4dabf7" font-size="14" font-weight="600" font-family="system-ui,sans-serif">domain-modeling</text>
+      <text x="735" y="402" text-anchor="middle" fill="#8b9bb4" font-size="11" font-family="system-ui,sans-serif">CONTEXT.md + ADRs</text>
+
+      <!-- ── CONSUMER NODES (top rows) ── -->
+      <rect x="20" y="20" width="120" height="38" rx="6" fill="rgba(77,171,247,0.08)" stroke="#4dabf7" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="80" y="43" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">grill-me</text>
+
+      <rect x="20" y="78" width="140" height="38" rx="6" fill="rgba(77,171,247,0.08)" stroke="#4dabf7" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="90" y="101" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">grill-with-docs</text>
+
+      <rect x="20" y="200" width="100" height="38" rx="6" fill="rgba(45,212,191,0.08)" stroke="#2dd4bf" stroke-width="1"/>
+      <text x="70" y="223" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">triage</text>
+
+      <rect x="20" y="258" width="100" height="38" rx="6" fill="rgba(45,212,191,0.08)" stroke="#2dd4bf" stroke-width="1"/>
+      <text x="70" y="281" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">to-prd</text>
+
+      <rect x="20" y="316" width="100" height="38" rx="6" fill="rgba(45,212,191,0.08)" stroke="#2dd4bf" stroke-width="1"/>
+      <text x="70" y="339" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">to-issues</text>
+
+      <rect x="380" y="200" width="80" height="38" rx="6" fill="rgba(61,220,132,0.08)" stroke="#3ddc84" stroke-width="1"/>
+      <text x="420" y="223" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">tdd</text>
+
+      <rect x="380" y="78" width="220" height="38" rx="6" fill="rgba(255,159,67,0.08)" stroke="#ff9f43" stroke-width="1"/>
+      <text x="490" y="101" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">improve-codebase-architecture</text>
+
+      <rect x="380" y="258" width="100" height="38" rx="6" fill="rgba(61,220,132,0.08)" stroke="#3ddc84" stroke-width="1"/>
+      <text x="430" y="281" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">implement</text>
+
+      <rect x="660" y="78" width="160" height="38" rx="6" fill="rgba(61,220,132,0.08)" stroke="#3ddc84" stroke-width="1"/>
+      <text x="740" y="101" text-anchor="middle" fill="#e4e7ef" font-size="12" font-family="system-ui,sans-serif">diagnosing-bugs</text>
+
+      <!-- ── ARROWS ── -->
+      <!-- grill-me → grilling -->
+      <path d="M 80,58 Q 100,220 162,360" fill="none" stroke="#4dabf7" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-blue)"/>
+      <!-- grill-with-docs → grilling + domain-modeling -->
+      <path d="M 90,116 Q 110,250 163,360" fill="none" stroke="#4dabf7" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-blue)"/>
+      <path d="M 160,97 Q 450,200 733,360" fill="none" stroke="#4dabf7" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-dep)"/>
+      <!-- triage → grilling + domain-modeling -->
+      <path d="M 70,238 Q 110,310 162,360" fill="none" stroke="#4dabf7" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+      <path d="M 120,219 Q 430,290 730,360" fill="none" stroke="#4dabf7" stroke-width="1" marker-end="url(#arrow-dep)"/>
+      <!-- tdd → codebase-design -->
+      <path d="M 420,238 L 450,360" fill="none" stroke="#3ddc84" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+      <!-- implement → tdd -->
+      <path d="M 430,258 L 422,238" fill="none" stroke="#3ddc84" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+      <!-- improve-arch → codebase-design + grilling + domain-modeling -->
+      <path d="M 470,116 L 450,360" fill="none" stroke="#ff9f43" stroke-width="1.5" marker-end="url(#arrow-dep)"/>
+      <path d="M 410,116 Q 200,260 172,360" fill="none" stroke="#ff9f43" stroke-width="1" marker-end="url(#arrow-dep)"/>
+      <path d="M 540,116 Q 660,260 730,360" fill="none" stroke="#ff9f43" stroke-width="1" marker-end="url(#arrow-dep)"/>
+      <!-- diagnosing-bugs → domain-modeling (reads CONTEXT.md) -->
+      <path d="M 740,116 Q 740,240 735,360" fill="none" stroke="#3ddc84" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow-green)"/>
+
+      <!-- ── LEGEND ── -->
+      <line x1="20" y1="438" x2="50" y2="438" stroke="#4dabf7" stroke-width="1.5" marker-end="url(#arrow-blue)"/>
+      <text x="58" y="442" fill="#8b9bb4" font-size="11" font-family="system-ui,sans-serif">→ เรียก engine (dashed = wrapper)</text>
+      <line x1="320" y1="438" x2="350" y2="438" stroke="#3ddc84" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+      <text x="358" y="442" fill="#8b9bb4" font-size="11" font-family="system-ui,sans-serif">→ codebase-design / tdd</text>
+      <text x="560" y="442" fill="#5c6a85" font-size="10" font-family="system-ui,sans-serif">engine 3 ตัว (สีน้ำเงิน) อยู่ใต้ทุก skill</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ════════ MODAL ════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-banner" id="modal-banner"></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ════════ FOOTER ════════ -->
+<div class="footer">
+  <p>Matt Pocock's Engineering Skills &middot; 24 skills (12 user + 12 model) &middot; 8 phases</p>
+  <p style="margin-top:8px;">ต้นฉบับ: github.com/mattpocock/skills &middot; ติดตั้งในโปรเจ็กต์ที่ <code style="font-family:monospace;color:var(--muted);">.claude/skills/</code></p>
+  <p style="margin-top:4px;">อัปเดต: 1 กรกฎาคม 2026 — ปรับให้ตรงกับชุดที่ติดตั้งจริง 24 ตัว (เดิมนับผิด 28 + มี skill ที่ไม่มีอยู่จริง)</p>
+</div>
+
+<script>
+// ── Skill Database (24 skills — ตรงกับที่ติดตั้งจริงใน .claude/skills/) ──
+const SKILLS = {
+  'ask-matt': {
+    name: 'ask-matt',
+    cmd: '/ask-matt',
+    type: 'user',
+    color: 'var(--accent)',
+    desc: 'Router ตัวเดียวที่สรุป flow ทั้งหมด — บอกสถานการณ์แล้วมันชี้ว่าควรเดินทางไหน\n\nจำแพกว่ามี skill อะไรบ้าง ก็ถามมัน มันจะบอก main flow (idea→ship) + on-ramps + standalone + vocabulary layer',
+    when: 'เมื่อจำไม่ได้ว่าสถานการณ์นี้ควรใช้ skill/flow ไหน',
+    example: 'ผู้ใช้: /ask-matt\nบอก "กูอยากทำฟีเจอร์ใหม่แต่ยังไม่ชัด"\n\nAgent ชี้: เริ่มที่ /grill-with-docs → ถ้าหลายเซสชันใช้ /to-prd → /to-issues → แต่ละ issue เปิดเซสชันใหม่ + /implement\nเคล็ด: ขั้น grill→prd→issues ต้องอยู่ใน context เดียวไม่ตัด',
+    tags: ['router', 'navigation', 'flow', 'entry-point']
+  },
+  'setup-matt-pocock-skills': {
+    name: 'setup-matt-pocock-skills',
+    cmd: '/setup-matt-pocock-skills',
+    type: 'user',
+    color: 'var(--accent)',
+    desc: 'ตั้งค่า per-repo config ที่ engineering skills อื่นถือว่ามีอยู่:\n• Issue tracker — GitHub (gh), GitLab (glab), local markdown (.scratch/), หรืออื่น\n• Triage labels — mapping 5 role (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix) เป็น label จริง\n• Domain docs — single-context (CONTEXT.md) หรือ multi-context (CONTEXT-MAP.md)\n\nเขียนลง CLAUDE.md หรือ AGENTS.md (ตัวที่มีอยู่ ไม่สร้างซ้ำ) + ไฟล์ docs/agents/*.md',
+    when: 'รันครั้งแรกก่อนใช้ to-prd/to-issues/triage/code-review หรือเมื่อเปลี่ยน issue tracker',
+    example: 'ผู้ใช้: /setup-matt-pocock-skills\n\nAgent:\n→ สำรวจ: git remote (GitHub), CLAUDE.md, CONTEXT.md, docs/adr/\n→ ถามทีละ section พร้อม explainer + default\n→ Section A: issue tracker → เลือก GitHub (มี remote)\n   → ตามถาม: PR เป็น request surface ไหม? (default: no)\n→ Section B: triage labels → ใช้ default\n→ Section C: domain docs → single-context\n→ เขียน docs/agents/{issue-tracker,triage-labels,domain}.md',
+    tags: ['setup', 'configuration', 'issue-tracker', 'triage-labels', 'domain-docs', 'context', 'adr']
+  },
+  'setup-pre-commit': {
+    name: 'setup-pre-commit',
+    cmd: '/setup-pre-commit',
+    type: 'model',
+    color: 'var(--accent)',
+    desc: 'ติดตั้ง Husky pre-commit hook + lint-staged รัน Prettier บน staged files ทุกครั้ง บวก typecheck + test script\n\nกันโค้ด format ผิด / test ไม่ผ่านเข้า git history\n(สำหรับ repo นี้ที่ใช้ npm + มี typecheck/test script อยู่แล้วจะต่อเข้าได้เลย)',
+    when: 'repo ที่ยังไม่มี pre-commit hooks หรืออยากเพิ่ม quality gate',
+    example: 'ผู้ใช้: /setup-pre-commit\n\nAgent:\n→ npm install -D husky lint-staged prettier\n→ npx husky init\n→ สร้าง .husky/pre-commit:\n   npx lint-staged\n   npm run typecheck\n   npm run test\n→ สร้าง .lintstagedrc: { "*": "prettier --ignore-unknown --write" }\n→ สร้าง .prettierrc (ถ้ายังไม่มี)\n→ commit: "Add pre-commit hooks (husky + lint-staged + prettier)"\n→ commit นี้เองก็ผ่าน hook = smoke test',
+    tags: ['setup', 'git', 'quality', 'husky', 'lint-staged', 'prettier']
+  },
+  'git-guardrails-claude-code': {
+    name: 'git-guardrails-claude-code',
+    cmd: '/git-guardrails-claude-code',
+    type: 'model',
+    color: 'var(--accent)',
+    desc: 'ติดตั้ง PreToolUse hook ใน Claude Code ที่ intercept + บล็อก git command อันตรายก่อนทำงาน\n\nที่บล็อก: git push (รวม --force), git reset --hard, git clean -f/-fd, git branch -D, git checkout ./git restore .\nเหมาะกับ repo นี้มาก เพราะช่วย enforcement กฎเหล็ก "ห้าม push ไป main"',
+    when: 'ใช้ Claude Code เป็น agent และกังวลเรื่อง git command ที่ทำลายงาน',
+    example: 'ผู้ใช้: /git-guardrails-claude-code\n\nAgent:\n→ ถาม scope: project (.claude/settings.json) หรือ global (~/.claude)?\n→ copy scripts/block-dangerous-git.sh → .claude/hooks/\n→ chmod +x\n→ เพิ่ม PreToolUse hook (matcher: Bash) ใน settings.json\n→ ทดสอบ:\n   echo \'{"tool_input":{"command":"git push origin main"}}\' | <script>\n   → exit code 2 + "BLOCKED" บน stderr',
+    tags: ['safety', 'git', 'claude-code', 'hooks', 'guardrails']
+  },
+  'grill-me': {
+    name: 'grill-me',
+    cmd: '/grill-me',
+    type: 'user',
+    color: 'var(--blue)',
+    desc: 'Wrapper บรรทัดเดียว — รัน /grilling session\n\nเหมือน grill-with-docs แต่ stateless: ไม่สร้าง CONTEXT.md/ADR ใดๆ ใช้ตอนยังไม่มี codebase หรือไม่ต้องการเก็บบันทึก',
+    when: 'อยากสัมภาษณ์ไล่คำถามแบบไม่ต้องสร้าง domain docs',
+    example: '/grill-me\n(เทียบเท่ารัน /grilling)',
+    tags: ['wrapper', 'interview', 'planning', 'grilling', 'stateless']
+  },
+  'grill-with-docs': {
+    name: 'grill-with-docs',
+    cmd: '/grill-with-docs',
+    type: 'user',
+    color: 'var(--blue)',
+    desc: 'Wrapper บรรทัดเดียว — รัน /grilling โดยใช้ /domain-modeling\n\nเป็นจุดเริ่มต้นของ main flow เมื่อมี codebase: relentless interview ลับแผน/ดีไซน์ พร้อมสร้าง docs (CONTEXT.md + ADR) ไว้เป็นหลักฐาน',
+    when: 'มี codebase แล้ว อยากลับ detail ของแผน/ดีไซน์พร้อมสร้าง domain docs',
+    example: '/grill-with-docs\n→ รัน /grilling + /domain-modeling ไปด้วยกัน\n→ ทุกคำตอบที่ตกลงกันถูกบันทึกลง CONTEXT.md ทันที\n→ ตัดสินใจของจริงที่ยากพลิก → เสนอ ADR',
+    tags: ['grilling', 'domain-modeling', 'interview', 'docs', 'wrapper', 'main-flow']
+  },
+  'grilling': {
+    name: 'grilling',
+    cmd: '/grilling',
+    type: 'model',
+    color: 'var(--blue)',
+    desc: 'ENGINE หลัก — สอบสวนแผนไล่ไปทุกมุมจนเข้าใจตรงกัน\n• ถามทีละคำถาม (หลายคำถามพร้อมกัน = สับสน)\n• แต่ละคำถามมีคำตอบแนะนำให้\n• ถ้าคำถามหาคำตอบได้จาก codebase → สำรวจเองแทน\n\nเดินตามต้นไม้การออกแบบ ไล่ dependency ระหว่าง decision ทีละอัน',
+    when: 'เมื่อต้องการ stress-test แผนก่อนสร้าง หรือผู้ใช้พูดคำว่า grill',
+    example: '/grilling\n\nAgent ถามทีละข้อ:\n→ "แจ้งเตือนซ่อมเสร็จ ส่งทางไหน? (แนะนำ: LINE เพราะร้านใช้อยู่)"\n→ รอคำตอบ → ถามต่อถัดไป\n→ "ใครเป็นคนกดส่ง? auto หรือพนักงาน? (แนะนำ: auto)"\n→ ...ไล่จนครบทุก branch',
+    tags: ['interview', 'planning', 'design', 'stress-test', 'engine']
+  },
+  'domain-modeling': {
+    name: 'domain-modeling',
+    cmd: '/domain-modeling',
+    type: 'model',
+    color: 'var(--blue)',
+    desc: 'วินัย "active" สำหรับสร้าง+ลับคม domain model ขณะออกแบบ — ท้าทายคำศัพท์ ประดิษฐ์ edge-case scenario เขียน glossary ลง CONTEXT.md ทันทีที่ตกลงกันได้\n\nCONTEXT.md = glossary ล้วน ห้ามใส่ implementation detail\nเสนอ ADR เฉพาะเมื่อครบ 3 ข้อ: ยากพลิกกลับ + คนอ่าน future จะสงสัย + เป็นผลของ trade-off จริง',
+    when: 'ต้องการจับคำศัพท์โดเมนให้แม่นยำ บันทึกการตัดสินใจ หรือเมื่อ skill อื่นต้องการดูแล domain model',
+    example: 'ผู้ใช้พูดถึง "ลูกค้า" คลุมเครือ\n\nAgent:\n→ "คุณหมายถึง Customer (ข้อมูลผู้ใช้บริการ) หรือคนมารับของ (อาจไม่ใช่เจ้าของ)?"\n→ พอตกลง → อัปเดต CONTEXT.md ทันที\n→ เช็คกับโค้ด: "โค้ด Repair มีแค่ status COMPLETED แต่คุณบอกว่ามี READY_FOR_PICKUP ด้วย — อันไหนถูก?"\n→ เสนอ ADR: "เลือก Prisma Postgres เพราะ ACID + Vercel native"',
+    tags: ['ddd', 'glossary', 'adr', 'domain', 'context-md']
+  },
+  'codebase-design': {
+    name: 'codebase-design',
+    cmd: '/codebase-design',
+    type: 'model',
+    color: 'var(--blue)',
+    desc: 'คำศัพท์+หลักคิดสำหรับออกแบบ deep module — interface เล็ก logic เยอะ วาง seam ให้ถูกที่\n\nคำศัพท์หลัก: Module, Interface, Implementation/Adapter, Depth, Seam, Leverage, Locality\nหลักคิด: deletion test, "interface คือ test surface", "adapter 1 ตัว = hypothetical seam, 2 ตัว = real"\nเป็น single source of truth ที่ /tdd และ /improve-codebase-architecture ใช้ร่วมกัน',
+    when: 'ออกแบบ/ปรับปรุง module interface ให้ deep + testable หรือเมื่อ skill อื่นต้องการคำศัพท์ deep-module',
+    example: 'ออกแบบ module คำนวณต้นทุนเฉลี่ย\n\nAgent:\n→ Deep module: interface เล็ก (recordPurchase, getAverageCost)\n→ Implementation เยอะซ่อนข้างใน (weighted average logic)\n→ Seam = จุดที่เรียก ใช้ผ่าน public interface\n→ Deletion test: ลบแล้ว complexity กระจายไป N callers → คุ้ม (deep)\n→ Test ผ่าน interface เดียวกับที่ caller ใช้',
+    tags: ['design', 'architecture', 'module', 'depth', 'seam', 'testability', 'vocabulary']
+  },
+  'prototype': {
+    name: 'prototype',
+    cmd: '/prototype',
+    type: 'model',
+    color: 'var(--orange)',
+    desc: 'สร้าง throwaway prototype เพื่อตอบคำถามดีไซน์หนึ่งข้อ — คำถามตัดสินรูปร่าง:\n• "logic/state model นี้รู้สึกถูกไหม?" → LOGIC branch: terminal app โต้ตอบวิ่งผ่าน state\n• "หน้าตาควรเป็นยังไง?" → UI branch: หลาย variation บน route เดียว สลับด้วย search param + floating bar\n\nกฎ: throwaway ตั้งแต่วันแรก, คำสั่งเดียวรันได้, ไม่เก็บข้อมูล, ข้ามความสวยงาม เสร็จแล้วเก็บแค่ "คำตอบ"',
+    when: 'สมมติฐานดีไซน์ต้องทดสอบด้วยโค้ดที่จะทิ้ง หรืออยากเห็นหน้าตาก่อนตัดสินใจ',
+    example: '/prototype state machine ของ Repair lifecycle\n\n→ LOGIC branch: terminal app พิมพ์คำสั่ง (receive, diagnose, quote, approve, fix, complete, deliver)\n→ ทุกครั้งที่ทำ พิมพ์ state เต็มให้เห็น\n→ ลอง edge case: ปฏิเสธอ้าง → ยกเลิกกลางคัน → คืนของ\n→ คำตอบ: "ต้องมี state CANCELLED แยกจาก COMPLETED" → เก็บใน ADR แล้วลบ prototype',
+    tags: ['prototype', 'design', 'throwaway', 'exploration', 'state-machine', 'adr']
+  },
+  'to-prd': {
+    name: 'to-prd',
+    cmd: '/to-prd',
+    type: 'user',
+    color: 'var(--teal)',
+    desc: 'สังเคราะห์บทสนทนา/ความเข้าใจ codebase ปัจจุบัน เป็น PRD แล้ว publish ขึ้น issue tracker — ไม่สัมภาษณ์ แค่สรุป\n\nเทมเพลต: Problem Statement, Solution, User Stories (ยาว+ครอบคลุม), Implementation Decisions, Testing Decisions, Out of Scope, Further Notes\nใส่ prototype snippet (state machine, schema) ที่ encode decision ได้ ติด label ready-for-agent',
+    when: 'เมื่อคุยจนเข้าใจแล้ว ต้องการเขียน PRD และตั้ง triage',
+    example: '/to-prd\n\nAgent:\n→ สำรวจ repo (อ่าน CONTEXT.md + ADR)\n→ เสนอ seams ที่จะ test (เลือก seam สูงสุดที่มีอยู่ก่อน) → ยืนยันกับผู้ใช้\n→ เขียน PRD:\n   ## Problem: เจ้าของไม่รู้ว่าซ่อมเสร็จ ต้องโทรถาม\n   ## Solution: แจ้งอัตโนมัติตอน markComplete\n   ## User Stories: 1. ในฐานะพนักงาน... 2. ในฐานะลูกค้า...\n   ## Out of Scope: ไม่ทำ SMS ในรอบนี้\n→ publish ขึ้น GitHub + label ready-for-agent',
+    tags: ['prd', 'spec', 'synthesis', 'agent-ready', 'main-flow']
+  },
+  'to-issues': {
+    name: 'to-issues',
+    cmd: '/to-issues',
+    type: 'user',
+    color: 'var(--teal)',
+    desc: 'แบ่งแผน/PRD เป็น tracer-bullet vertical slices ที่หยิบทำแยกกันได้\n\nแต่ละ issue = slice บางที่ตัดผ่านทุก layer (schema, API, UI, tests) end-to-end — ไม่ใช่ horizontal slice ของ layer เดียว\nแต่ละ issue deliver value + demoable ได้ มี blocked-by และ acceptance criteria พร้อม agent หยิบทำทันที',
+    when: 'มี PRD/แผนแล้ว ต้องการแบ่งเป็น issues บน issue tracker พร้อมสำหรับ triage',
+    example: '/to-issues 245\n\nAgent:\n→ แบ่ง PRD notification ออกเป็น slices:\n  Issue #1: schema — เพิ่ม NotificationLog model (blocked: none)\n  Issue #2: repairs.markComplete สร้าง log row (blocked: #1)\n  Issue #3: ส่ง LINE + เขียน delivery status (blocked: #2)\n→ เสนอลำดับ ถามผู้ใช้ granularity พอเปล่า\n→ publish ตาม dependency order (blocker ก่อน) พร้อม blocked-by จริง',
+    tags: ['issues', 'tracer-bullet', 'vertical-slice', 'agent-ready', 'main-flow']
+  },
+  'triage': {
+    name: 'triage',
+    cmd: '/triage',
+    type: 'user',
+    color: 'var(--teal)',
+    desc: 'ย้าย issue + external PR ผ่าน state machine ของ triage roles — แบ่งหมวด ตรวจ claim ถามไล่รายละเอียดถ้าจำเป็น เขียน agent-ready briefs\n\nCategory 2: bug, enhancement\nState 5: needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix\nPR = issue ที่มี code แนบ (roles/states เดียวกัน)\nทุกคอมเมนต์ขึ้นต้นด้วย AI disclaimer\nใช้กับ issue ภายนอกเท่านั้น (ไม่ใช่ที่ /to-issues สร้างเอง)',
+    when: 'maintainer ต้องการ triage — ดู buckets, แนะนำหมวด+สถานะ, ตรวจ claim (reproduce bug / checkout PR diff) หรือย้าย issue',
+    example: '"Show me anything that needs my attention"\n→ แสดง 3 buckets: Unlabeled / needs-triage / needs-info มี reporter ตอบกลับ พร้อม tag [PR]/[issue]\n→ เลือก #42 (bug report stock หักผิด)\n→ อ่าน context + เช็ค .out-of-scope/ หา prior rejection\n→ reproduce bug จากขั้นตอน reporter → ยืนยันได้\n→ grill เสร็จ → ติด ready-for-agent + แนบ agent brief\n→ quick override: "move #42 to ready-for-agent" → trust + act + skip grilling',
+    tags: ['triage', 'issues', 'pull-requests', 'state-machine', 'agent-briefs', 'grilling', 'domain-modeling']
+  },
+  'implement': {
+    name: 'implement',
+    cmd: '/implement',
+    type: 'user',
+    color: 'var(--green)',
+    desc: 'ทำงานตามที่อธิบายใน PRD หรือ issues\n• ใช้ /tdd ตาม seam ที่ตกลงไว้\n• รัน typechecking บ่อยๆ, single test file บ่อย, full suite ทีเดียวตอนท้าย\n• เสร็จแล้วใช้ /code-review\n• commit ลง branch ปัจจุบัน',
+    when: 'เมื่อ PRD/issues พร้อมแล้ว ต้องการลงมือ implement',
+    example: '/implement Issue #2\n\nAgent:\n→ อ่าน issue body + acceptance criteria\n→ ขับ /tdd ที่ seam ที่ตกลงไว้ (tRPC procedure)\n→ รัน typecheck หลังแต่ละ slice\n→ เสร็จ → รัน /code-review 2 แกน\n→ แก้ตาม review → commit',
+    tags: ['implementation', 'tdd', 'coding', 'code-review', 'main-flow']
+  },
+  'tdd': {
+    name: 'tdd',
+    cmd: '/tdd',
+    type: 'model',
+    color: 'var(--green)',
+    desc: 'TDD แบบ vertical tracer bullets — test → impl ทีละตัว → วนซ้ำ\n\nANTI-PATTERN: Horizontal Slices (เขียน test ทั้งหมดก่อน แล้วค่อย impl ทั้งหมด) = test ขยะ\nปรัชญา: test ตรวจพฤติกรรมผ่าน public interface ไม่ใช่ implementation detail → ทนต่อ refactor\nห้าม refactor ตอน RED — ต้อง GREEN ก่อน\nอ่าน CONTEXT.md + ADR ก่อน ใช้ /codebase-design หา deep module seams',
+    when: 'ผู้ใช้อยาก build feature/fix bug แบบ test-first, พูดถึง red-green-refactor, หรือต้องการ integration tests',
+    example: 'WRONG (horizontal): RED test1-5 → GREEN impl1-5\nRIGHT (vertical):\n→ RED: test "markComplete เปลี่ยน status เป็น COMPLETED" → fail\n→ GREEN: โค้ดน้อยที่สุดที่ผ่าน\n→ RED: test "สร้าง NotificationLog row" → fail\n→ GREEN: ผ่าน\n→ ...ทีละตัว\n→ refactor (หลัง GREEN): extract duplication, deepen modules',
+    tags: ['tdd', 'testing', 'red-green-refactor', 'vertical-slices', 'codebase-design', 'context']
+  },
+  'resolving-merge-conflicts': {
+    name: 'resolving-merge-conflicts',
+    cmd: '/resolving-merge-conflicts',
+    type: 'model',
+    color: 'var(--green)',
+    desc: 'แก้ merge/rebase conflict ที่กำลังดำเนินอยู่ — เข้าใจ intent ของทุกฝั่งแล้ว resolve ทุก hunk\n\nห้าม --abort ต้อง resolve เสมอ\nรัน automated checks (typecheck → test → format) หลังแก้',
+    when: 'มี merge/rebase conflict กำลังดำเนินอยู่และต้องแก้',
+    example: 'git merge feat/notification → CONFLICT\n\n→ ดู state: git history + conflicting files\n→ หา primary source: commit messages + PRs + issues (ทำไมเปลี่ยนแต่ละฝั่ง?)\n→ resolve ทุก hunk: รักษา intent ทั้งสองฝั่ง ถ้าขัดกันเลือกอันตรง goal ของ merge พร้อมโน้ต\n→ ห้ามประดิษฐ์ behavior ใหม่\n→ รัน npm run typecheck → npm test → format\n→ stage + commit (หรือ rebase --continue จนจบ)',
+    tags: ['git', 'merge', 'conflict', 'resolve']
+  },
+  'diagnosing-bugs': {
+    name: 'diagnosing-bugs',
+    cmd: '/diagnosing-bugs',
+    type: 'model',
+    color: 'var(--red)',
+    desc: 'วงจร debug สำหรับ bug ยาก + performance regression\n\nPhase 1 คือหัวใจ: สร้าง feedback loop ที่ tight + red-capable (command เดียวที่ไป RED บน bug นี้) — ไม่มี loop ห้ามตั้งสมมติฐาน\nอ่าน CONTEXT.md + ADR ก่อนสร้าง mental model\n6 phases: feedback loop → reproduce+minimise → hypothesise (3-5 falsifiable) → instrument (ทีละตัวแปร) → fix+regression → cleanup+post-mortem',
+    when: 'ผู้ใช้พูดว่า diagnose/debug this หรือรายงานว่ามีอะไรพัง/throw/fail/ช้า',
+    example: 'Bug: ขายสินค้าแล้ว stock หักผิดบางครั้ง\n\n→ Phase 1: สร้าง integration test ยิง sales.create แล้ว assert stock → RED\n→ Phase 2: reproduce + ตัดส่วนไม่เกี่ยวให้เหลือน้อยสุด\n→ Phase 3: 5 สมมติฐาน falsifiable — "ถ้า race condition ใส่ await แล้ว bug หาย"\n→ Phase 4: instrument ทีละตัวแปร (tag log [DEBUG-a4f2])\n→ Phase 5: regression test ก่อน fix → apply fix → ผ่าน\n→ Phase 6: cleanup + "ถ้าไม่มี seam ดี → ส่งต่อ /improve-codebase-architecture"',
+    tags: ['debug', 'feedback-loop', 'root-cause', 'regression', 'context-md', 'adr']
+  },
+  'code-review': {
+    name: 'code-review',
+    cmd: '/code-review',
+    type: 'model',
+    color: 'var(--orange)',
+    desc: 'รีวิว diff ตั้งแต่ fixed point (commit/branch/tag/merge-base) ตาม 2 แกน — รันขนานด้วย sub-agents:\n• Standards — ตรงมาตรฐาน repo ที่เอกสารไว้ไหม + code smells baseline (Fowler)\n• Spec — ตรงที่ issue/PRD ขอไหม ขาดไหม เกิน (scope creep) ไหม\n\nรายงาน 2 แกนแยกกัน — กันแกนหนึ่งกลบอีกแกน (โค้ดผ่านมาตรฐานแต่ทำผิดสเปก หรือ ทำถูกแต่ผิดธรรมเนียม)\n⚠️ ชื่อชนกับ built-in /code-review ของเครื่องนี้',
+    when: 'ก่อน merge PR หรือเมื่อต้องการตรวจคุณภาพโค้ดเทียบจุดอ้างอิง',
+    example: 'ผู้ใช้: /code-review since feat/notification\n\nSub-agent A (Standards):\n→ ใช้ Prettier ✓ / ชื่อ fn ขึ้น verb ✓\n→ ⚠️ magic number ควรเป็น constant\n→ ⚠️ Shotgun Surgery: แก้ field นึงกระจาย 5 ไฟล์\n\nSub-agent B (Spec):\n→ Issue ขอ retry logic → มี ✓\n→ ❌ ขอ rate limiting ไม่มี!\n→ ⚠️ มี feature ที่สเปกไม่ได้ขอ = scope creep',
+    tags: ['review', 'standards', 'spec', 'parallel', 'code-smells', 'pr']
+  },
+  'improve-codebase-architecture': {
+    name: 'improve-codebase-architecture',
+    cmd: '/improve-codebase-architecture',
+    type: 'user',
+    color: 'var(--orange)',
+    desc: 'สแกน codebase หา "deepening opportunities" — refactor ที่เปลี่ยน shallow module เป็น deep\n\n3 ขั้น:\n1. Explore (subagent Explore) — ใช้ deletion test หา friction\n2. สร้าง HTML report (Tailwind + Mermaid) ใน temp dir: card per candidate (Files/Problem/Solution/Benefits/Before-After diagram/Recommendation badge) + Top recommendation\n3. grill ตัวที่เลือก (ใช้ /grilling + /domain-modeling + /codebase-design)\nตรวจจับ ADR conflict — แสดงเฉพาะ friction จริงพอคุ้มเปิด ADR ใหม่',
+    when: 'มีเวลาว่างอยากรักษา codebase ให้ดีต่อ agent หรืออยากหา friction + โอกาส deepen',
+    example: '/improve-codebase-architecture\n\n→ สแกนพบ: logic ต้นทุนเฉลี่ยกระจาย 3 router (products, sales, repairs) คัดลอกกัน\n→ deletion test: ลบ module กลาง → complexity กลับไปกระจาย → คุ้ม\n→ HTML report: before (3 copies) vs after (1 CostCalc module หลัง interface เล็ก)\n→ Recommendation: Strong\n→ เลือก grill → /codebase-design design-it-twice → ได้ deep module',
+    tags: ['architecture', 'deep-modules', 'html-report', 'tailwind', 'mermaid', 'codebase-design', 'grilling', 'domain-modeling']
+  },
+  'handoff': {
+    name: 'handoff',
+    cmd: '/handoff',
+    type: 'user',
+    color: 'var(--cyan)',
+    desc: 'ย่อ conversation ปัจจุบันเป็น handoff document สำหรับ agent ตัวถัดไป (เก็บใน temp dir ไม่ใช่ workspace)\n\nมี "suggested skills" section\nอ้างอิง artifacts (PRD, ADR, issues, commits, diffs) แทนที่จะทำซ้ำ\nลบข้อมูล sensitive (API key, password, PII)\nargument = บอกว่าเซสชันถัดไปจะทำอะไร',
+    when: 'session จะจบ/เต็ม หรือต้องแตกไปทำ prototype แยก แล้วต้องส่งต่อให้ session ใหม่',
+    example: '/handoff ทำ retry logic + log 30 วันต่อ\n\nAgent สร้าง handoff doc:\n→ ✅ ทำเสร็จ: schema NotificationLog, markComplete procedure\n→ ⏳ ค้าง: retry logic, log retention\n→ 🧠 ตัดสินใจแล้ว: ใช้ LINE API (ADR-0012)\n→ Suggested skills: /implement, /tdd, /diagnosing-bugs (ถ้า retry flaky)\n→ อ้างอิง: PRD #245, commit abc123 (ไม่ copy เนื้อหา)',
+    tags: ['handoff', 'session', 'continuity', 'summary', 'main-flow']
+  },
+  'teach': {
+    name: 'teach',
+    cmd: '/teach',
+    type: 'user',
+    color: 'var(--pink)',
+    desc: 'สอนผู้ใช้เรื่องใหม่ใน teaching workspace (stateful, หลาย session)\n\nWorkspace: MISSION.md (เหตุผลที่อยากเรียน — ground การสอน), ./reference/*.html, RESOURCES.md, ./learning-records/*.md, ./lessons/*.html (สวย Tufte style), ./assets/* (reuse-first), NOTES.md\nปรัชญา: Knowledge + Skills + Wisdom\nแยก Fluency strength (ชั่วขณะ) จาก Storage strength (ระยะยาว — เป้าหมายจริง)\ndesirable difficulty: retrieval practice, spacing, interleaving',
+    when: 'ผู้ใช้อยากเรียนรู้ทักษะ/concept ใหม่ในระยะยาวหลาย session',
+    example: '/teach สอนเรื่อง Prisma transaction\n\n→ สร้าง/อ่าน MISSION.md ก่อน (ถ้าไม่มี → ถามทำไมอยากรู้)\n→ หา zone of proximal development จาก learning-records\n→ สร้าง ./lessons/0001-transaction-basics.html ใช้ ./assets/ ที่มีก่อน\n→ แต่ละบทสั้น จบใน 1 win เชื่อม mission\n→ เชื่อม reference doc + แนะ primary source\n→ เก็บ progress ใน ./learning-records/',
+    tags: ['teaching', 'learning', 'workspace', 'lessons', 'mission', 'assets', 'storage-strength']
+  },
+  'writing-great-skills': {
+    name: 'writing-great-skills',
+    cmd: '/writing-great-skills',
+    type: 'user',
+    color: 'var(--pink)',
+    desc: 'Reference สำหรับเขียน/แก้ skill ให้ดี — predictability คือคุณธรรมหลัก\n\nหัวข้อ: invocation (model vs user), information hierarchy (steps vs reference), progressive disclosure (push ลง linked file), leading words (tracer bullet, fog of war), pruning (single source of truth, no-op test), failure modes (premature completion, duplication, sediment, sprawl, no-op)',
+    when: 'เขียน/แก้ skill แล้วต้องการให้ predictable + maintainable',
+    example: '/writing-great-skills\n\n→ เลือก invocation: model-invoked (มี description, agent หยิบเอง) vs user-invoked (เก็บ description, พิมพ์เอง) — แต่ละทางจ่าย load คนละแบบ\n→ description: front-load leading word, one trigger per branch\n→ leading words: "fast/deterministic" → collapse เป็น "tight"\n→ pruning: ลบ no-op ทีละประโยค (ไม่ใช่ทีละบรรทัด)\n→ failure modes: เกิด premature completion → ลับ completion criterion ก่อน',
+    tags: ['skill', 'reference', 'leading-words', 'predictability', 'progressive-disclosure']
+  },
+  'migrate-to-shoehorn': {
+    name: 'migrate-to-shoehorn',
+    cmd: '/migrate-to-shoehorn',
+    type: 'model',
+    color: 'var(--pink)',
+    desc: 'แปลง `as` type assertions ใน test files เป็น @total-typescript/shoehorn\n\nใช้ใน test เท่านั้น ห้ามใช้ใน production\nfromPartial() — ส่ง partial data ที่ยัง type-check ผ่าน\nfromAny() — ส่งข้อมูลผิด type โดยเจตนา (เก็บ autocomplete)\nfromExact() — บังคับ full object',
+    when: 'โปรเจ็กต์ TS ที่มี `as` assertions เยอะใน test files',
+    example: '// ก่อน (อันตราย):\ngetUser({ body: { id: "123" } } as Request)\n\n// หลัง:\nimport { fromPartial } from "@total-typescript/shoehorn"\ngetUser(fromPartial({ body: { id: "123" } }))\n\nWorkflow:\n→ grep -r " as [A-Z]" --include="*.test.ts"\n→ แทนที่ as Type → fromPartial()\n→ แทนที่ as unknown as Type → fromAny()\n→ npm i + run typecheck',
+    tags: ['typescript', 'migration', 'testing', 'type-safety', 'shoehorn']
+  },
+  'scaffold-exercises': {
+    name: 'scaffold-exercises',
+    cmd: '/scaffold-exercises',
+    type: 'model',
+    color: 'var(--pink)',
+    desc: 'สร้างโครงแบบฝึกหัดที่ผ่าน linting — sections/problems/solutions/explainers\n\nโครงสร้าง: XX-section-name/ > XX.YY-exercise-name/ > {problem|solution|explainer}/readme.md\nสร้าง stub readmes แล้วรัน lint จนผ่าน จึง commit\nเหมาะสำหรับสร้างเนื้อหาสอน/workshop',
+    when: 'ต้องการสร้างแบบฝึกหัดให้ผู้เรียน หรือสร้าง workshop material',
+    example: 'แผน: Section 01 Prisma basics — 01.01 intro, 01.02 schema (explainer+problem+solution)\n\n→ mkdir -p exercises/01-prisma-basics/01.01-intro/explainer\n→ mkdir -p exercises/01-prisma-basics/01.02-schema/{explainer,problem,solution}\n→ สร้าง readme.md แต่ละ subfolder (title + description)\n→ pnpm ai-hero-cli internal lint → แก้จนผ่าน\n→ git commit',
+    tags: ['exercises', 'education', 'scaffold', 'workshop', 'linting']
+  }
+};
+
+// ── Modal Functions ──
+function openModal(skillId) {
+  const skill = SKILLS[skillId];
+  if (!skill) return;
+  const banner = document.getElementById('modal-banner');
+  const body = document.getElementById('modal-body');
+  banner.style.background = skill.color;
+  const typeLabel = skill.type === 'user'
+    ? 'USER-INVOKED — พิมพ์ ' + skill.cmd + ' เรียกเอง'
+    : 'MODEL-INVOKED — agent หยิบใช้เองเมื่องานเข้าเงื่อนไข';
+  body.innerHTML = `
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-name" style="color:${skill.color}">${skill.name}</div>
+    <div class="modal-command">${skill.cmd}</div>
+    <div class="modal-type">${typeLabel}</div>
+    <div class="modal-section">
+      <div class="modal-section-title">รายละเอียด</div>
+      <p>${skill.desc.replace(/\n/g, '<br>')}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">เมื่อไหร่ควรใช้</div>
+      <p>${skill.when}</p>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">ตัวอย่างการใช้งาน</div>
+      <div class="modal-example">${skill.example.replace(/\n/g, '<br>')}</div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-tags">${skill.tags.map(t => `<span class="modal-tag">${t}</span>`).join('')}</div>
+    </div>
+  `;
+  document.getElementById('modal-overlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function scrollToPhase(phaseId) {
+  const el = document.getElementById('phase-' + phaseId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+
+</body>
+</html>

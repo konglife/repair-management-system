@@ -131,7 +131,7 @@ src/
 ## API Architecture
 
 ### tRPC Router Structure
-The API follows domain-driven router organization:
+The API follows domain-driven router organization (ดู `src/server/api/root.ts` — 10 routers):
 - `categories` - Category CRUD operations
 - `units` - Unit management
 - `products` - Product inventory management
@@ -140,6 +140,8 @@ The API follows domain-driven router organization:
 - `sales` - Sales transaction management
 - `repairs` - Repair job management
 - `dashboard` - Business intelligence summaries
+- `settings` - BusinessProfile / ตั้งค่าร้าน
+- `reports` - รายงานสรุป (sales/repairs/purchases)
 
 ### Key Business Logic
 - **Average Cost Calculation**: Weighted average when recording purchases
@@ -203,4 +205,30 @@ The application supports the complete repair shop workflow from inventory manage
 - `docs_archive/docs_mvp/` - เอกสารรุ่น MVP
 - `docs_archive/docs_2.0/`, `docs_2.1.0/`, `docs_2.2.0/`, `docs_2.3.0/` - เอกสารรุ่นถัดๆ มา
 
-โฟลเดอร์ `docs/` ปัจจุบันว่าง (เผื่อไว้สำหรับเอกสารรอบพัฒนาใหม่ ถ้าจำเป็น)
+เอกสารรอบพัฒนาปัจจุบันอยู่ที่ `docs/`:
+- `docs/HANDOFF.md` - ส่งต่องานไปแชทใหม่ (**อ่านก่อนเริ่มงานทุกเซสชัน**)
+- `docs/journal/YYYY-MM-DD.md` - บันทึกประจำวันของ Claude (ดู `docs/journal/README.md` สำหรับระบบ)
+
+## Agent Skills
+
+โปรเจ็กต์นี้ติดตั้ง **Matt Pocock's skills** (24 skills) ไว้ที่ `.claude/skills/`:
+- **เก็บเฉพาะเครื่อง** (อยู่ใน `.gitignore` ไม่ commit) — เครื่องอื่น clone มาจะไม่มี
+- Layout **flat** (`.claude/skills/<skill>/`) เพราะ Claude Code ค้นพบ project skills แบบ 1 ระดับ
+- รายการ + แผนที่หมวด + วิธี re-sync อยู่ใน `.claude/skills/README.md`
+- ⚠️ `/code-review` ของ Matt ชนชื่อกับ built-in — ลบ `.claude/skills/code-review/` ถ้าอยากกลับเป็น built-in
+
+### Issue tracker
+
+Issues/PRD เก็บเป็น **GitHub Issues** บน `konglife/repair-management-system` ใช้ `gh` CLI (PRs ไม่ใช่ request surface). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+ใช้ default label = ชื่อ role (`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`) + category `bug`/`enhancement`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context repo — `CONTEXT.md` ที่ root + `docs/adr/` (สร้าง lazily). See `docs/agents/domain.md`.
+
+## Vercel Access
+
+นอกจาก Vercel CLI (`vercel env pull`, `vercel deploy` — ต้องลง binary + `vercel link`) ยังเข้า Vercel ได้ผ่าน **Vercel MCP plugin** (ทีม `konglife's projects`) สำหรับอ่าน projects/deployments/env/logs และ deploy โดยไม่ต้องลง CLI

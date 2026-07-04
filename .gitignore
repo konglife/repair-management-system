@@ -37,6 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# claude code (local-only — เก็บเฉพาะเครื่อง ไม่ commit)
+.claude/settings.local.json
+.claude/skills/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
