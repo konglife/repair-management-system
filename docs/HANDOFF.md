@@ -1,93 +1,64 @@
-# Handoff — เริ่ม Matt Pocock flow จากกระดาษเปล่า
+# Handoff — ส่งต่อเพื่อ grill ต่อ (วันถัดไป)
 
-> ไฟล์นี้ใช้ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
-> กฎ/โฟลว์/env ทั้งหมดอยู่ใน `CLAUDE.md` ไฟล์นี้โฟกัสที่ **เป้าหมาย + สถานะ + ขั้นถัดไป**
-
----
-
-## 🎯 เป้าหมายของแชทใหม่
-
-**เริ่มใช้ Matt Pocock skills อย่างเป็นระบบเพื่อปรับปรุง/พัฒนาโปรเจ็กต์นี้ โดยเริ่มจากกระดาษเปล่า**
-
-ผู้ใช้เลือกแนวทาง "ล้างเอกสาร domain ที่มี แล้วเริ่ม Matt flow ใหม่" — คือให้ flow สร้างเอกสาร (CONTEXT.md / ADR / PRD) ขึ้นมาเองจากการสนทนา ไม่ใช่เตรียมไว้ก่อน
-
-## ⚠️ กฎเหล็ก (ห้ามละเลย — อยู่ใน CLAUDE.md ด้วย)
-
-1. **ห้าม push/merge ไป `main`** (production ใช้จริงที่ร้าน) เว้นแต่ผู้ใช้สั่ง release เอง
-2. **ห้ามแตะฐานข้อมูล production** — ใช้ DB dev เท่านั้น (`.env.local` ชี้ dev อยู่แล้ว)
-3. ทำงานบน `develop` หรือสาขาย่อยจาก `develop` เท่านั้น
-4. ทุก push/deploy/migration ที่มีผลกระทบ → **บอกผู้ใช้ก่อนทุกครั้ง**
-
-> มี git guardrail hook (`.claude/hooks/block-dangerous-git.sh`) บล็อก `git push` ไป main/master + reset --hard/clean/branch -D อยู่แล้ว (local-only ไม่ได้ commit)
+> ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
+> กฎ/โฟลว์/env → `CLAUDE.md` · คำศัพท์ domain → `CONTEXT.md`
+> เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ + skill ที่แนะนำ**
 
 ---
 
-## 📍 สถานะตอนจบเซสชันนี้
+## 🎯 เป้าหมายเซสชันถัดไป
 
-- **สาขา:** `develop`
-- **commit ล่าสุด:** `9f8bf4b` — "docs: baseline เอกสารรอบโปรเจ็กต์ + คู่มือ agent skills" (commit local ยังไม่ push)
-- **Working tree (ยังไม่ commit):**
-  - `D CONTEXT.md` ← **ลบทิ้งโดยเจตนา** (จะให้ Matt flow สร้างใหม่)
-  - `D docs/agents/{domain,issue-tracker,triage-labels}.md` ← **ลบทิ้งโดยเจตนา** (จะให้ `/setup-matt-pocock-skills` สร้างใหม่)
-  - `M docs/HANDOFF.md` ← ไฟล์นี้ (ฉบับส่งต่อใหม่)
-  - `?? .claude/` ← local-only (hooks/guardrails/skills) **ห้าม commit**
+**`/grill-with-docs` ต่อ** — ดำเนินการ grill ที่ค้างไว้ สร้าง `CONTEXT.md` ให้สมบูรณ์ขึ้น ก่อนเข้า `/to-prd`
 
-### ⚠️ สิ่งที่ต้องรู้เรื่องการลบ
-- `CONTEXT.md` และ `docs/agents/` **ถูกลบทิ้ง**ตามคำสั่งผู้ใช้ เพื่อเริ่ Matt flow จากกระดาษเปล่า
-- **`CLAUDE.md` ยังมี reference ไป `docs/agents/*` และ `CONTEXT.md` อยู่** (sections: Issue tracker / Triage labels / Domain docs) → พอลบไฟล์แล้วเป็น dangling reference
-- วิธี reconcile: รัน `/setup-matt-pocock-skills` ในแชทใหม่ → มันจะสร้าง `docs/agents/` ใหม่ + reconcile CLAUDE.md (skill ออกแบบให้ idempotent)
+ขณะนี้เราอยู่ใน skill `grill-with-docs` (เปิดโดยผู้ใช้) — หยุดพักไว้ตรง **คำถามที่ 2**
 
----
+## ⏭️ จุดที่จะต่อ (สำคัญที่สุด)
 
-## ⏭️ ขั้นถัดไปในแชทใหม่ (ทำตามลำดับ)
+คำถาม grill ที่ 2 ที่รอคำตอบจากผู้ใช้:
 
-1. **อ่าน `CLAUDE.md`** ครบ (กฎ/โฟลว์/env/สถาปัตยกรรม) — โหลดอัตโนมัติอยู่แล้ว
-2. **รัน `/setup-matt-pocock-skills`** เพื่อสร้าง `docs/agents/` ใหม่ + reconcile CLAUDE.md
-   - issue tracker = **GitHub Issues** (`konglife/repair-management-system`, ใช้ `gh` CLI)
-   - PRs เป็น request surface = **no** (single-user app)
-   - triage labels = default (ชื่อ role)
-   - domain docs = **single-context** (`CONTEXT.md` ที่ root)
-3. **เริ่มสนทนาว่าจะปรับปรุง/สร้างอะไร** ผ่าน **`/grill-with-docs`**
-   - skill นี้จะดึง `/grilling` + `/domain-modeling` มาสัมภาษณ์ไล่คำถาม + สร้าง `CONTEXT.md` ใหม่จากผลสนทนา
-   - **อย่าเพิ่งเขียนโค้ด** — ขั้นนี้คือการลับแผนให้คม
-4. พอแผนชัด → **`/to-prd`** (สรุปเป็น PRD → publish GitHub issue) → **`/to-issues`** (แบ่งเป็น vertical slices)
-5. แต่ละ issue → เปิดเซสชันใหม่ + **`/implement`** (ขับ `/tdd`) → **`/code-review`**
+> **ขอบเขตของ "งานขาย" (Sale) vs "งานซ่อม" (Repair) ในชีวิตจริงของร้าน:**
+> เวลาลูกค้ามาซ่อมแล้วใช้อะไหล่ — อะไหล่นั้นนับเป็น "งานขาย" ด้วยไหม หรือบันทึกเฉพาะในงานซ่อม?
+> "งานขาย" โดยเฉพาะ = ขายของลอยๆ (ลูกค้าซื้อไปทำเอง) ใช่ไหม? และพบบ่อยแค่ไหนเทียบงานซ่อม?
 
-> ไม่แน่ใจใช้ skill ไหน → รัน **`/ask-matt`** (router ชี้ flow)
+**คำแนะนำที่เสนอไว้:** "งานขาย" = ขายของลอย ส่วนอะไหล่ในงานซ่อมบันทึกใน `UsedPart` คนละทาง (ตรงกับที่โค้ดแยก `Sale`/`UsedPart`) — แต่ต้องยืนยันกับผู้ใช้เพราะสัดส่วนจริงมีผลต่อมุมมอง/รายงาน
 
----
+หลังได้คำตอบ → อัปเดต `CONTEXT.md` + ไล่ grill ต่อเรื่องอื่น (ปริมาณ/สัดส่วนการใช้งานจริง, คำถามที่ระบบตอบไม่ได้, สิ่งที่รำคาญตอนใช้)
 
-## 🧭 โฟลว์ dev หลักของ Matt (idea → ship)
+## 🧭 Suggested skills (เซสชันถัดไป)
 
-```
-/grill-with-docs  →  /to-prd  →  /to-issues
-                                   ↓ แต่ละ issue เปิดเซสชันใหม่
-                            /implement (→/tdd) → /code-review → /handoff
-```
-on-ramps (เข้ามารวม flow): บั๊ก/request ภายนอก → `/triage` · ของพังดื้อ → `/diagnosing-bugs` · ปรับสถาปัตยกรรม → `/improve-codebase-architecture`
-
-แผนที่ skill ทั้ง 24 ตัว + dependency map อยู่ที่ **`docs/matt-pocock-skills.html`** (เปิดในเบราว์เซอร์)
-
-## 🗂️ เอกสาร domain (สถานะหลังล้าง)
-- `CONTEXT.md` — ❌ ถูกลบ → จะถูกสร้างใหม่โดย `/domain-modeling` ตอน `/grill-with-docs`
-- `docs/agents/*` — ❌ ถูกลบ → จะถูกสร้างใหม่โดย `/setup-matt-pocock-skills`
-- `docs/adr/` — ไม่เคยมี → สร้าง lazy ตอนมี decision จริงใน grill
-- `docs/matt-pocock-skills.html` — ✅ มี (แผนที่ skill 24 ตัว)
-
----
-
-## 📚 ข้อมูลอ้างอิง
-| | ค่า |
+| Skill | เมื่อไหร่ |
 |---|---|
-| GitHub repo | `konglife/repair-management-system` |
-| Vercel team | `konglife's projects` (`team_raZ7DknFlxOMrqsM67VORqgw`) |
-| Vercel projects | prod `repair-management-system` (`prj_Z40riTYpImEgsmtR9DfgSdyd3WJf` ↔ main) · dev `repair-management-system-dev` (`prj_LUp3k2fgydbKfhGQ7cAstdNxZY2l` ↔ develop) |
-| commit ล่าสุด develop | `9f8bf4b` (local, ยังไม่ push — นำ origin 1) |
-| commit ล่าสุด main/prod | `d95d433` |
-| Co-author email | `claude <81847+claude@users.noreply.github.com>` |
+| **`/grill-with-docs`** | ทันที — ต่อจากคำถามที่ 2 |
+| `/to-prd` | หลัง grill จนแผนชัด → สรุปเป็น PRD → publish GitHub Issue |
+| `/improve-codebase-architecture` | ถ้าผู้ใช้อยากสำรวจ architecture ทั้งระบบ (มี `CONTEXT.md` อ้างอิงได้แล้ว) |
+| `/ask-matt` | ไม่แน่ใจใช้ skill ไหน |
 
-## 📌 ค้างรอการตัดสินใจ (สำหรับแชทใหม่)
-- **commit การลบ CONTEXT.md/agents หรือยังไม่ commit?** — working tree ตอนนี้มี deletion ค้างไว้ ผู้ใช้ยังไม่สั่ง commit
-- **prod ค้าง deploy 6 เดือน** — develop นำ main ~15 commit ต้องวางแผน release ระวัง
-- **Repair model** — ยังไม่มี field "ค่าบริการ/ราคา" แยกจากต้นทุนจริง (totalCost = ค่าซ่อมรวมที่ผู้ใช้ป้อน)
-- **บั๊กที่รู้แล้ว** (รอ triage): `reports.getMonthlySummary` = publicProcedure (auth รั่ว) · `repair.laborCost` ติดลบได้ · เงินเก็บเป็น Float
+## 📍 สถานะ
+
+- **สาขา:** `develop` (ทุกอย่างอยู่ที่นี่ ไม่แตะ `main`/prod)
+- **HEAD:** `93cb48c` + commit ใหม่เซสชันนี้ (docs + journal + handoff) — ดู `git log` / `CHANGELOG.md`
+- **ปัญหาที่ยืนยันจากโค้ดแล้ว** (เอกสารไว้ใน `docs/API-DOCS.md` → "Known Issues"):
+  1. `reports.getMonthlySummary` = `publicProcedure` (auth รั่ว) — router เดียวที่ public
+  2. โมเดลราคางานซ่อม: `laborCost = totalCost − partsCost` (ยอดคงเหลือ, markup อะไหล่ถูกกองรวม)
+  3. `laborCost` ติดลบได้
+  4. เงินเก็บเป็น `Float` ทุกฟิลด์
+
+## 📌 ค้างรอการตัดสินใจ
+
+- **prod ค้าง deploy ~10 เดือน** — develop นำ main หลาย commit ต้องวางแผน release ระวัง (ดู `CHANGELOG.md` → `[Unreleased]`)
+- **ยังไม่มี `docs/adr/`** — ADR จะเกิด lazy ตอน grill จน decision แข็งตัว (ตามเงื่อนไข 3 ข้อ ของ `domain-modeling`)
+- บั๊ก 4 ข้อข้างบน **ยังไม่ได้ triage** เป็น GitHub Issue (รอหลัง grill เสร็จ → พิจารณา `/triage`)
+
+## 📚 อ้างอิง (อย่าทำซ้ำ — ไปอ่านที่ไฟล์)
+
+| | ที่อยู่ |
+|---|---|
+| สถาปัตยกรรม + deployment | `docs/ARCHITECTURE.md` |
+| ข้อมูล/ER | `docs/DATABASE.md` |
+| API (routers/procedures/known issues) | `docs/API-DOCS.md` |
+| หน้า/คอมโพเนนต์ | `docs/UI-UX-SPECIFICATION.md` |
+| คำศัพท์ domain | `CONTEXT.md` |
+| ประวัติเปลี่ยนแปลง | `CHANGELOG.md` |
+| Matt skill flow | `README.md` → "Matt Pocock Skills Flow" |
+| ระบบ journal | `docs/journal/README.md` |
+| ข้อมูลอ้างอิงโปรเจ็กต์ (repo/team/vercel IDs) | commit `9f8bf4b` / `CLAUDE.md` |
