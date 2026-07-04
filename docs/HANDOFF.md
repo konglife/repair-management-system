@@ -1,104 +1,93 @@
-# Handoff — เซสชัน 2026-07-01 (ตอนที่ 3: เริ่มสร้าง HTML แผนภาพสถาปัตยกรรม 5 ไฟล์)
+# Handoff — เริ่ม Matt Pocock flow จากกระดาษเปล่า
 
-> ไฟล์นี้ใช้ส่งต่องานไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
-> กฎ/โฟลว์/env ทั้งหมดอยู่ใน `CLAUDE.md` ไฟล์นี้โฟกัสที่ **ความคืบหน้า + จุดที่จะต่อ**
-
----
-
-## 📍 สถานะตอนจบเซสชัน
-- **สาขา:** `develop` (sync `origin/develop`) — commit ล่าสุด `de03e2b`
-- **`main`:** local = `origin/main` = `d95d433` — production ล็อค ห้ามแตะ
-- **Working tree:** มีไฟล์ **ยังไม่ commit เยอะ** (สะสมมา 3 ตอน) — ดู "งานค้าง"
-- ⚠️ **ยังไม่ได้ commit อะไรเลย** — รอผู้ใช้สั่ง (ตามกฎเหล็ก)
+> ไฟล์นี้ใช้ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
+> กฎ/โฟลว์/env ทั้งหมดอยู่ใน `CLAUDE.md` ไฟล์นี้โฟกัสที่ **เป้าหมาย + สถานะ + ขั้นถัดไป**
 
 ---
 
-## ✅ สิ่งที่ทำเสร็จเซสชันนี้ (ตอนที่ 3)
+## 🎯 เป้าหมายของแชทใหม่
 
-### 1. สร้างไฟล์แผนภาพที่ 1 สำเร็จ → `docs/architecture-component-20260701.html`
-High-Level Component Diagram ของระบบจริง — แบ่ง **6 ชั้น** (Client → Auth Boundary → App Router → tRPC → Domain Routers → Data) อ้างไฟล์จริงใน `src/` ทุกกล่อง. เน้นปัญหาเด่นที่เชื่อมไปเอกสารเดิม:
-- 🐞 `reports.getMonthlySummary` = `publicProcedure` (รั่ว auth)
-- ⚠ logic ซ้ำข้าม router (sale≈repair · date-range ×3 · dashboard≈reports) = candidate refactor #1/#2/#4/#5
-- ⚠ `stock/page.tsx` = 1,295 บรรทัด = candidate #3
+**เริ่มใช้ Matt Pocock skills อย่างเป็นระบบเพื่อปรับปรุง/พัฒนาโปรเจ็กต์นี้ โดยเริ่มจากกระดาษเปล่า**
 
-### 2. เพิ่ม pan/zoom แบบโต้ตอบให้ภาพใหญ่ (สำคัญที่สุดที่ต้องส่งต่อ)
-ผู้ใช้ฟ้องว่าภาพ "ภาพรวมทั้งระบบ" อ่านไม่ได้ (สูงเกิน ถูกตัด ซูม/แพนไม่ได้) → แก้ด้วย **dependency-free pan/zoom**:
-- 🖱️ สกอลเมาส์ = ซูม (ยึดตำแหน่งเคอร์เซอร์) · ✋ ลาก = แพน (Pointer Events)
-- 🔘 toolbar: `−` / `%` / `+` / `⤢(รีเซ็ต fit ความกว้าง)` · พื้นหลัง checkerboard
-- เปิดมาครั้งแรก fit width อัตโนมัติ
+ผู้ใช้เลือกแนวทาง "ล้างเอกสาร domain ที่มี แล้วเริ่ม Matt flow ใหม่" — คือให้ flow สร้างเอกสาร (CONTEXT.md / ADR / PRD) ขึ้นมาเองจากการสนทนา ไม่ใช่เตรียมไว้ก่อน
 
-**สถาปัตยกรรมโค้ด (REUSABLE — ใช้กับไฟล์ 2–5 ต่อ):**
-- โครงสร้าง HTML ทุก diagram ใหญ่ = `.zoom-bar` (toolbar) + `.zoom-stage` (overflow:hidden, ความสูงคงที่ เช่น `70vh`) + `.zoom-canvas` (ครอบ `<pre class="mermaid">`)
-- CSS ทั้งหมดอยู่ใน `<style>` ของไฟล์ 1 (class: `.zoom-stage` `.zoom-canvas` `.zoom-bar` `.zoom-pct` `.zoom-hint`)
-- JS controller อยู่ใน `<script type="module">` เดียวกับ mermaid init — หลักการ: `mermaid.initialize({startOnLoad:false})` → `await mermaid.run()` → `document.querySelectorAll(".zoom-stage").forEach(initStage)`
-- `initStage()` ทำ wheel-zoom + pointer-pan + ปุ่ม เอง; อ่านค่าจาก `canvas.firstElementChild.getBoundingClientRect()` ตอน transform ยังเป็น none
-- ⚠ ไฟล์ 2–5 ต้อง **ก๊อปปี้ CSS + JS block ทั้งสอง** มาด้วย ไม่งั้น pan/zoom ไม่ทำงาน
+## ⚠️ กฎเหล็ก (ห้ามละเลย — อยู่ใน CLAUDE.md ด้วย)
+
+1. **ห้าม push/merge ไป `main`** (production ใช้จริงที่ร้าน) เว้นแต่ผู้ใช้สั่ง release เอง
+2. **ห้ามแตะฐานข้อมูล production** — ใช้ DB dev เท่านั้น (`.env.local` ชี้ dev อยู่แล้ว)
+3. ทำงานบน `develop` หรือสาขาย่อยจาก `develop` เท่านั้น
+4. ทุก push/deploy/migration ที่มีผลกระทบ → **บอกผู้ใช้ก่อนทุกครั้ง**
+
+> มี git guardrail hook (`.claude/hooks/block-dangerous-git.sh`) บล็อก `git push` ไป main/master + reset --hard/clean/branch -D อยู่แล้ว (local-only ไม่ได้ commit)
 
 ---
 
-## ⏭️ จุดที่จะต่อเซสชันใหม่ — สร้างแผนภาพไฟล์ 2–5 (ทำได้ทันที)
-| ไฟล์ | ชื่อ | แหล่งความจริง | หมายเหตุ |
-|---|---|---|---|
-| ✅ 1 | High-Level Component | `src/` ทั้งระบบ | **เสร็จแล้ว** |
-| ⬜ 2 | **Sequence** (จุดซับซ้อนสุด = sale/repair create) | `sale.ts:136-234` · `repair.ts:121-219` | transaction: validate stock → snapshot price/cost → create header+items → decrement stock |
-| ⬜ 3 | Logical ER Diagram | `prisma/schema.prisma` | domain models + ความสัมพันธ์ |
-| ⬜ 4 | System Architecture | Next.js App Router · tRPC · Clerk · Prisma Postgres · Vercel 2-env | ดู CLAUDE.md "Branch & Deployment" |
-| ⬜ 5 | **Physical ERD (reverse-engineer)** | DB **dev** เท่านั้น | ดูคำแนะนำด้านล่าง |
+## 📍 สถานะตอนจบเซสชันนี้
 
-**ชื่อไฟล์ที่ตกลง (footer ไฟล์ 1 ลิงก์ไว้หมดแล้ว):**
-- `architecture-sequence-20260701.html`
-- `architecture-er-logical-20260701.html`
-- `architecture-system-20260701.html`
-- `architecture-er-physical-20260701.html`
+- **สาขา:** `develop`
+- **commit ล่าสุด:** `9f8bf4b` — "docs: baseline เอกสารรอบโปรเจ็กต์ + คู่มือ agent skills" (commit local ยังไม่ push)
+- **Working tree (ยังไม่ commit):**
+  - `D CONTEXT.md` ← **ลบทิ้งโดยเจตนา** (จะให้ Matt flow สร้างใหม่)
+  - `D docs/agents/{domain,issue-tracker,triage-labels}.md` ← **ลบทิ้งโดยเจตนา** (จะให้ `/setup-matt-pocock-skills` สร้างใหม่)
+  - `M docs/HANDOFF.md` ← ไฟล์นี้ (ฉบับส่งต่อใหม่)
+  - `?? .claude/` ← local-only (hooks/guardrails/skills) **ห้าม commit**
 
-### ⚠️ ข้อควรระวังตอนทำ Physical ERD (ไฟล์ 5)
-- **ห้ามแตะ DB production** — ใช้ DB **dev** เท่านั้น (`.env.local` ชี้ dev อยู่แล้ว)
-- **ทางปลอดภัยที่สุด (ไม่ต่อ DB):** `schema.prisma` = source of truth อยู่แล้ว → `prisma-erd-generator` (`npm i -D prisma-erd-generator` + เพิ่ม generator ใน schema + `npx prisma generate`) สร้าง ERD ออกมา
-- เช็ค drift กับ DB dev: `npx prisma db pull --print` (อ่านอย่างเดียว ปลอดภัย) เทียบกับ `schema.prisma`
-
-### สไตล์เอกสาร (ให้คงเส้นคงตะวัน)
-Tailwind CDN + Mermaid v11 (ESM) + ภาษาไทย + serif heading + สี slate. ทุก diagram ใหญ่ใส่ pan/zoom block. อ้างอิงโค้ดจริงทุกจุด — **ไม่ใช่สิ่งที่ควรจะเป็น**
+### ⚠️ สิ่งที่ต้องรู้เรื่องการลบ
+- `CONTEXT.md` และ `docs/agents/` **ถูกลบทิ้ง**ตามคำสั่งผู้ใช้ เพื่อเริ่ Matt flow จากกระดาษเปล่า
+- **`CLAUDE.md` ยังมี reference ไป `docs/agents/*` และ `CONTEXT.md` อยู่** (sections: Issue tracker / Triage labels / Domain docs) → พอลบไฟล์แล้วเป็น dangling reference
+- วิธี reconcile: รัน `/setup-matt-pocock-skills` ในแชทใหม่ → มันจะสร้าง `docs/agents/` ใหม่ + reconcile CLAUDE.md (skill ออกแบบให้ idempotent)
 
 ---
 
-## 🎯 Suggested skills (สำหรับแชทใหม่)
-- **`excalidraw`** — ถ้าอยากได้ diagram ลายมือ (arch/flow/seq) เป็นทางเลือกแทน Mermaid ในบางไฟล์
-- **`codebase-design`** — คำศัพท์ deep/shallow module ที่ใช้ใน architecture-review (อาจใช้ตอนวาด "ระบบที่ควรจะเป็น")
-- **`handoff`** — ตอนจบเซสชัน สร้างไฟล์นี้ต่ออีกรอบ (skill บอกเขียนลง OS temp dir แต่ repo convention = ไฟล์นี้ ใช้ไฟล์นี้)
+## ⏭️ ขั้นถัดไปในแชทใหม่ (ทำตามลำดับ)
 
-> ไม่จำเป็นต้องเรียก skill เพื่อทำไฟล์ 2–5 — ทำตรงได้เลย ส่วนใหญ่เป็น Mermaid + HTML
+1. **อ่าน `CLAUDE.md`** ครบ (กฎ/โฟลว์/env/สถาปัตยกรรม) — โหลดอัตโนมัติอยู่แล้ว
+2. **รัน `/setup-matt-pocock-skills`** เพื่อสร้าง `docs/agents/` ใหม่ + reconcile CLAUDE.md
+   - issue tracker = **GitHub Issues** (`konglife/repair-management-system`, ใช้ `gh` CLI)
+   - PRs เป็น request surface = **no** (single-user app)
+   - triage labels = default (ชื่อ role)
+   - domain docs = **single-context** (`CONTEXT.md` ที่ root)
+3. **เริ่มสนทนาว่าจะปรับปรุง/สร้างอะไร** ผ่าน **`/grill-with-docs`**
+   - skill นี้จะดึง `/grilling` + `/domain-modeling` มาสัมภาษณ์ไล่คำถาม + สร้าง `CONTEXT.md` ใหม่จากผลสนทนา
+   - **อย่าเพิ่งเขียนโค้ด** — ขั้นนี้คือการลับแผนให้คม
+4. พอแผนชัด → **`/to-prd`** (สรุปเป็น PRD → publish GitHub issue) → **`/to-issues`** (แบ่งเป็น vertical slices)
+5. แต่ละ issue → เปิดเซสชันใหม่ + **`/implement`** (ขับ `/tdd`) → **`/code-review`**
+
+> ไม่แน่ใจใช้ skill ไหน → รัน **`/ask-matt`** (router ชี้ flow)
 
 ---
 
-## 🗂️ งานค้าง (ยังไม่ commit ทั้งหมด — สะสม 3 ตอน)
-**จากตอนที่ 1:** `CLAUDE.md` · `.gitignore` · `docs/matt-pocock-skills.html` · `docs/agents/{issue-tracker,triage-labels,domain}.md` · `CONTEXT.md` · `docs/journal/2026-07-01.md`
-**จากตอนที่ 2:** `docs/architecture-review-20260701.html` · `docs/calculation-logic-20260701.html` · `docs/HANDOFF.md` (ตอนนั้น)
-**จากตอนที่ 3 (ใหม่):** `docs/architecture-component-20260701.html` · `docs/HANDOFF.md` (ไฟล์นี้, เขียนทับ)
-`.claude/skills/` (24+ skills) — local-only อยู่ใน .gitignore ไม่ commit
+## 🧭 โฟลว์ dev หลักของ Matt (idea → ship)
+
+```
+/grill-with-docs  →  /to-prd  →  /to-issues
+                                   ↓ แต่ละ issue เปิดเซสชันใหม่
+                            /implement (→/tdd) → /code-review → /handoff
+```
+on-ramps (เข้ามารวม flow): บั๊ก/request ภายนอก → `/triage` · ของพังดื้อ → `/diagnosing-bugs` · ปรับสถาปัตยกรรม → `/improve-codebase-architecture`
+
+แผนที่ skill ทั้ง 24 ตัว + dependency map อยู่ที่ **`docs/matt-pocock-skills.html`** (เปิดในเบราว์เซอร์)
+
+## 🗂️ เอกสาร domain (สถานะหลังล้าง)
+- `CONTEXT.md` — ❌ ถูกลบ → จะถูกสร้างใหม่โดย `/domain-modeling` ตอน `/grill-with-docs`
+- `docs/agents/*` — ❌ ถูกลบ → จะถูกสร้างใหม่โดย `/setup-matt-pocock-skills`
+- `docs/adr/` — ไม่เคยมี → สร้าง lazy ตอนมี decision จริงใน grill
+- `docs/matt-pocock-skills.html` — ✅ มี (แผนที่ skill 24 ตัว)
 
 ---
 
-## 📚 เอกสารอ้างอิงสำคัญ (อ่านคู่กัน ห้ามทำซ้ำเนื้อหา)
-- `CLAUDE.md` — กฎ/โฟลว์/env (โหลดอัตโนมัติ)
-- `docs/architecture-component-20260701.html` — ไฟล์ 1 (เสร็จ) = ต้นแบบสไตล์ + pan/zoom
-- `docs/architecture-review-20260701.html` — 6 candidate refactor + top recommendation
-- `docs/calculation-logic-20260701.html` — สูตรคำนวณจริงทั้งระบบ + 8 จุดสังเกต (🐞 A–H)
-- `prisma/schema.prisma` — source of truth ของ schema (10 models)
-
-### ข้อมูลอ้างอิง
+## 📚 ข้อมูลอ้างอิง
 | | ค่า |
 |---|---|
 | GitHub repo | `konglife/repair-management-system` |
 | Vercel team | `konglife's projects` (`team_raZ7DknFlxOMrqsM67VORqgw`) |
 | Vercel projects | prod `repair-management-system` (`prj_Z40riTYpImEgsmtR9DfgSdyd3WJf` ↔ main) · dev `repair-management-system-dev` (`prj_LUp3k2fgydbKfhGQ7cAstdNxZY2l` ↔ develop) |
-| commit ล่าสุด develop | `de03e2b` (นำ main 14, หลัง 0) |
+| commit ล่าสุด develop | `9f8bf4b` (local, ยังไม่ push — นำ origin 1) |
 | commit ล่าสุด main/prod | `d95d433` |
 | Co-author email | `claude <81847+claude@users.noreply.github.com>` |
 
----
-
-## 📌 ค้างรอการตัดสินใจ (ยังเหมือนเดิม + ของใหม่)
-- **commit งานค้างทั้งหมด** — ผู้ใช้ยังไม่สั่ง (docs + 3 HTML + CLAUDE.md edits)
-- **pan/zoom** — ผู้ใช้ยังไม่ได้ยืนยันว่าทำงานถูกใจหลังเปิดดูไฟล์ 1 → ถ้าต้องแก้ ให้แก้ในไฟล์ 1 ก่อนแล้วค่อย copy ไป 2–5
-- **prod ค้าง deploy 6 เดือน** — วางแผน release (merge develop → main) ระวัง develop นำ 14 commit
-- **Repair model** — เมื่อไหร่จะเพิ่ม field "ค่าบริการ/ราคา" แยกจากต้นทุนจริง (resolve คำถามเปิดใน CONTEXT.md)
+## 📌 ค้างรอการตัดสินใจ (สำหรับแชทใหม่)
+- **commit การลบ CONTEXT.md/agents หรือยังไม่ commit?** — working tree ตอนนี้มี deletion ค้างไว้ ผู้ใช้ยังไม่สั่ง commit
+- **prod ค้าง deploy 6 เดือน** — develop นำ main ~15 commit ต้องวางแผน release ระวัง
+- **Repair model** — ยังไม่มี field "ค่าบริการ/ราคา" แยกจากต้นทุนจริง (totalCost = ค่าซ่อมรวมที่ผู้ใช้ป้อน)
+- **บั๊กที่รู้แล้ว** (รอ triage): `reports.getMonthlySummary` = publicProcedure (auth รั่ว) · `repair.laborCost` ติดลบได้ · เงินเก็บเป็น Float
