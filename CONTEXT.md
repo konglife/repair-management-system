@@ -33,3 +33,68 @@ _Avoid_: unit of measure, UOM
 **หมวดหมู่ (Category)**:
 การจัดกลุ่มสินค้า เช่น อะไหล่มอไซค์ น้ำมัน อะไหล่เครื่องตัดหญ้า
 _Avoid_: group, type
+
+## รูปร่างธุรกิจจริง (จากข้อมูล production)
+
+> ข้อมูลจาก prod aggregate (สค 2025 – กค 2026, ~11 เดือน) — ยืนยันแล้วไม่อ่อนไหว ร้านเล็กในหมู่บ้าน
+
+### ธุรกิจหลัก = ซ่อม (repair-first)
+| | เคส | สัดส่วนเคส | มูลค่ารวม | สัดส่วนเงิน |
+|---|---|---|---|---|
+| งานซ่อม | 530 | 92% | 81,060 ฿ | **95.7%** |
+| งานขาย (ของลอย) | 44 | 8% | 3,640 ฿ | 4.3% |
+
+→ **งานขาย (Sale) เป็น side activity** ~2-5 เคส/เดือน (พีค 10) — เกือบเป็น vestigial feature
+→ ทุกการตัดสินใจ design/priority ต้องมอง repair workflow เป็นแกนกลาง
+
+### ภาระงาน (single-user)
+- ซ่อม ~40-60 เคส/เดือน ≈ **1.5-2 เคส/วัน**
+- ขาย ~2-5 เคส/เดือน
+
+### โครงสร้างรายได้ต่อเคส
+- ซ่อมเฉลี่ย **152.93 ฿/เคส** = ค่าแรง 81.52 (53%) + อะไหล่ 71.41 (47%)
+- ขายเฉลี่ย **82.7 ฿/เคส**
+
+### ความจริงที่น่าสนใจ (รอยืนยันใน grill)
+- **ทุกงานซ่อมมีอะไหล่** — 530/530 repair มี `UsedPart` อย่างน้อย 1 ชิ้น (avg 1.1, max 3)
+- `laborCost` ติดลบ = **0 ครั้ง** ใน 530 เคส (บั๊กเป็นไปได้แต่ยังไม่เกิดจริง)
+- **Float rounding เห็นจริง** — 141 cell มี noise (~8.6% ของยอดเงินทั้งหมด) → กระทบ UI/รายงานจริง
+- ไม่มี Sale เดียวที่ไร้ `sale_items` (ไม่มี orphan)
+
+## Workflow การใช้งานจริง (ยืนยันจากเจ้าของร้าน)
+
+- **บันทึกงานเย็นวันเดียว** — เจ้าของร้านลงบันทึกตอนเย็นของทุกวัน (batch ปิดวัน) → **ความเร็วในการ entry เป็นสิ่งสำคัญที่สุด** ไม่ใช่ real-time
+- **ไม่มีงานซ่อมค้างคืน** — ทุก repair ปิดภายในวันเดียว → ไม่ต้องการสถานะ "in-progress/kanban" ซับซ้อน
+- **"อะไหล่ 0 บาท"** — ในระบบมีสินค้าอะไหล่ราคา 0 บาท ไว้ใช้ตอน **ลูกค้านำอะไหล่มาเอง** (BYO part) → นี่คือเหตุผลที่ทุก repair มี `UsedPart` ≥1
+  - ⚠️ ผลกระทบ: อะไหล่ 0 บาททำให้ `partsCost`/`avg parts per repair` มี noise (นับรวมตัว placeholder) — ต้อง filter ตอนวิเคราะห์
+
+## Pain points จากการใช้งานจริง (backlog หลัก)
+
+> รายละเอียดเต็ม → จะแยกเป็น GitHub Issues ตอน `/to-prd`. สรุป theme:
+
+### 1. Stock Management
+- ไม่มี pagination (Products, PurchaseRecord) — ลิสต์ยาว
+- Add Product / Add Purchase เป็น inline form → อยากได้ Modal
+- **Product picker ใช้ยาก** — ค้นหา + dropdown ไม่สะดวก (เจอซ้ำใน Sales/Purchase/Repair)
+- "Filter by product" (PurchaseRecord) แทบไม่ใช้
+
+### 2. Sales
+- ไม่มี pagination, inline form → Modal, Product picker ยาก (same pattern)
+
+### 3. Repairs (core — สำคัญที่สุด)
+- Create Repair เป็น Modal แล้ว แต่ **ฟอร์มด้านในยังใช้ยาก**:
+  - **Customer picker** ค้นหา/เลือกยาก
+  - **"Add Parts Used" ฟอร์มซ้อน** ใช้ยาก
+
+### 4. อื่นๆ / ข้ามหน้า
+- **ความไม่สอดคล้องกัน** — แต่ละหน้า/ฟอร์มไม่เป็นแนวเดียวกัน (วันที่ picker ไม่เหมือนกัน, form pattern ไม่ตรง) — เจ้าของร้านไม่แน่ใจ "มาตรฐาน dev 2026 ทำยังไง"
+- Dashboard แทบไม่ได้ดูจริง
+- Low Stock Alerts ยังตั้งค่ารวม (global threshold) ไม่ได้ per-product
+- Settings ยังปรับปรุงไม่เสร็จ
+- ไม่แน่ใจเรื่อง business-logic bug (→ มีบั๊กที่ยืนยันจากโค้ดแล้ว 4 ข้อ ดู `docs/API-DOCS.md` Known Issues)
+
+### 🎯 Theme ใหญ่ที่ข้ามหน้า
+1. **Product/Customer picker ใช้ยาก** — pattern เดียวกันเจอ 3 ที่ (Purchase/Sales/Repair) → fix ครั้งเดียวกระจาย 3 จุด
+2. **inline→Modal + pagination** — pattern ซ้ำทุก list page
+3. **ความไม่สม่ำเสมอของ UI** — ต้อง design-system pass
+4. **ความเร็ว entry** — เพราะบันทึก batch เย็นวันเดียว → ทุก fricition คูณเข้าวันละหลายสิบเคส

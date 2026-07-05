@@ -1,74 +1,85 @@
-# Handoff — ส่งต่อเพื่อ grill ต่อ (วันถัดไป)
+# Handoff — ส่งต่อไปทำ `/improve-codebase-architecture` (แชทถัดไป)
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
-> กฎ/โฟลว์/env → `CLAUDE.md` · คำศัพท์ domain → `CONTEXT.md`
-> เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ + skill ที่แนะนำ**
+> กฎ/โฟลว์/env → `CLAUDE.md` · คำศัพท์ domain + รูปร่างธุรกิจ + pain backlog → `CONTEXT.md`
+> เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ + skill ที่จะใช้**
 
 ---
 
 ## 🎯 เป้าหมายเซสชันถัดไป
 
-**`/grill-with-docs` ต่อ** — ดำเนินการ grill ที่ค้างไว้ สร้าง `CONTEXT.md` ให้สมบูรณ์ขึ้น ก่อนเข้า `/to-prd`
+**`/improve-codebase-architecture`** — survey สถาปัตยกรรมทั้งระบบก่อนตัดสินใจ scope (ก่อนเข้า `/to-prd`)
 
-ขณะนี้เราอยู่ใน skill `grill-with-docs` (เปิดโดยผู้ใช้) — หยุดพักไว้ตรง **คำถามที่ 2**
+ทำตาม process ของ skill แบบเคร่งครัด:
+1. **Explore** — อ่าน `CONTEXT.md` + ADRs (`docs/adr/` — ยังไม่มี, lazy) ก่อน, แล้วใช้ Agent `subagent_type=Explore` เดินสำรวจโค้ด (ห้ามใช้ heuristic ตายตัว — สำรวจแบบ organic, โฟกัสจุดที่เจอ friction)
+2. **HTML report** — เขียน self-contained HTML ลง OS temp dir (`%TEMP%/architecture-review-<ts>.html` บน Windows) ใช้ Tailwind+Mermaid CDN, มี before/after diagram ทุก candidate, `start <path>` เปิดให้ผู้ใช้ แล้วถาม "Which of these would you like to explore?" — **ห้าม propose interface ในขั้นนี้**
+3. **Grilling loop** — พอผู้ใช้เลือก candidate → ใช้ skill `/grilling` เดิน design tree, แตะ `/domain-modeling` ค้างไว้ตามต้องการ
 
-## ⏭️ จุดที่จะต่อ (สำคัญที่สุด)
+ใช้คำศัพท์ `/codebase-design` ตลอด: **module / interface / implementation / depth / deep / shallow / seam / adapter / leverage / locality** (ห้ามใช้ component/service/boundary/wrapper). ใช้ deletion test ทุกที่ที่สงสัยว่า shallow.
 
-คำถาม grill ที่ 2 ที่รอคำตอบจากผู้ใช้:
+## ⏭️ จุดที่จะต่อ
 
-> **ขอบเขตของ "งานขาย" (Sale) vs "งานซ่อม" (Repair) ในชีวิตจริงของร้าน:**
-> เวลาลูกค้ามาซ่อมแล้วใช้อะไหล่ — อะไหล่นั้นนับเป็น "งานขาย" ด้วยไหม หรือบันทึกเฉพาะในงานซ่อม?
-> "งานขาย" โดยเฉพาะ = ขายของลอยๆ (ลูกค้าซื้อไปทำเอง) ใช่ไหม? และพบบ่อยแค่ไหนเทียบงานซ่อม?
+แชทก่อนหน้าจะจะปล่อย Explore agents คู่ขนาน (server + UI) แต่ผู้ใช้ขอหยุดเพื่อส่งต่อ — **เริ่มจากขั้น Explore ใหม่ในแชทนี้** พร้อมบริบทที่สมบูรณ์กว่าเดิม (มีข้อมูล prod แล้ว)
 
-**คำแนะนำที่เสนอไว้:** "งานขาย" = ขายของลอย ส่วนอะไหล่ในงานซ่อมบันทึกใน `UsedPart` คนละทาง (ตรงกับที่โค้ดแยก `Sale`/`UsedPart`) — แต่ต้องยืนยันกับผู้ใช้เพราะสัดส่วนจริงมีผลต่อมุมมอง/รายงาน
+### จุดที่คาดว่าจะเจอ friction (จากข้อมูลที่มี — ใช้เป็น hint ไม่ใช่ checklist)
+**ฝั่ง server/business logic:**
+- เก็บเงินเป็น `Float` ทุกฟิลด์ — มีที่ parse/round กลางไหม หรือกระจาย? `CurrencyInput` ของเดียว?
+- โมเดลราคาซ่อม `laborCost = totalCost − partsCost` — คำนวณที่ไหน จาก input อะไน "repair intake" เป็น module เดียวหรือกระจาย?
+- weighted-average cost ตอน purchase — deep module เดียวหรือ inline ใน router?
+- stock deduction ซ่อม/ขาย — อยู่ที่ไหน transaction-safe ไหม ซ้ำกันไหม
+- "อะไหล่ 0 บาท" (ลูกค้านำมาเอง) — special-case รั่วออกมาทุกที่หรือเป็น seam เดียว?
+- `reports.getMonthlySummary` = `publicProcedure` (auth รั่ว) — บอกอะไรเกี่ยวกับ auth seam?
+- zod schemas/validation — ซ้ำข้าม router ไหม
 
-หลังได้คำตอบ → อัปเดต `CONTEXT.md` + ไล่ grill ต่อเรื่องอื่น (ปริมาณ/สัดส่วนการใช้งานจริง, คำถามที่ระบบตอบไม่ได้, สิ่งที่รำคาญตอนใช้)
+**ฝั่ง UI/forms (pain จริงของเจ้าของร้าน):**
+- **Picker pattern ซ้ำ N ที่** — ProductAutocomplete/PartsAutocomplete/Customer picker ใช้ยาก เจอซ้ำใน Purchase/Sales/Repair → leverage สูง (deep module เดียวแทน N call sites)
+- **inline form → Modal** ซ้ำทุก list page (Add Product/Add Purchase/Add Sale items)
+- **ไม่มี pagination** ทุกหน้า (ลิสต์ยาว)
+- **date picker ไม่เหมือนกัน** ข้าม Reports/หน้าอื่น
+- **ความไม่สอดคล้องกันข้ามหน้า** — เจ้าของร้านเป็นห่วง "มาตรฐาน dev 2026"
 
-### 🔎 ก่อน grill ต่อ — เก็บข้อมูลการใช้งานจริงจาก prod
+## 🔎 ข้อมูลการใช้งานจริงจาก prod (เก็บแล้วใน `CONTEXT.md`)
 
-ผู้ใช้อนุญาตให้ดูข้อมูลจริงเพื่อทำความเข้าใจการใช้งาน (และยืนยันว่าข้อมูล **ไม่อ่อนไหว** — ร้านเล็กในหมู่บ้าน). วิธีที่ตกลงกัน:
+ผู้ใช้อนุญาตให้ดูข้อมูลจริง (ร้านเล็กในหมู่บ้าน ไม่อ่อนไหว). **กฎเหล็ก: Claude ห้ามรับ DATABASE_URL prod หรือ execute บน prod** — เขียน SQL read-only aggregate ส่งให้ผู้ใช้รันเอง (วิธี 1). ข้อมูลที่เก็บไว้แล้ว:
+- 92% เคส / 95.7% รายได้มาจากซ่อม · ขายของลอย 8% / 4.3%
+- ~1.5-2 เคสซ่อม/วัน · บันทึก batch ตอนเย็น · ไม่มีงานซ่อมค้างคืน
+- ทุกซ่อมมี `UsedPart` ≥1 (เพราะมี "อะไหล่ 0 บาท" ไว้ตอนลูกค้านำมาเอง)
+- `laborCost` ติดลบ = 0 ครั้งใน 530 เคส · Float noise เห็น 141 cell จริง
 
-- **วิธี 1 (หลัก):** เขียน SQL **read-only aggregate** (COUNT/AVG — ไม่เอา PII ระดับแถว) → ผู้ใช้รันเองใน Vercel DB UI / `psql` → ส่งผลกลับมา. **ห้าม** Claude รับ DATABASE_URL prod หรือ execute บน prod เอง (กฎเหล็ก). ตัวอย่างสิ่งที่อยากรู้: งานซ่อม vs งานขาย เดือนละกี่รายการ, `laborCost` ติดลบจริงไหม, Float rounding เห็นไหม
-- **วิธี 2 (เสริม):** อ่าน **Vercel runtime logs** ผ่าน MCP (มี access อยู่) ดู procedure ที่ถูกเรียกบ่อย/ช่วงเวลาใช้หนัก — ไม่แตะ DB
-- **วิธี 4 (สำรอง, ผู้ใช้อนุญาต):** ผู้ใช้ดัมป์ raw (pg_dump/CSV) มาให้ได้ — แต่ยัง **ไม่จำเป็น** เพราะวิธี 1 พอ ใช้เฉพาะตอนต้องการข้อมูลระดับแถวจริงๆ
+raw CSV scratch อยู่ที่ `docs/1.csv` (overview) + `docs/2.csv` (รายเดือน) — **อย่า commit** (ข้อมูล prod)
 
-> เริ่มจากวิธี 1 ก่อน — เขียน SQL ส่งให้ผู้ใช้รัน
-
-## 🧭 Suggested skills (เซสชันถัดไป)
+## 🧭 Suggested skills
 
 | Skill | เมื่อไหร่ |
 |---|---|
-| **`/grill-with-docs`** | ทันที — ต่อจากคำถามที่ 2 |
-| `/to-prd` | หลัง grill จนแผนชัด → สรุปเป็น PRD → publish GitHub Issue |
-| `/improve-codebase-architecture` | ถ้าผู้ใช้อยากสำรวจ architecture ทั้งระบบ (มี `CONTEXT.md` อ้างอิงได้แล้ว) |
-| `/ask-matt` | ไม่แน่ใจใช้ skill ไหน |
+| **`/improve-codebase-architecture`** | ทันที — ทำตาม process 3 ขั้นด้านบน |
+| `/codebase-design` | ใช้คำศัพท์ + design-it-twice ตอนเลือก interface ของ deepened module |
+| `/grilling` | หลังผู้ใช้เลือก candidate → เดิน design tree |
+| `/domain-modeling` | ค้างไว้ตอบ — ตอนตั้งชื่อ concept ใหม่/ลับคำศัพท์ใน `CONTEXT.md` และสร้าง ADR lazy |
+| `/to-prd` | หลัง architecture survey เสร็จ → เปลี่ยน pain backlog เป็น PRD/issue |
 
 ## 📍 สถานะ
 
-- **สาขา:** `develop` (ทุกอย่างอยู่ที่นี่ ไม่แตะ `main`/prod)
-- **HEAD:** `93cb48c` + commit ใหม่เซสชันนี้ (docs + journal + handoff) — ดู `git log` / `CHANGELOG.md`
-- **ปัญหาที่ยืนยันจากโค้ดแล้ว** (เอกสารไว้ใน `docs/API-DOCS.md` → "Known Issues"):
-  1. `reports.getMonthlySummary` = `publicProcedure` (auth รั่ว) — router เดียวที่ public
-  2. โมเดลราคางานซ่อม: `laborCost = totalCost − partsCost` (ยอดคงเหลือ, markup อะไหล่ถูกกองรวม)
-  3. `laborCost` ติดลบได้
-  4. เงินเก็บเป็น `Float` ทุกฟิลด์
+- **สาขา:** `develop` (ไม่แตะ `main`/prod)
+- **HEAD:** `1e0ca26`
+- **ไฟล์เปลี่ยนยังไม่ commit:** `CONTEXT.md` (M) — เพิ่ม section "รูปร่างธุรกิจจริง" + "Workflow การใช้งานจริง" + "Pain points backlog". `docs/1.csv`/`docs/2.csv` untracked (scratch, อย่า commit)
+- **`/grill-with-docs` จบแล้ว** ✅ — `CONTEXT.md` ครบพอเข้า architecture survey
 
 ## 📌 ค้างรอการตัดสินใจ
 
-- **prod ค้าง deploy ~10 เดือน** — develop นำ main หลาย commit ต้องวางแผน release ระวัง (ดู `CHANGELOG.md` → `[Unreleased]`)
-- **ยังไม่มี `docs/adr/`** — ADR จะเกิด lazy ตอน grill จน decision แข็งตัว (ตามเงื่อนไข 3 ข้อ ของ `domain-modeling`)
-- บั๊ก 4 ข้อข้างบน **ยังไม่ได้ triage** เป็น GitHub Issue (รอหลัง grill เสร็จ → พิจารณา `/triage`)
+- **prod ค้าง deploy ~10 เดือน** — develop นำ main หลาย commit (ดู `CHANGELOG.md` → `[Unreleased]`)
+- **บั๊ก 4 ข้อยังไม่ได้ triage** เป็น issue (auth รั่ว / labor model / negative labor / Float) — เอาเข้า `/to-prd` รวมกับ UX backlog ได้
+- **ยังไม่มี `docs/adr/`** — เกิด lazy ตอน architecture survey + grilling จน decision แข็งตัว
 
 ## 📚 อ้างอิง (อย่าทำซ้ำ — ไปอ่านที่ไฟล์)
 
 | | ที่อยู่ |
 |---|---|
+| Domain + รูปร่างธุรกิจ + pain backlog | `CONTEXT.md` |
 | สถาปัตยกรรม + deployment | `docs/ARCHITECTURE.md` |
 | ข้อมูล/ER | `docs/DATABASE.md` |
 | API (routers/procedures/known issues) | `docs/API-DOCS.md` |
 | หน้า/คอมโพเนนต์ | `docs/UI-UX-SPECIFICATION.md` |
-| คำศัพท์ domain | `CONTEXT.md` |
 | ประวัติเปลี่ยนแปลง | `CHANGELOG.md` |
 | Matt skill flow | `README.md` → "Matt Pocock Skills Flow" |
 | ระบบ journal | `docs/journal/README.md` |
-| ข้อมูลอ้างอิงโปรเจ็กต์ (repo/team/vercel IDs) | commit `9f8bf4b` / `CLAUDE.md` |
