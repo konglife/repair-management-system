@@ -14,6 +14,10 @@ import { reportsRouter } from "~/server/api/routers/reports";
  * This is the primary router for your server.
  *
  * All routers added in /api/routers should be manually added here.
+ *
+ * Auth default: every procedure uses `protectedProcedure`.
+ * `publicProcedure` is reserved for sign-in/sign-up only — financial/PII
+ * routes must never be public (see ADR-0001 / architecture review C5).
  */
 export const appRouter = createTRPCRouter({
   categories: categoryRouter,
