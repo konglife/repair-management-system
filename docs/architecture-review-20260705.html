@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture review — repair-management-system</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 5 4; }
+      .leak { stroke: #dc2626; }
+      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .grid-bg {
+        background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+        background-size: 14px 14px;
+      }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans antialiased">
+    <main class="max-w-5xl mx-auto px-6 py-14 space-y-14">
+
+      <!-- ============ HEADER ============ -->
+      <header class="space-y-6">
+        <div class="flex items-baseline justify-between flex-wrap gap-2">
+          <h1 class="text-4xl font-serif tracking-tight">Architecture review</h1>
+          <span class="text-sm text-slate-500 mono">repair-management-system · 2026-07-05</span>
+        </div>
+        <p class="text-sm text-slate-600 max-w-2xl">
+          A walk of the codebase for <em>deepening opportunities</em> — shallow modules that could become deep,
+          and repeated patterns that could become one module. Survey, not solutions. Pick one to grill.
+        </p>
+
+        <!-- Legend -->
+        <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Legend</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="flex items-center gap-3">
+              <span class="inline-block w-10 h-7 border-2 border-slate-700 rounded"></span>
+              <span><b>module</b></span>
+            </div>
+            <div class="flex items-center gap-3">
+              <svg width="44" height="14"><line x1="2" y1="7" x2="42" y2="7" class="seam" stroke="#475569" stroke-width="2"/></svg>
+              <span><b>seam</b> (interface lives here)</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <svg width="44" height="14"><line x1="2" y1="7" x2="42" y2="7" class="leak" stroke-width="2"/></svg>
+              <span><b style="color:#dc2626">leak</b> across a seam</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="inline-block w-10 h-7 rounded deep"></span>
+              <span><b>deep</b> module</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-100 flex flex-wrap gap-2 text-xs">
+            <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+            <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-semibold">Worth exploring</span>
+            <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold">Speculative</span>
+          </div>
+        </div>
+
+        <!-- Business context strip -->
+        <div class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-sm text-indigo-900">
+          <b>Why these candidates, in this order.</b>
+          This shop is <b>repair-first</b> (92% of cases, 95.7% of revenue; ~1.5–2 repairs/day, all logged in one evening batch).
+          So <b>entry speed</b> is the dominant product quality, and <b>repair pricing</b> is the dominant domain distortion.
+          Leverage below is scored by call-sites touched <i>and</i> alignment with that shape.
+        </div>
+      </header>
+
+      <!-- ============ CANDIDATES ============ -->
+      <section id="candidates" class="space-y-12">
+
+        <!-- ===================== C1: PICKER ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C1 · Collapse two pickers (and a missing third) into one deep module</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            src/components/ui/ProductAutocomplete.tsx · src/components/ui/PartsAutocomplete.tsx ·
+            src/app/(main)/sales/page.tsx:353 · src/app/(main)/repairs/page.tsx:446
+          </div>
+
+          <!-- before / after -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <!-- BEFORE: mass diagram-ish -->
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — two shallow adapters + a raw select</div>
+              <div class="space-y-3">
+                <div class="rounded border-2 border-slate-300 p-2">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-500">ProductAutocomplete</div>
+                  <div class="text-xs text-slate-600">~192 lines · search · dropdown · clear · <span class="text-slate-400">showOutOfStock</span></div>
+                </div>
+                <div class="rounded border-2 border-slate-300 p-2">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-500">PartsAutocomplete <span class="text-rose-500">~95% copy</span></div>
+                  <div class="text-xs text-slate-600">~188 lines · search · dropdown · clear · <span class="text-slate-400">price=averageCost</span></div>
+                </div>
+                <div class="rounded border-2 border-dashed border-rose-300 bg-rose-50 p-2">
+                  <div class="text-[10px] uppercase tracking-wider text-rose-500">Customer picker — <b>missing</b></div>
+                  <div class="text-xs text-rose-700">raw &lt;Select&gt; + .map() on 2 pages · no search</div>
+                </div>
+                <div class="text-center text-slate-400 text-xs">3 call sites, 3 different shapes</div>
+              </div>
+            </div>
+            <!-- AFTER -->
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — one deep module, one interface</div>
+              <div class="flex items-center justify-center h-[150px]">
+                <div class="rounded deep text-slate-100 p-5 w-full text-center">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">EntityPicker&lt;T&gt;</div>
+                  <div class="text-sm font-semibold mt-1">small interface</div>
+                  <div class="text-xs text-slate-300 mt-2">query · label · filter · onSelect</div>
+                  <div class="text-[10px] text-slate-500 mt-3 border-t border-slate-600 pt-2">Product · Part · Customer behind one seam</div>
+                </div>
+              </div>
+              <div class="text-center text-slate-500 text-xs mt-2">leverage: one interface, N call sites</div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> The owner's #1 stated pain: pickers are hard to use. Two near-identical picker modules exist, and the Customer picker <em>doesn't exist</em> — it's a raw <span class="mono">&lt;Select&gt;</span> with no search, pasted on two pages.</p>
+            <p><b>Solution.</b> One deep module whose interface is a query + label fn + onSelect. Product, Part, Customer become three thin adapters at the same seam.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">locality: picker bugs concentrate in one module</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">leverage: 1 interface covers 3+ call sites</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">Customer gets search for free (closes a UX gap)</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">deletion test: deleting PartsAutocomplete concentrates, not moves</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C2: REPAIR PRICING ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C2 · Repair pricing: keep the residual, but guard & name it</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-semibold">Worth exploring</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            src/server/api/routers/repair.ts:181 · prisma/schema.prisma:118-120
+          </div>
+          <div class="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <b>Decided (ADR-0001):</b> the residual model <i>is correct</i> for this shop — the owner only wants "what hit my pocket", never labor split from parts markup. So C2 no longer changes the model. Don't re-suggest splitting labor/markup.
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — labor is a leftover</div>
+              <pre class="mermaid">
+flowchart TD
+  IN["totalCost (owner types one number)"]:::in
+  PC["partsCost = Σ averageCost × qty"]:::mid
+  LAB["laborCost = totalCost − partsCost"]:::leak
+  DB[("Repair row")]:::out
+  IN --> LAB
+  PC --> LAB
+  LAB --> DB
+  PC --> DB
+  classDef leak fill:#fee2e2,stroke:#dc2626,stroke-width:2px;
+  classDef in fill:#fef9c3,stroke:#a16207;
+  classDef mid fill:#e0e7ff,stroke:#4338ca;
+  classDef out fill:#dcfce7,stroke:#15803d;
+              </pre>
+              <p class="text-xs text-rose-600 mt-2">markup on parts is silently counted as "labor" · can go negative · no invariant</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — residual stays, but guarded & named</div>
+              <pre class="mermaid">
+flowchart TD
+  M["Pricing module"]:::deep
+  IN["totalCost (typed) + partsCost"]:::in
+  OUT["margin = total − parts · throws if &lt; 0"]:::out
+  IN --> M
+  M --> OUT
+  classDef deep fill:#0f172a,stroke:#0f172a,color:#fff;
+  classDef in fill:#fef9c3,stroke:#a16207;
+  classDef out fill:#dcfce7,stroke:#15803d;
+              </pre>
+              <p class="text-xs text-slate-500 mt-2">residual model stays · one module guards it + tests without a DB</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> The residual <span class="mono">margin = totalCost − partsCost</span> is right, but: the field is mislabelled <span class="mono">laborCost</span> (it's really margin), it can go negative on a fat-finger, and the calc sits inline inside the stock-deduction transaction.</p>
+            <p><b>Solution.</b> A small module keeps the residual model, guards <span class="mono">margin ≥ 0</span>, and is testable without a DB. Optionally rename the field/concept to <span class="mono">margin</span> in reports.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">guards a real-but-rare fat-finger (0 in 530 prod cases)</li>
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">honest naming kills the dashboard/reports formula confusion (see C4)</li>
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">testable without a DB; small</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C3: STOCK DEDUCTION ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C3 · Pull stock deduction out from under two routers</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            src/server/api/routers/sale.ts:137-167 · src/server/api/routers/repair.ts:122-152  (≈58 near-identical lines)
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — copy-pasted transaction body</div>
+              <pre class="mermaid">
+flowchart LR
+  S["sale.create"]:::r
+  R["repair.create"]:::r
+  B1["validate · check qty · decrement loop"]:::body
+  B2["validate · check qty · decrement loop"]:::body2
+  S --> B1
+  R --> B2
+  classDef r fill:#e0e7ff,stroke:#4338ca;
+  classDef body fill:#fef9c3,stroke:#a16207;
+  classDef body2 fill:#fee2e2,stroke:#dc2626;
+              </pre>
+              <p class="text-xs text-slate-500 mt-2">same shape, same error strings, drifted once already</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — one module owns the decrement</div>
+              <div class="flex flex-col items-center justify-center h-[140px] gap-3">
+                <div class="flex gap-2">
+                  <span class="text-[10px] uppercase tracking-wider text-slate-500 px-2 py-1 border border-slate-300 rounded">sale.create</span>
+                  <span class="text-[10px] uppercase tracking-wider text-slate-500 px-2 py-1 border border-slate-300 rounded">repair.create</span>
+                </div>
+                <svg width="120" height="22"><line x1="60" y1="2" x2="60" y2="18" class="seam" stroke="#475569" stroke-width="2"/><polygon points="60,20 56,12 64,12" fill="#475569"/></svg>
+                <div class="rounded deep text-slate-100 px-6 py-3 text-center">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">deductStock(tx, items[])</div>
+                  <div class="text-xs text-slate-300 mt-1">validate · decrement · in one tx</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> The validate-then-decrement loop is duplicated almost line-for-line between <span class="mono">sale.create</span> and <span class="mono">repair.create</span>. A stock bug must be fixed twice.</p>
+            <p><b>Solution.</b> One module takes a transaction client + item list. Both routers call it; neither owns the loop.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">locality: every stock mutation is visible in one module</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">leverage: deletes ~58 lines; future stock audit has one home</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">deletion test: concentrating, not moving</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C4: FINANCIAL AGGREGATION ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C4 · Stop computing profit three different ways</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+              <span class="px-2 py-1 rounded bg-rose-100 text-rose-700 font-semibold mono">contains a bug</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            src/server/api/routers/dashboard.ts:116-174 · reports.ts:133-141 · sale.ts:290-322 · repair.ts:276-289
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — profit formula drifts per caller</div>
+              <div class="space-y-2 text-xs mono">
+                <div class="p-2 rounded bg-rose-50 border border-rose-200">
+                  <span class="text-rose-600">dashboard:</span> repairProfit = totalRepairLaborCost
+                </div>
+                <div class="p-2 rounded bg-amber-50 border border-amber-200">
+                  <span class="text-amber-700">reports:</span> repairProfit = repairIncome − repairCost
+                </div>
+                <div class="p-2 rounded bg-slate-50 border border-slate-200">
+                  <span class="text-slate-600">sale.analytics:</span> totalRevenue = Σ totalAmount
+                </div>
+              </div>
+              <p class="text-xs text-rose-600 mt-2">two of these disagree about what repair profit even is</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — Financials.aggregatePeriod</div>
+              <div class="flex items-center justify-center h-[150px]">
+                <div class="rounded deep text-slate-100 p-5 w-full">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">interface</div>
+                  <div class="text-sm font-semibold mt-1">aggregatePeriod(rows) → {revenue, cost, profit}</div>
+                  <div class="text-[10px] text-slate-400 mt-3 border-t border-slate-600 pt-2">dashboard · reports · analytics all read one number</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> "Sum the Float fields and subtract" is reimplemented in dashboard, reports, and analytics — and dashboard's repair-profit formula is just <i>wrong</i> (<span class="mono">= totalRepairLaborCost</span>).</p>
+            <p><b>Solution.</b> One module defines the profit model. Every summary reads through it.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">locality: the profit definition exists exactly once</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">fixes a live dashboard bug as a side effect</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">pairs with C2 (RepairPricing) — honest inputs feed honest aggregation</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C5: AUTH SEAM ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C5 · The auth seam has one hole — and it's the loud one</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+              <span class="px-2 py-1 rounded bg-rose-100 text-rose-700 font-semibold mono">security</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            src/server/api/routers/reports.ts:70  (39/40 procedures are protectedProcedure; this one is publicProcedure)
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — ad hoc procedure choice</div>
+              <div class="grid grid-cols-10 gap-1">
+                <!-- 39 green, 1 red -->
+                <script>document.write(Array.from({length:39},()=>'<div class="h-4 rounded bg-emerald-400"></div>').join('')+'<div class="h-4 rounded bg-rose-500"></div>')</script>
+              </div>
+              <p class="text-xs text-slate-500 mt-3">auth is a convention each router remembers, not a property of the seam</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — close the hole, document the rule</div>
+              <div class="rounded deep text-slate-100 p-4">
+                <div class="text-xs">publicProcedure → protectedProcedure</div>
+                <div class="text-[10px] text-slate-400 mt-2">+ one-line convention note in root.ts</div>
+              </div>
+              <p class="text-xs text-slate-500 mt-3">cheap to fix; the candidate is really "make the seam real"</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> Financial summaries are reachable unauthenticated. The seam exists by convention; one router forgot the convention.</p>
+            <p><b>Solution.</b> Flip to <span class="mono">protectedProcedure</span>; record the default so a future router doesn't re-drift.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">leverage: one line, removes a real exposure on live prod data</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">small, but it's the cheapest win on the list — ship first, grill later</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C6: DATE-RANGE FILTER ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C6 · Pull the date-range switch out of six places</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            sale.ts:36-62 · sale.ts:248-274 · repair.ts:28-55 · repair.ts:234-259 · dashboard.ts:88-101 · dashboard.ts:285-298
+          </div>
+
+          <!-- call-graph collapse -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — same switch, six homes</div>
+              <div class="space-y-1">
+                <div class="h-5 rounded bg-indigo-200 border border-indigo-300 text-[10px] text-indigo-800 px-2 flex items-center">switch dateRange: today / 7days / 1month</div>
+                <div class="h-5 rounded bg-indigo-200 border border-indigo-300 text-[10px] text-indigo-800 px-2 flex items-center">switch dateRange: …</div>
+                <div class="h-5 rounded bg-indigo-200 border border-indigo-300 text-[10px] text-indigo-800 px-2 flex items-center">switch dateRange: …</div>
+                <div class="h-5 rounded bg-indigo-200 border border-indigo-300 text-[10px] text-indigo-800 px-2 flex items-center">switch dateRange: …</div>
+                <div class="h-5 rounded bg-amber-200 border border-amber-300 text-[10px] text-amber-800 px-2 flex items-center">switch dateRange: … (different enum values!)</div>
+                <div class="h-5 rounded bg-amber-200 border border-amber-300 text-[10px] text-amber-800 px-2 flex items-center">switch dateRange: …</div>
+              </div>
+              <p class="text-xs text-rose-500 mt-2">dashboard's enum already diverged — drift is happening</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — collapsed</div>
+              <div class="flex items-center justify-center h-[150px]">
+                <div class="rounded deep text-slate-100 p-5 w-full text-center">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">parseDateRange(range) → DateFilter</div>
+                  <div class="text-xs text-slate-400 mt-3 opacity-70">six faded call sites now one-liners</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> ~150 lines of the same today/7days/1month switch, and the enum values have already started to drift between routers.</p>
+            <p><b>Solution.</b> One function returns a Prisma date filter. Six call sites become one-liners.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">locality: date semantics defined once</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">leverage: kills ~150 lines + stops enum drift</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C7: DATE INPUT (UI) ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C7 · One date input, not two unrelated ones</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            reports/page.tsx:117 (raw &lt;input type=date&gt;) vs sales/page.tsx:370 · repairs/page.tsx:471 · stock/page.tsx:1095 (Calendar+Popover)
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — Reports is the odd one out</div>
+              <div class="space-y-3">
+                <div class="rounded border-2 border-slate-300 p-2 text-xs">
+                  <span class="text-slate-500">Most pages:</span> shadcn Calendar + Popover
+                </div>
+                <div class="rounded border-2 border-dashed border-rose-300 bg-rose-50 p-2 text-xs text-rose-700">
+                  Reports: native <span class="mono">&lt;input type="date"&gt;</span> + Calendar icon
+                </div>
+              </div>
+              <p class="text-xs text-slate-500 mt-3">owner feels this as "every page looks different"</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — DatePicker module</div>
+              <div class="flex items-center justify-center h-[120px]">
+                <div class="rounded deep text-slate-100 p-4 w-full text-center">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">DatePicker</div>
+                  <div class="text-xs text-slate-300 mt-1">one look, every page</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> The owner's "no 2026 standard" pain, concrete case: Reports uses a browser-native date input while every other page uses the shadcn calendar popover.</p>
+            <p><b>Solution.</b> One DatePicker module; Reports swaps to it.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">locality: date UX lives in one module</li>
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">closes a visible consistency gap the owner already noticed</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C8: LIST + SEARCH + NO PAGINATION ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C8 · Six list pages each roll their own search — and none paginate</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-semibold">Worth exploring</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            customers · stock (×3) · sales · repairs list pages — each owns useMemo + .filter(); no pagination anywhere
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — N hand-rolled filters, unbounded tables</div>
+              <pre class="mermaid">
+flowchart LR
+  P1["customers.page"]:::p --> F1["useMemo + filter"]:::f
+  P2["stock.page"]:::p --> F2["useMemo + filter"]:::f
+  P3["sales.page"]:::p --> F3["useMemo + filter"]:::f
+  P4["repairs.page"]:::p --> F4["useMemo + filter"]:::f
+  classDef p fill:#e0e7ff,stroke:#4338ca;
+  classDef f fill:#fef9c3,stroke:#a16207;
+              </pre>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — one list module</div>
+              <div class="flex items-center justify-center h-[140px]">
+                <div class="rounded deep text-slate-100 p-4 w-full text-center">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">DataTable&lt;T&gt;: rows + predicate + pagination</div>
+                  <div class="text-xs text-slate-300 mt-2">one interface, six call sites</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> Every list page reinvents search + renders the whole table. No pagination — fine today (small data), but the pattern hardens as data grows.</p>
+            <p><b>Solution.</b> A list module takes rows + a predicate + pagination. Six pages thin out.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-emerald-600 before:mr-2">leverage: 1 interface, 6 call sites</li>
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">caveat: data is small now — pagination is speculative; the search consolidation is not</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C9: MONEY TYPE ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C9 · Give money a module on the server (it only has one on the UI)</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-semibold">Worth exploring</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">schema migration</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            CurrencyInput.tsx (UI ✅ deep) · vs Float on every money column in prisma/schema.prisma · 141 prod cells show Float noise
+          </div>
+
+          <!-- cross-section: money passes through many layers untyped -->
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — Float top to bottom, no seam</div>
+              <div class="space-y-1">
+                <div class="h-8 border-l-4 border-emerald-400 bg-emerald-50 px-2 flex items-center text-xs">UI: CurrencyInput (typed)</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-rose-50 px-2 flex items-center text-xs">network: raw number</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-rose-50 px-2 flex items-center text-xs">router: <span class="mono">z.number()</span></div>
+                <div class="h-8 border-l-4 border-rose-400 bg-rose-50 px-2 flex items-center text-xs">db: Float (noise)</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-rose-50 px-2 flex items-center text-xs">aggregation: <span class="mono">Σ Float</span></div>
+              </div>
+              <p class="text-xs text-rose-500 mt-2">rounding/formatting has no home → 141 noisy cells in prod</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — Money type at one seam</div>
+              <div class="flex items-center justify-center h-[180px]">
+                <div class="rounded deep text-slate-100 p-5 w-full text-center">
+                  <div class="text-[10px] uppercase tracking-wider text-slate-400">Money { parse · round · format · add }</div>
+                  <div class="text-xs text-slate-300 mt-2">one representation, every layer</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> The UI already has a deep CurrencyInput. The server has nothing — money is bare Float from zod to DB to aggregation. Float noise is visible in real reports.</p>
+            <p><b>Solution.</b> A Money module (parse/round/format/arithmetic). Optionally migrate columns to Decimal/Int-cents behind it.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">locality: rounding rules defined once (today: nowhere)</li>
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">caveat: schema migration touches prod data → high care, do last</li>
+            <li class="before:content-['→'] before:text-amber-600 before:mr-2">a Money type can land before any migration (round/format only)</li>
+          </ul>
+        </article>
+
+        <!-- ===================== C10: STOCK PAGE MONOLITH ===================== -->
+        <article class="space-y-4">
+          <div class="flex items-baseline justify-between flex-wrap gap-2">
+            <h2 class="text-2xl font-serif">C10 · Split the 1295-line stock page</h2>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold">Speculative</span>
+              <span class="px-2 py-1 rounded bg-slate-200 text-slate-700 font-semibold mono">in-process</span>
+            </div>
+          </div>
+          <div class="mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded p-3">
+            src/app/(main)/stock/page.tsx — 4 tabs inline: categories · units · products · purchases
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-slate-300 bg-white p-4">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">Before — one file, four concerns</div>
+              <div class="rounded border-2 border-slate-400 p-3 space-y-2">
+                <div class="h-4 bg-indigo-200 rounded text-[9px] text-indigo-800 px-1 flex items-center">categories tab (150 ln)</div>
+                <div class="h-4 bg-indigo-200 rounded text-[9px] text-indigo-800 px-1 flex items-center">units tab (150 ln)</div>
+                <div class="h-4 bg-indigo-300 rounded text-[9px] text-indigo-900 px-1 flex items-center">products tab (240 ln)</div>
+                <div class="h-4 bg-indigo-200 rounded text-[9px] text-indigo-800 px-1 flex items-center">purchases tab (190 ln)</div>
+                <div class="text-[9px] text-slate-500 text-right">+ shared search/state/headers</div>
+              </div>
+              <p class="text-xs text-slate-500 mt-2">deletion test: deleting the file moves complexity, doesn't concentrate it — so split, don't extract</p>
+            </div>
+            <div class="rounded-lg border border-slate-300 bg-white p-4 grid-bg">
+              <div class="text-xs uppercase tracking-wider text-slate-400 mb-3">After — four sibling modules</div>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="rounded border-2 border-slate-300 bg-white p-2 text-[10px] text-center">CategoriesTab</div>
+                <div class="rounded border-2 border-slate-300 bg-white p-2 text-[10px] text-center">UnitsTab</div>
+                <div class="rounded border-2 border-slate-300 bg-white p-2 text-[10px] text-center">ProductsTab</div>
+                <div class="rounded border-2 border-slate-300 bg-white p-2 text-[10px] text-center">PurchasesTab</div>
+              </div>
+              <p class="text-xs text-slate-500 mt-3 text-center">AI-navigability: one concept per file</p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-x-8 gap-y-1 text-sm">
+            <p><b>Problem.</b> Four unrelated CRUD concerns in one 1295-line file. Hard to navigate, hard to test in isolation.</p>
+            <p><b>Solution.</b> Split into four sibling tab modules. No behaviour change — pure locality win.</p>
+          </div>
+          <ul class="text-sm space-y-1 text-slate-700">
+            <li class="before:content-['→'] before:text-slate-500 before:mr-2">locality + AI-navigability, not leverage</li>
+            <li class="before:content-['→'] before:text-slate-500 before:mr-2">low value on its own; do it when a tab already needs work (e.g. ProductsTab for C1/C8)</li>
+          </ul>
+        </article>
+
+      </section>
+
+      <!-- ============ TOP RECOMMENDATION ============ -->
+      <section id="top-recommendation">
+        <div class="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-7 space-y-3">
+          <div class="text-xs uppercase tracking-wider text-emerald-700 font-semibold">Top recommendation — tackle first</div>
+          <h2 class="text-3xl font-serif">
+            <a href="#" class="hover:underline">C1 · One EntityPicker module</a>
+          </h2>
+          <p class="text-slate-700 max-w-3xl">
+            It is the cleanest "deepening": today there are two shallow adapters (Product/Parts, 95% duplicated) and a
+            <em>missing</em> Customer picker — three call sites, three shapes. One deep module gives one interface across all three,
+            and it lands directly on the owner's #1 stated pain (pickers are hard to use, entry speed is everything in the evening batch).
+            Low risk, pure leverage, repair-first.
+          </p>
+          <p class="text-sm text-slate-600 max-w-3xl">
+            <b>Highest-value <i>logic</i> deepening is C3 (stock deduction)</b> — 58 duplicated lines across sale/repair, pure locality win.
+            C2 (repair pricing) was narrowed by <b>ADR-0001</b>: the residual model is correct, so it's now a small guard + honest-naming task, not a model change.
+            <b>C5 (auth seam)</b> is a one-line prod-safe fix worth doing immediately, out of band, before any of this.
+          </p>
+        </div>
+      </section>
+
+      <footer class="text-xs text-slate-400 border-t border-slate-200 pt-6">
+        Generated by /improve-codebase-architecture · vocabulary from /codebase-design · domain from CONTEXT.md.
+        Survey only — no interfaces proposed. Pick a candidate to grill.
+      </footer>
+    </main>
+  </body>
+</html>
