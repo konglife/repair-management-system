@@ -1,6 +1,16 @@
 "use client";
 
-import { ShoppingCart, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package, CalendarIcon } from "lucide-react";
+import {
+  ShoppingCart,
+  Plus,
+  Loader2,
+  Eye,
+  DollarSign,
+  TrendingUp,
+  Receipt,
+  Package,
+  CalendarIcon,
+} from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
@@ -9,12 +19,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "~/components/ui/SearchInput";
-import { ProductAutocomplete } from "~/components/ui/ProductAutocomplete";
+import { CustomerPicker, ProductPicker } from "~/components/ui/pickers";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 
 // Type interfaces for tRPC query results
@@ -68,13 +95,13 @@ type DateRange = "today" | "7days" | "1month" | undefined;
 
 export default function SalesPage() {
   const router = useRouter();
-  
+
   // Search state
   const [salesSearchTerm, setSalesSearchTerm] = useState("");
-  
+
   // Date range filter state
   const [dateRange, setDateRange] = useState<DateRange>(undefined);
-  
+
   // State for Create Sale form
   const [showCreateSaleForm, setShowCreateSaleForm] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -84,15 +111,13 @@ export default function SalesPage() {
   const [saleDate, setSaleDate] = useState<Date | undefined>(new Date());
 
   // tRPC queries
-  const { data: sales = [], isLoading: salesLoading } = api.sales.getAll.useQuery(
-    dateRange ? { dateRange } : undefined
-  );
-  const { data: analytics, isLoading: analyticsLoading } = api.sales.getAnalytics.useQuery(
-    dateRange ? { dateRange } : undefined
-  );
+  const { data: sales = [], isLoading: salesLoading } =
+    api.sales.getAll.useQuery(dateRange ? { dateRange } : undefined);
+  const { data: analytics, isLoading: analyticsLoading } =
+    api.sales.getAnalytics.useQuery(dateRange ? { dateRange } : undefined);
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
-  
+
   // Utils for query invalidation
   const utils = api.useUtils();
 
@@ -100,21 +125,31 @@ export default function SalesPage() {
   const filteredSales = useMemo(() => {
     if (!salesSearchTerm.trim()) return sales;
     const searchTerm = salesSearchTerm.toLowerCase();
-    return sales.filter((sale: { customer: { name: string }; totalAmount: number; createdAt: string | Date }) => {
-      // Search by customer name
-      const customerNameMatch = sale.customer.name.toLowerCase().includes(searchTerm);
-      
-      // Search by date (various formats)
-      const dateString = formatDisplayDate(sale.createdAt).toLowerCase();
-      const dateMatch = dateString.includes(searchTerm);
-      
-      // Search by total amount (both number and formatted currency)
-      const totalAmountString = sale.totalAmount.toString();
-      const formattedAmount = formatCurrency(sale.totalAmount).toLowerCase();
-      const amountMatch = totalAmountString.includes(searchTerm) || formattedAmount.includes(searchTerm);
-      
-      return customerNameMatch || dateMatch || amountMatch;
-    });
+    return sales.filter(
+      (sale: {
+        customer: { name: string };
+        totalAmount: number;
+        createdAt: string | Date;
+      }) => {
+        // Search by customer name
+        const customerNameMatch = sale.customer.name
+          .toLowerCase()
+          .includes(searchTerm);
+
+        // Search by date (various formats)
+        const dateString = formatDisplayDate(sale.createdAt).toLowerCase();
+        const dateMatch = dateString.includes(searchTerm);
+
+        // Search by total amount (both number and formatted currency)
+        const totalAmountString = sale.totalAmount.toString();
+        const formattedAmount = formatCurrency(sale.totalAmount).toLowerCase();
+        const amountMatch =
+          totalAmountString.includes(searchTerm) ||
+          formattedAmount.includes(searchTerm);
+
+        return customerNameMatch || dateMatch || amountMatch;
+      }
+    );
   }, [sales, salesSearchTerm]);
 
   // tRPC mutations
@@ -146,15 +181,19 @@ export default function SalesPage() {
     if (!product) return;
 
     // Check if product is already in the sale
-    const existingItemIndex = saleItems.findIndex(item => item.productId === selectedProductId);
-    
+    const existingItemIndex = saleItems.findIndex(
+      (item) => item.productId === selectedProductId
+    );
+
     if (existingItemIndex >= 0) {
       // Update existing item quantity
       const updatedItems = [...saleItems];
       updatedItems[existingItemIndex] = {
         ...updatedItems[existingItemIndex]!,
         quantity: updatedItems[existingItemIndex]!.quantity + productQuantity,
-        subtotal: (updatedItems[existingItemIndex]!.quantity + productQuantity) * product.salePrice,
+        subtotal:
+          (updatedItems[existingItemIndex]!.quantity + productQuantity) *
+          product.salePrice,
       };
       setSaleItems(updatedItems);
     } else {
@@ -174,7 +213,7 @@ export default function SalesPage() {
   };
 
   const removeProductFromSale = (productId: string) => {
-    setSaleItems(saleItems.filter(item => item.productId !== productId));
+    setSaleItems(saleItems.filter((item) => item.productId !== productId));
   };
 
   const updateProductQuantity = (productId: string, quantity: number) => {
@@ -183,7 +222,7 @@ export default function SalesPage() {
       return;
     }
 
-    const updatedItems = saleItems.map(item => {
+    const updatedItems = saleItems.map((item) => {
       if (item.productId === productId) {
         return {
           ...item,
@@ -206,11 +245,20 @@ export default function SalesPage() {
 
     createSaleMutation.mutate({
       customerId: selectedCustomerId,
-      items: saleItems.map(item => ({
+      items: saleItems.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
       })),
-      saleDate: saleDate ? new Date(saleDate.getFullYear(), saleDate.getMonth(), saleDate.getDate(), 12, 0, 0) : undefined,
+      saleDate: saleDate
+        ? new Date(
+            saleDate.getFullYear(),
+            saleDate.getMonth(),
+            saleDate.getDate(),
+            12,
+            0,
+            0
+          )
+        : undefined,
     });
   };
 
@@ -230,11 +278,20 @@ export default function SalesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Sales</h2>
-          <p className="text-muted-foreground">Manage sales transactions and view sales history</p>
+          <p className="text-muted-foreground">
+            Manage sales transactions and view sales history
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="date-range" className="text-sm font-medium">Filter by:</Label>
-          <Select value={dateRange || "all"} onValueChange={(value) => setDateRange(value === "all" ? undefined : value as DateRange)}>
+          <Label htmlFor="date-range" className="text-sm font-medium">
+            Filter by:
+          </Label>
+          <Select
+            value={dateRange || "all"}
+            onValueChange={(value) =>
+              setDateRange(value === "all" ? undefined : (value as DateRange))
+            }
+          >
             <SelectTrigger className="w-40" id="date-range">
               <SelectValue placeholder="All time" />
             </SelectTrigger>
@@ -247,12 +304,14 @@ export default function SalesPage() {
           </Select>
         </div>
       </div>
-      
+
       {/* Dashboard Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Transactions
+            </CardTitle>
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -261,11 +320,11 @@ export default function SalesPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{analytics?.totalSales ?? 0}</div>
+              <div className="text-2xl font-bold">
+                {analytics?.totalSales ?? 0}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Number of sales
-            </p>
+            <p className="text-xs text-muted-foreground">Number of sales</p>
           </CardContent>
         </Card>
         <Card>
@@ -279,16 +338,18 @@ export default function SalesPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalRevenue ?? 0)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics?.totalRevenue ?? 0)}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Total revenue
-            </p>
+            <p className="text-xs text-muted-foreground">Total revenue</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Sale Value</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Average Sale Value
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -297,16 +358,18 @@ export default function SalesPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(analytics?.averageSaleValue ?? 0)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics?.averageSaleValue ?? 0)}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Per transaction
-            </p>
+            <p className="text-xs text-muted-foreground">Per transaction</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Top Selling Product</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Top Selling Product
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -315,7 +378,9 @@ export default function SalesPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-lg font-bold truncate">{analytics?.topSellingProduct?.name ?? "None"}</div>
+              <div className="text-lg font-bold truncate">
+                {analytics?.topSellingProduct?.name ?? "None"}
+              </div>
             )}
             <p className="text-xs text-muted-foreground">
               {analytics?.topSellingProduct?.quantity ?? 0} sold
@@ -341,7 +406,12 @@ export default function SalesPage() {
             <div className="mb-6 p-6 border rounded-lg bg-gray-50">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Create New Sale</h3>
-                <Button type="button" variant="ghost" size="sm" onClick={closeCreateForm}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeCreateForm}
+                >
                   ×
                 </Button>
               </div>
@@ -350,18 +420,13 @@ export default function SalesPage() {
                   {/* Customer Selection */}
                   <div>
                     <Label htmlFor="customer">Customer *</Label>
-                    <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.map((customer: Customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} {customer.phone && `(${customer.phone})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <CustomerPicker
+                      customers={customers}
+                      value={selectedCustomerId}
+                      onValueChange={setSelectedCustomerId}
+                      placeholder="Search for a customer..."
+                      className="mt-1"
+                    />
                   </div>
 
                   {/* Date Selection */}
@@ -376,7 +441,11 @@ export default function SalesPage() {
                           }`}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {saleDate ? format(saleDate, "PPP") : <span>Pick a date</span>}
+                          {saleDate ? (
+                            format(saleDate, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -397,8 +466,9 @@ export default function SalesPage() {
                       <div className="flex-1">
                         <Label htmlFor="product">Product</Label>
                         <div className="mt-1">
-                          <ProductAutocomplete
+                          <ProductPicker
                             products={products}
+                            variant="sale"
                             value={selectedProductId}
                             onValueChange={setSelectedProductId}
                             placeholder="Search for a product..."
@@ -412,7 +482,9 @@ export default function SalesPage() {
                           type="number"
                           min="1"
                           value={productQuantity}
-                          onChange={(e) => setProductQuantity(Number(e.target.value))}
+                          onChange={(e) =>
+                            setProductQuantity(Number(e.target.value))
+                          }
                           className="mt-1"
                         />
                       </div>
@@ -432,9 +504,14 @@ export default function SalesPage() {
                       <h4 className="font-medium mb-4">Sale Items</h4>
                       <div className="space-y-2">
                         {saleItems.map((item) => (
-                          <div key={item.productId} className="flex items-center justify-between p-2 bg-white rounded">
+                          <div
+                            key={item.productId}
+                            className="flex items-center justify-between p-2 bg-white rounded"
+                          >
                             <div className="flex-1">
-                              <span className="font-medium">{item.productName}</span>
+                              <span className="font-medium">
+                                {item.productName}
+                              </span>
                               <span className="text-sm text-gray-500 ml-2">
                                 {formatCurrency(item.unitPrice || 0)} each
                               </span>
@@ -444,7 +521,12 @@ export default function SalesPage() {
                                 type="number"
                                 min="1"
                                 value={item.quantity}
-                                onChange={(e) => updateProductQuantity(item.productId, Number(e.target.value))}
+                                onChange={(e) =>
+                                  updateProductQuantity(
+                                    item.productId,
+                                    Number(e.target.value)
+                                  )
+                                }
                                 className="w-20"
                               />
                               <span className="w-20 text-right font-medium">
@@ -454,7 +536,9 @@ export default function SalesPage() {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => removeProductFromSale(item.productId)}
+                                onClick={() =>
+                                  removeProductFromSale(item.productId)
+                                }
                               >
                                 Remove
                               </Button>
@@ -465,7 +549,9 @@ export default function SalesPage() {
                       <div className="mt-4 pt-4 border-t">
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-medium">Total:</span>
-                          <span className="text-lg font-bold">{formatCurrency(calculateTotal())}</span>
+                          <span className="text-lg font-bold">
+                            {formatCurrency(calculateTotal())}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -473,14 +559,18 @@ export default function SalesPage() {
 
                   {/* Form Actions */}
                   <div className="flex justify-end gap-3">
-                    <Button type="button" variant="outline" onClick={closeCreateForm}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={closeCreateForm}
+                    >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={
-                        createSaleMutation.isPending || 
-                        !selectedCustomerId || 
+                        createSaleMutation.isPending ||
+                        !selectedCustomerId ||
                         saleItems.length === 0
                       }
                     >
@@ -520,14 +610,22 @@ export default function SalesPage() {
               <TableBody>
                 {salesLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground"
+                    >
                       <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : filteredSales.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      {salesSearchTerm ? "No sales found matching your search." : "No sales found. Create your first sale to get started."}
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground"
+                    >
+                      {salesSearchTerm
+                        ? "No sales found matching your search."
+                        : "No sales found. Create your first sale to get started."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -557,7 +655,6 @@ export default function SalesPage() {
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 }
