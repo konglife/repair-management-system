@@ -19,6 +19,13 @@ jest.mock("~/app/providers", () => {
         }),
       },
     },
+    useUtils: () => ({
+      dashboard: {
+        getLowStockAlerts: {
+          invalidate: jest.fn(),
+        },
+      },
+    }),
   };
 
   return {
@@ -29,7 +36,7 @@ jest.mock("~/app/providers", () => {
 describe("Settings Page", () => {
   it("renders settings page with business profile form", () => {
     render(<SettingsPage />);
-    
+
     expect(screen.getByText("Settings")).toBeInTheDocument();
     expect(screen.getByText("Business Profile")).toBeInTheDocument();
     expect(screen.getByLabelText(/Shop Name/)).toBeInTheDocument();
@@ -42,10 +49,12 @@ describe("Settings Page", () => {
 
   it("shows validation error for empty shop name", async () => {
     render(<SettingsPage />);
-    
-    const submitButton = screen.getByRole("button", { name: /Save Business Profile/ });
-    fireEvent.click(submitButton);
-    
+
+    const form = screen
+      .getByRole("button", { name: /Save Settings/ })
+      .closest("form")!;
+    fireEvent.submit(form);
+
     await waitFor(() => {
       expect(screen.getByText("Shop name is required")).toBeInTheDocument();
     });
@@ -53,33 +62,39 @@ describe("Settings Page", () => {
 
   it("validates email format", async () => {
     render(<SettingsPage />);
-    
+
     const emailInput = screen.getByLabelText(/Contact Email/);
     const shopNameInput = screen.getByLabelText(/Shop Name/);
-    
+
     fireEvent.change(shopNameInput, { target: { value: "Test Shop" } });
     fireEvent.change(emailInput, { target: { value: "invalid-email" } });
-    
-    const submitButton = screen.getByRole("button", { name: /Save Business Profile/ });
-    fireEvent.click(submitButton);
-    
+
+    const form = screen
+      .getByRole("button", { name: /Save Settings/ })
+      .closest("form")!;
+    fireEvent.submit(form);
+
     await waitFor(() => {
-      expect(screen.getByText("Please enter a valid email address")).toBeInTheDocument();
+      expect(
+        screen.getByText("Please enter a valid email address")
+      ).toBeInTheDocument();
     });
   });
 
   it("validates URL format for logo", async () => {
     render(<SettingsPage />);
-    
+
     const logoUrlInput = screen.getByLabelText(/Company Logo URL/);
     const shopNameInput = screen.getByLabelText(/Shop Name/);
-    
+
     fireEvent.change(shopNameInput, { target: { value: "Test Shop" } });
     fireEvent.change(logoUrlInput, { target: { value: "invalid-url" } });
-    
-    const submitButton = screen.getByRole("button", { name: /Save Business Profile/ });
-    fireEvent.click(submitButton);
-    
+
+    const form = screen
+      .getByRole("button", { name: /Save Settings/ })
+      .closest("form")!;
+    fireEvent.submit(form);
+
     await waitFor(() => {
       expect(screen.getByText("Please enter a valid URL")).toBeInTheDocument();
     });
