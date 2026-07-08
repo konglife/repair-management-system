@@ -14,6 +14,8 @@
 > - **`develop` = `origin/develop`** · working tree สะอาด (เหลือ `docs/1.csv`/`docs/2.csv` scratch — ห้าม commit)
 > - **ไม่แตะ `main`/prod ทั้งหมด**
 
+> ⚠️ **C3 ยังไม่ได้ browser-verify** — merge + push develop แล้ว แต่ยังไม่ได้ทดสอบจริงบน dev. เจ้าของร้านกำลังจะตรวจเอง. **เซสชันถัดไปควรเช็คก่อนว่าผู้ใช้ verify แล้วหรือยัง** ถ้ายัง → เช็ค Vercel deploy READY แล้วช่วยทดสอบ 4 ขั้น (สร้าง sale / สร้าง repair / ขายเกินสต็อก → error / ดู history+stock) ก่อนทำ issue ถัดไป
+
 ---
 
 ## 🎯 เป้าหมายเซสชันถัดไป
