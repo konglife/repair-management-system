@@ -1,4 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitFor,
+  within,
+  fireEvent,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import StockPage from "./page";
 import { api } from "~/app/providers";
@@ -233,113 +239,97 @@ describe("StockPage - Purchase Recording", () => {
     // so 'Record New Purchase' is not visible until the form is opened.
   });
 
-  // SKIP: Product field uses ProductPicker (EntityPicker) — not a native <select>,
-  // the form is toggle-revealed via "Add Purchase", and currency is ฿. These tests
-  // drive the autocomplete/form and need a rewrite against the new picker now that
-  // C1 (EntityPicker) is shipped — tracked in docs/test-debt-fix-plan.md.
-  it.skip("displays purchase recording form with correct fields", async () => {
+  // Product field uses ProductPicker (EntityPicker) — a searchable dropdown, not a
+  // native <select>. The form is toggle-revealed via "Add Purchase" and currency is ฿.
+  // These tests drive the picker (open via "Toggle dropdown", click item) + the form.
+  async function openPurchaseForm() {
     const user = userEvent.setup();
-    render(<StockPage />);
+    const { container } = render(<StockPage />);
+    await user.click(screen.getByRole("button", { name: /Record Purchase/i }));
+    await user.click(screen.getByRole("button", { name: /Add Purchase/i }));
+    const form = container.querySelector("form") as HTMLFormElement;
+    return { user, form };
+  }
 
-    const purchaseTab = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    await user.click(purchaseTab);
+  it("displays purchase recording form with correct fields", async () => {
+    const { form } = await openPurchaseForm();
 
-    // Check form fields
-    expect(screen.getByLabelText("Product")).toBeInTheDocument();
-    expect(screen.getByLabelText("Quantity")).toBeInTheDocument();
-    expect(screen.getByLabelText("Cost Per Unit ($)")).toBeInTheDocument();
+    expect(form).toBeInTheDocument();
+    // Product is a searchable picker, not a native <select>
     expect(
-      screen.getByRole("button", { name: /Record Purchase/i })
+      within(form).getByPlaceholderText("Search for a product to purchase...")
+    ).toBeInTheDocument();
+    expect(
+      within(form).getByPlaceholderText("Enter quantity")
+    ).toBeInTheDocument();
+    expect(
+      within(form).getByLabelText("Currency amount input")
+    ).toBeInTheDocument();
+    expect(
+      within(form).getByRole("button", { name: /Record Purchase/i })
     ).toBeInTheDocument();
   });
 
-  it.skip("populates product dropdown with available products", async () => {
-    const user = userEvent.setup();
-    render(<StockPage />);
+  it("populates product dropdown with available products", async () => {
+    const { user, form } = await openPurchaseForm();
 
-    const purchaseTab = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    await user.click(purchaseTab);
+    await user.click(
+      within(form).getByRole("button", { name: "Toggle dropdown" })
+    );
 
-    const productSelect = screen.getByLabelText("Product");
-    expect(productSelect).toBeInTheDocument();
-
-    // Check that products are in the dropdown
-    expect(screen.getByText("iPhone Screen (piece)")).toBeInTheDocument();
-    expect(screen.getByText("Phone Case (piece)")).toBeInTheDocument();
+    expect(within(form).getByText("iPhone Screen (piece)")).toBeInTheDocument();
+    expect(within(form).getByText("Phone Case (piece)")).toBeInTheDocument();
   });
 
-  it.skip("validates purchase form inputs", async () => {
-    const user = userEvent.setup();
-    render(<StockPage />);
+  it("enables submit only once product, quantity and cost are filled", async () => {
+    const { user, form } = await openPurchaseForm();
 
-    const purchaseTab = screen.getByRole("button", {
+    const submit = within(form).getByRole("button", {
       name: /Record Purchase/i,
     });
-    await user.click(purchaseTab);
+    // Disabled with no fields filled
+    expect(submit).toBeDisabled();
 
-    const submitButton = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
+    // Select a product via the picker
+    await user.click(
+      within(form).getByRole("button", { name: "Toggle dropdown" })
+    );
+    await user.click(within(form).getByText("iPhone Screen (piece)"));
+    expect(submit).toBeDisabled();
 
-    // Button should be disabled initially (no product selected)
-    expect(submitButton).toBeDisabled();
+    // Still disabled without quantity
+    await user.type(within(form).getByPlaceholderText("Enter quantity"), "5");
+    expect(submit).toBeDisabled();
 
-    // Fill in product
-    const productSelect = screen.getByLabelText("Product");
-    await user.selectOptions(productSelect, "product-1");
-
-    // Still disabled without quantity and cost
-    expect(submitButton).toBeDisabled();
-
-    // Fill in quantity
-    const quantityInput = screen.getByLabelText("Quantity");
-    await user.type(quantityInput, "5");
-
-    // Still disabled without cost
-    expect(submitButton).toBeDisabled();
-
-    // Fill in cost
-    const costInput = screen.getByLabelText("Cost Per Unit ($)");
-    await user.type(costInput, "75.50");
-
-    // Now should be enabled
-    expect(submitButton).toBeEnabled();
+    // Enabled once cost is filled
+    await user.type(
+      within(form).getByLabelText("Currency amount input"),
+      "75.50"
+    );
+    expect(submit).toBeEnabled();
   });
 
-  it.skip("submits purchase form with correct data", async () => {
-    const user = userEvent.setup();
-    render(<StockPage />);
+  it("submits purchase form with correct data", async () => {
+    const { user, form } = await openPurchaseForm();
 
-    const purchaseTab = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    await user.click(purchaseTab);
+    // Select product via the picker
+    await user.click(
+      within(form).getByRole("button", { name: "Toggle dropdown" })
+    );
+    await user.click(within(form).getByText("iPhone Screen (piece)"));
 
-    // Fill in form
-    const productSelect = screen.getByLabelText("Product");
-    await user.selectOptions(productSelect, "product-1");
+    await user.type(within(form).getByPlaceholderText("Enter quantity"), "10");
+    await user.type(within(form).getByLabelText("Currency amount input"), "85");
 
-    const quantityInput = screen.getByLabelText("Quantity");
-    await user.type(quantityInput, "10");
+    fireEvent.submit(form);
 
-    const costInput = screen.getByLabelText("Cost Per Unit ($)");
-    await user.type(costInput, "85.00");
-
-    // Submit form
-    const submitButton = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    await user.click(submitButton);
-
-    expect(mockMutateFn).toHaveBeenCalledWith({
-      productId: "product-1",
-      quantity: 10,
-      costPerUnit: 85.0,
-    });
+    expect(mockMutateFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: "product-1",
+        quantity: 10,
+        costPerUnit: 85,
+      })
+    );
   });
 
   it("displays purchase history section", async () => {
@@ -420,27 +410,21 @@ describe("StockPage - Purchase Recording", () => {
     });
   });
 
-  it.skip("shows loading state when creating purchase", async () => {
+  it("shows loading state when creating purchase", async () => {
     (api.purchases.create.useMutation as jest.Mock).mockReturnValue({
       mutate: mockMutateFn,
       isPending: true,
     });
 
-    const user = userEvent.setup();
-    render(<StockPage />);
+    const { form } = await openPurchaseForm();
 
-    const purchaseTab = screen.getByRole("button", {
+    const submit = within(form).getByRole("button", {
       name: /Record Purchase/i,
     });
-    await user.click(purchaseTab);
-
-    const submitButton = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    expect(submitButton).toBeDisabled();
+    expect(submit).toBeDisabled();
 
     // Should show loading spinner (Loader2 component)
-    const loader = submitButton.querySelector("svg");
+    const loader = submit.querySelector("svg");
     expect(loader).toBeInTheDocument();
   });
 
@@ -518,33 +502,22 @@ describe("StockPage - Purchase Recording", () => {
     expect(screen.getByText("Record Stock Purchase")).toBeInTheDocument();
   });
 
-  it.skip("handles form validation errors gracefully", async () => {
-    // Mock window.alert to verify error handling
+  it("handles form validation errors gracefully", async () => {
     const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => {});
 
-    const user = userEvent.setup();
-    render(<StockPage />);
+    const { user, form } = await openPurchaseForm();
 
-    const purchaseTab = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    await user.click(purchaseTab);
+    // Select product
+    await user.click(
+      within(form).getByRole("button", { name: "Toggle dropdown" })
+    );
+    await user.click(within(form).getByText("iPhone Screen (piece)"));
 
-    // Fill form with invalid data
-    const productSelect = screen.getByLabelText("Product");
-    await user.selectOptions(productSelect, "product-1");
+    // Fill with invalid quantity (0)
+    await user.type(within(form).getByPlaceholderText("Enter quantity"), "0");
+    await user.type(within(form).getByLabelText("Currency amount input"), "85");
 
-    const quantityInput = screen.getByLabelText("Quantity");
-    await user.type(quantityInput, "0"); // Invalid quantity
-
-    const costInput = screen.getByLabelText("Cost Per Unit ($)");
-    await user.type(costInput, "85.00");
-
-    // Try to submit
-    const submitButton = screen.getByRole("button", {
-      name: /Record Purchase/i,
-    });
-    await user.click(submitButton);
+    fireEvent.submit(form);
 
     expect(alertSpy).toHaveBeenCalledWith("Please enter a valid quantity");
 

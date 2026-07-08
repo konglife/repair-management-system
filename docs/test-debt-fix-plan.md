@@ -52,7 +52,7 @@ trivial cast — ดูและแก้
 | Suite                               | ผล                                                                                           |
 | ----------------------------------- | -------------------------------------------------------------------------------------------- |
 | `dashboard/page.test.tsx`           | 15/15 เขียว (แก้ hang + stale $→฿/5→7 cards/grid)                                            |
-| `stock/page.test.tsx`               | 8 เขียว, **6 skip** (defer หลัง C1 — เหตุผลด้านล่าง)                                         |
+| `stock/page.test.tsx`               | 14/14 เขียว, **0 skip** (6 skips rewrite ขับ EntityPicker เสร็จ 2026-07-08 — ด้านล่าง)       |
 | `reports/page.test.tsx`             | 8/8 เขียว (loading assertion เปลี่ยนเป็น navigation เพราะ isLoading ถูก batch หายไปก่อนเห็น) |
 | `reports/summary/page.test.tsx`     | 8/8 เขียว (`Test Part (฿1,200)`→`Test Part x1`, `-` count เป็น `>=2`)                        |
 | `repairs/[id]/page.test.tsx`        | 20/20 เขียว (root cause 2 ข้อ — ด้านล่าง)                                                    |
@@ -66,13 +66,9 @@ trivial cast — ดูและแก้
 - **แก้:** ตัด `@jest/globals` import (ใช้ global jest ตามมาตรฐาน repo) + ทำ mock factory self-contained (เหมือน stock) + `mockReturnValue` ใน beforeEach. หลังจากนั้นเป็น stale-UI ธรรมดา ("Found multiple elements" → `getAllByText`)
 - **Pattern ใหม่:** อย่า `import { jest } from "@jest/globals"` ใน repo นี้ (ทำ mock hoisting พัง) — เพิ่มเป็น pattern #9
 
-### 🚫 stock/page.test.tsx — 6 tests skipped (defer หลัง C1)
+### ✅ stock/page.test.tsx — 6 skips rewrite เสร็จ (2026-07-08)
 
-Component เปลี่ยน paradigm ทั้งก้อน: native `<select>` → `ProductAutocomplete`, form toggle-revealed ผ่าน "Add Purchase", `$`→`฿`, validation alert หายไป. และ **C1 (EntityPicker) จะมาแทน ProductAutocomplete ทั้งหมด** → rewrite วันนี้ = ทิ้ง. เลย:
-
-- เก็บ 8 stable-behavior tests (tab nav, history table, loading/empty state) ให้เขียว
-- `it.skip` 6 tests ที่ drive autocomplete/form validation/submit พร้อม comment เหตุผล
-- **TODO:** เปิด GitHub Issue สำหรับ rewrite หลัง C1 (ผู้ใช้ยังไม่สั่ง create — รอยืนยัน) + rewrite ตาม `docs/c1-entitypicker-design.md`
+เดิม component เปลี่ยน paradigm: native `<select>` → EntityPicker, form toggle-revealed ผ่าน "Add Purchase", `$`→`฿`. เคย defer 6 skips หลัง C1 — **ตอนนี้เขียนใหม่ขับ ProductPicker ครบ 0 skip** (pattern เก็บไว้ใน `docs/HANDOFF.md` section "rewrite stock skips").
 
 ---
 
