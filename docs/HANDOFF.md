@@ -1,32 +1,37 @@
-# Handoff — stock skips เคลียร์แล้ว → ถัดไป commit + push/issue
+# Handoff — stock skips + push + 5 issues เสร็จ → ถัดไปเลือก issue มาทำ
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-08):** ✅ **rewrite stock skips เสร็จ (6/6 ดัน ProductPicker)**
+> **สถานะล่าสุด (2026-07-08):** ✅ **stock skips + push develop + เปิด 5 issues เสร็จ**
 >
-> - เทส 6 ตัวใน `stock/page.test.tsx` เอา `it.skip` ออก เขียนใหม่ขับ EntityPicker (toggle dropdown → click item) + scope `within(form)` + `fireEvent.submit` · **0 skip แล้ว**
-> - `npm test`: 51 suite / **632 pass / 0 skip / 0 fail** · `npm run lint` สะอาด · `npx tsc --noEmit` สะอาด
-> - **ยังไม่ commit / ยังไม่ push** (working tree: `stock/page.test.tsx` modified + `docs/HANDOFF.md`) — รอผู้ใช้สั่ง
+> - rewrite stock skips 6 ตัว → **commit `a2f3346` + push ขึ้น `origin/develop`** แล้ว · `npm test`: 51 suite / **632 pass / 0 skip / 0 fail** · lint + tsc สะอาด
+> - **Vercel dev project deploy READY** (commit `a2f3346`, runtime logs ไม่มี error)
+> - **เปิด GitHub Issues 5 ใบ** (ทั้งหมด label `enhancement,needs-triage`):
+>   - `#3` C3 รวมตัดสต็อก · `#4` C6 รวม date-range · `#5` C7 DatePicker · `#6` C8 DataTable · `#7` code-smell EntityPicker
+> - **`develop` = `origin/develop`** (sync แล้ว) · working tree สะอาด (เหลือ `docs/1.csv`/`docs/2.csv` scratch — ห้าม commit)
 > - **ไม่แตะ `main`/prod ทั้งหมด**
 
 ---
 
 ## 🎯 เป้าหมายเซสชันถัดไป
 
-เรียงตามลำดับ (รายละเอียดด้านล่าง):
+เลือกมาทำทีละใบ (ทุมี rationale + ตำแหน่งไฟล์ใน body แล้ว เข้า `/grilling` ออกแบบ interface ก่อนทำ — ยกเว้น #7):
 
-1. **commit งาน stock-skip rewrite** → `test: เคลียร์หนี้เทส stock skips 6 ตัว (drive EntityPicker)` (รอผู้ใช้สั่ง)
-2. **push develop ขึ้น remote** → Vercel deploy preview อัตโนมัติ (รอผู้ใช้สั่ง — action ออกสาธารณะ)
-3. **(optional) เปิด GitHub Issue** track candidate ที่เหลือ (รอผู้ใช้สั่ง)
-4. **(optional ทุกเมื่อ) `/to-prd`** แปลง candidate ที่เหลือ (C3/C6/C7/C8) เป็น PRD/Issue
+1. **#3 C3 (แนะนำทำก่อน)** — survey จัด "Strong" + คุ้มที่สุด (ลบ ~58 บรรทัด) · ลองจับคู่กับ #6/#7 ตอนที่ไฟล์นั้นเปิดอยู่แล้วก็ได้
+2. **#7 code-smell** — งานเล็ก ไม่ต้อง grill ทำอุ่นๆ ได้
+3. **#4 / #5 / #6** — เลือกตามความสนใจ (มีทั้ง logic + UI)
+
+**C9 (money module ฝั่ง server) ยังไม่เปิด issue** — รอผู้ใช้ triage (ดู `docs/architecture-review-20260705-th.html` §C9)
 
 ---
 
 ## ✅ สถานะงานที่จบแล้ว
 
-- **rewrite stock skips (6 tests)** — `stock/page.test.tsx` 6 `it.skip` เขียนใหม่ขับ ProductPicker/EntityPicker → 0 skip · ยังไม่ commit (รอคำสั่ง)
+- **rewrite stock skips (6 tests)** — `stock/page.test.tsx` 6 `it.skip` เขียนใหม่ขับ ProductPicker/EntityPicker → 0 skip · committed `a2f3346` + pushed
+- **push develop** — `develop` push ขึ้น `origin/develop` · Vercel dev deploy READY
+- **GitHub Issues เปิด 5 ใบ** — `#3` C3 / `#4` C6 / `#5` C7 / `#6` C8 / `#7` code-smell (label `enhancement,needs-triage`)
 - **C5 (auth seam)** — `reports.getMonthlySummary` public→protected · committed `b262c18`
 - **setup-pre-commit** (Husky + lint-staged + typecheck) — committed `69f8944` · gate lint+typecheck+test ทุก commit
 - **C1 (EntityPicker)** — ship + verify browser + code-review ผ่าน · committed `7f498c9`
@@ -93,17 +98,10 @@ C1 ผ่านทั้ง Standards + Spec (0 hard violation). เก็บ sm
 
 ## 📍 สถานะไฟล์
 
-- **สาขา:** `develop` (ไม่แตะ `main`/prod)
-- **นำ `origin/develop` อยู่ 5 commits (ยังไม่ push):**
-  - `2459602` docs (C1 design + ADR-0001 + test-debt plan + chrome CDP + arch review)
-  - `316e976` test (หนี้เทส 10 suite เขียว)
-  - `7f498c9` feat (C1 EntityPicker + ย้าย 3 หน้า)
-  - `69f8944` chore (pre-commit hooks)
-  - `b262c18` fix (C5 auth)
-- **working tree (ยังไม่ commit):**
-  - `M src/app/(main)/stock/page.test.tsx` (rewrite 6 skips)
-  - `M docs/HANDOFF.md`
-  - `?? docs/1.csv` / `?? docs/2.csv` — scratch prod **ห้าม commit**
+- **สาขา:** `develop` (ไม่แตะ `main`/prod) · **= `origin/develop`** (sync แล้ว)
+- **commit ล่าสดบน develop:** `a2f3346` test (stock skips) — นำ main อยู่หลาย commit (ยังไม่ release)
+- **working tree สะอาด** (เหลือแค่ `?? docs/1.csv` / `?? docs/2.csv` — scratch prod **ห้าม commit**)
+- **GitHub Issues เปิด:** `#3` `#4` `#5` `#6` `#7` (ทั้งหมด `enhancement,needs-triage`) · ดูรายการ: `gh issue list`
 
 ---
 
@@ -123,17 +121,13 @@ C1 ผ่านทั้ง Standards + Spec (0 hard violation). เก็บ sm
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: rewrite stock skips เสร็จแล้ว (6/6 ดัน EntityPicker) — ยังไม่ commit
+สถานะ: stock skips + push develop + เปิด 5 issues เสร็จแล้ว — develop sync origin แล้ว
 - npm test: 51 suite / 632 pass / 0 skip / 0 fail · lint+tsc สะอาด
-- working tree: stock/page.test.tsx (rewrite skips) + docs/HANDOFF.md
-- ยังไม่ commit / ยังไม่ push (นำ origin/develop 5 commits) — รอคำสั่ง
-- code-review: smell backlog 4 ข้อ minor (reset() + as number คุ้มแก้ที่สุด) อยู่ใน HANDOFF
+- develop = origin/develop (commit ล่าสด a2f3346) · Vercel dev deploy READY
+- GitHub Issues เปิด: #3 C3 / #4 C6 / #5 C7 / #6 C8 / #7 code-smell (enhancement,needs-triage)
 - ADR-0001: residual pricing model ถูกต้อง — ห้ามเสนอแยก labor/markup
 
-ถัดไป:
-1. commit stock-skip rewrite (รอผู้ใช้สั่ง)
-2. push develop (รอผู้ใช้สั่ง)
-3. optional: เปิด GitHub Issue track candidate ที่เหลือ
+ถัดไป: เลือก issue มาทำ — แนะ #3 (C3 คุ้มที่สุด) หรือ #7 (งานเล็ก) เข้า /grilling ออกแบบก่อน (ยกเว้น #7)
 ```
 
 > copy ข้อความนี้ไปแปะในแชทใหม่ได้เลย
