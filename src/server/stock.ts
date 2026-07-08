@@ -42,15 +42,9 @@ export async function validateAndDeductStock(
     productMap.set(product.id, product);
   }
 
-  // ตรวจแต่ละ item: มีจริง + สต็อกพอ (เก็บ check "มีจริง" ไว้เผื่อกรณี edge — เดิมก็มี)
+  // ตรวจสต็อกพอทุก item (product มีจริงแน่นอน — length check ด้านบกการันตีแล้ว)
   for (const item of items) {
-    const product = productMap.get(item.productId);
-    if (!product) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: `Product with id ${item.productId} not found`,
-      });
-    }
+    const product = productMap.get(item.productId)!;
     if (product.quantity < item.quantity) {
       throw new TRPCError({
         code: "BAD_REQUEST",
@@ -59,7 +53,7 @@ export async function validateAndDeductStock(
     }
   }
 
-  // ตัดสต็อกทีละ item (ไม่ aggregate — รักษาพฤติกรรมเดิม)
+  // ตัดสต็อกทีละ item (กรณี productId ซ้ำตกที่ length check ตั้งแต่ต้น จึงไม่มี dedupe ที่นี่)
   for (const item of items) {
     await tx.product.update({
       where: { id: item.productId },

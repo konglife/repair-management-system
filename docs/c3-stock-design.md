@@ -104,8 +104,9 @@ validateAndDeductStock(tx, items)   ← validate + deduct มาก่อน
 
 - **locality**: การเปลี่ยนแปลงสต็อกทุกครั้งมองเห็นใน module เดียว — บั๊กสต็อกแก้ที่เดียวกระจาย 2 router
 - **leverage**: 1 interface คลุม 2 caller (และ caller ที่ 3 ในอนาคต)
-- ลบได้ ~58 บรรทัดซ้ำ
-- ลด `!` assertion (สมมติฐานซ่อนเดิม → type บังคับ handle)
+- ลบได้ ~58 บรรทัดซ้ำ/router (router ทั้งสอง net −93 บรรทัดรวม)
+
+> ~~ลด `!` assertion~~ (แก้: Map.get คืน `Product | undefined` เสมอ → `!` ยังอยู่แต่ justified เพราะ validate ผ่านแล้ว ประโยชน์จริงของ Map คือ O(1) + ความหมาย)
 
 ## deletion test
 
@@ -132,5 +133,9 @@ validateAndDeductStock(tx, items)   ← validate + deduct มาก่อน
 
 ## ความเสี่ยง
 
-- ต่ำ — pure refactor behavior-preserving, อยู่ใน tx เดียวกัน
-- order change (deduct มาก่อน create) → behavior-safe แต่ต้อง verify ผ่าน test เดิม
+- ต่ำ — pure refactor, อยู่ใน tx เดียวกัน
+- **order change (deduct มาก่อน customer-validate + create)** ⚠️:
+  - **DB state**: เท่าเดิม — ทั้งคู่ rollback ด้วยกันใน tx เดียว
+  - **observable error ordering เปลี่ยน**: เดิม customer-not-found throw _ก่อน_ สต็อกโดนแตะ; ใหม่ validate+deduct สต็อกก่อนแล้วค่อยเช็ค customer → ถ้า customer ผิดจะเกิด stock error path ก่อน (แต่สุดท้าย rollback เหมือนกัน)
+  - จึง bend คำว่า "behaviour-preserving เป๊ะ" ของ issue พอสมควร — ยอมรับโดยสำนึก (เลือกเพื่อ locality ของ validate+deduct รวมกัน) ตรวจโดย test เดิมผ่าน
+- Prettier reflow ทั้งไฟล์ (เกิดจาก pre-commit hook `prettier --write` ของ repo) → diff อึ้งกว่า refactor เพียวๆ แต่หลีกเลี่ยงยาก นโยบายของ repo
