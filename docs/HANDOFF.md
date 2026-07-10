@@ -18,11 +18,20 @@
 
 ## 🎯 เป้าหมายเซสชันถัดไป
 
-Issue ที่เปิดอยู่ (ทุก issue มี rationale + ตำแหน่งไฟล์ใน body เข้า `/grilling` ออกแบบ interface ก่อน):
+**โฟลว์: เลือก issue → `/grilling` ออกแบบ interface → implement (TDD) → `/code-review` → browser-verify → ปิด issue**
+(ทุก issue มี rationale + ตำแหน่งไฟล์ใน body — เข้า grill เลย ไม่ต้อง /to-prd เพราะมาจาก architecture review แล้ว)
 
-1. **#4 C6** — รวม switch date-range ซ้ำ ~150 บรรทัด ใน 6 ที่ (logic deepening คุ้ม) ← แนะน่ำถัดไป
-2. **#5 C7** — สร้าง DatePicker module เดียว (Reports ใช้ date input ต่างจากหน้าอื่น) · UI
-3. **#6 C8** — สร้าง DataTable module (6 หน้า list เขียน search เอง + ยังไม่มี pagination) · UI
+Issue ที่เปิดอยู่ 3 ใบ — เลือก 1 เข้า `/grilling`:
+
+| Issue     | งาน                                                                   | ขนาด | หมายเหตุ                                                                 |
+| --------- | --------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------ |
+| **#4 C6** | รวม switch date-range ซ้ำ ~150 บรรทัด ใน 6 ที่                        | กลาง | ⭐ แนะนำถัดไป — logic deepening คุ้มที่สุด, ลดซ้ำเยอะ, มีบรรทัดฐานจาก C3 |
+| **#5 C7** | DatePicker module เดียว (Reports ใช้ date input ต่างจากหน้าอื่น)      | กลาง | UI — ดู `CONTEXT.md` pain "date picker ไม่สอดคล้อง"                      |
+| **#6 C8** | DataTable module (6 หน้า list เขียน search เอง + ยังไม่มี pagination) | ใหญ่ | UI — ดู `CONTEXT.md` pain "ไม่มี pagination, picker ใช้ยากซ้ำ"           |
+
+> **แนะ #4 C6** ก่อน — เป็นฝั่ง logic (มี design pattern จาก C3 `validateAndDeductStock`), ตัดซ้ำได้ชัด, และเป็น warm-up ดีก่อนเข้า 2 งาน UI ใหญ่กว่า
+
+**ก่อน grill:** อ่าน body issue (`gh issue view 4`) หาตำแหน่งไฟล์ 6 ที่ที่ซ้ำ + อ่าน design doc บรรทัดฐาน (`docs/c1-entitypicker-design.md` / `docs/c3-stock-design.md`) เพื่อเทียบรูปแบบ decision log
 
 **C9 (money module ฝั่ง server) ยังไม่เปิด issue** — รอผู้ใช้ triage (ดู `docs/architecture-review-20260705-th.html` §C9)
 
@@ -112,13 +121,14 @@ Issue ที่เปิดอยู่ (ทุก issue มี rationale + ต�
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: #7 (code-smell EntityPicker/pickers) เสร็จ + browser-verify · C3 ก็ browser-verify ผ่านแล้ว
+สถานะ: #7 (code-smell) เสร็จ + browser-verify · C3 ก็ browser-verify ผ่านแล้ว · production ค้าง release (develop นำ main 34 commits)
 - npm test: 52 suite / 639 pass / 0 skip / 0 fail · lint+tsc สะอาด
-- develop = origin/develop (commit ล่าสด dfb2d6c) · Vercel dev deploy READY
+- develop = origin/develop (commit ล่าสด 0fe52e0) · working tree สะอาด · Vercel dev deploy READY
 - GitHub Issues เปิด: #4 C6 / #5 C7 / #6 C8 (ปิด #3 + #7 แล้ว)
 - ADR-0001: residual pricing model ถูกต้อง — ห้ามเสนอแยก labor/markup
 
-ถัดไป: เลือก #4 C6 (ลบซ้ำ ~150 บรรทัด) / #5 C7 (DatePicker) / #6 C8 (DataTable) เข้า /grilling ออกแบบ interface ก่อน
+ถัดไป: เลือก 1 ใน 3 แล้วเข้า /grilling ออกแบบ interface ก่อน implement — แนะนำ #4 C6 (รวม switch date-range ซ้ำ ~150 บรรทัด, ฝั่ง logic, มีบรรทัดฐานจาก C3)
+ก่อน grill: อ่าน gh issue view <n> + design doc บรรทัดฐาน docs/c3-stock-design.md
 ```
 
 > copy ข้อความนี้ไปแปะในแชทใหม่ได้เลย
