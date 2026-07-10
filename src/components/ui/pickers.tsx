@@ -24,6 +24,42 @@ export interface PickerProduct {
 
 type ProductVariant = "sale" | "part" | "purchase";
 
+/**
+ * All variant-driven behavior in one place — price field, whether
+ * out-of-stock items are visible, whether the unit name is appended,
+ * and the empty-list message. Adding a variant = one new entry here.
+ */
+interface VariantConfig {
+  priceField: "salePrice" | "averageCost";
+  showOutOfStock: boolean;
+  appendUnit: boolean;
+  emptyText: string;
+}
+
+const VARIANT_CONFIG: Record<ProductVariant, VariantConfig> = {
+  // sales line items: hide out-of-stock, show salePrice
+  sale: {
+    priceField: "salePrice",
+    showOutOfStock: false,
+    appendUnit: false,
+    emptyText: "No products with stock available.",
+  },
+  // parts used in a repair: hide out-of-stock, show averageCost
+  part: {
+    priceField: "averageCost",
+    showOutOfStock: false,
+    appendUnit: false,
+    emptyText: "No products with stock available.",
+  },
+  // recording a purchase: show everything, show salePrice, append unit
+  purchase: {
+    priceField: "salePrice",
+    showOutOfStock: true,
+    appendUnit: true,
+    emptyText: "No products available.",
+  },
+};
+
 interface ProductPickerProps {
   products: PickerProduct[];
   value?: string;
@@ -46,15 +82,13 @@ export function ProductPicker({
   placeholder,
   className,
 }: ProductPickerProps) {
-  const showOutOfStock = variant === "purchase";
-  const priceField = variant === "part" ? "averageCost" : "salePrice";
+  const { priceField, showOutOfStock, appendUnit, emptyText } =
+    VARIANT_CONFIG[variant];
 
   const label = (p: PickerProduct): ReactNode => {
     const name =
-      variant === "purchase" && p.unit?.name
-        ? `${p.name} (${p.unit.name})`
-        : p.name;
-    const price = (p[priceField] ?? 0) as number;
+      appendUnit && p.unit?.name ? `${p.name} (${p.unit.name})` : p.name;
+    const price = p[priceField] ?? 0;
     return (
       <div>
         <div className="font-medium">{name}</div>
@@ -82,11 +116,7 @@ export function ProductPicker({
       label={label}
       filter={filter}
       placeholder={placeholder ?? "Search for a product..."}
-      emptyText={
-        showOutOfStock
-          ? "No products available."
-          : "No products with stock available."
-      }
+      emptyText={emptyText}
       className={className}
     />
   );

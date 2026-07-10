@@ -30,8 +30,13 @@ export function EntityPicker<T extends { id: string }>({
 }: EntityPickerProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [highlight, setHighlight] = useState(-1);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const reset = () => {
+    setSearchTerm("");
+    setHighlightedIndex(-1);
+  };
 
   const filtered = useMemo(
     () => filter(items, searchTerm),
@@ -43,8 +48,7 @@ export function EntityPicker<T extends { id: string }>({
   const select = (id: string) => {
     onValueChange(id);
     setIsOpen(false);
-    setSearchTerm("");
-    setHighlight(-1);
+    reset();
   };
 
   // Close on click outside
@@ -65,20 +69,19 @@ export function EntityPicker<T extends { id: string }>({
     if (!isOpen) return;
     if (event.key === "Escape") {
       setIsOpen(false);
-      setSearchTerm("");
-      setHighlight(-1);
+      reset();
       return;
     }
     if (filtered.length === 0) return;
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setHighlight((h) => (h + 1) % filtered.length);
+      setHighlightedIndex((h) => (h + 1) % filtered.length);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
-      setHighlight((h) => (h - 1 + filtered.length) % filtered.length);
+      setHighlightedIndex((h) => (h - 1 + filtered.length) % filtered.length);
     } else if (event.key === "Enter") {
       event.preventDefault();
-      const idx = highlight >= 0 ? highlight : 0;
+      const idx = highlightedIndex >= 0 ? highlightedIndex : 0;
       const item = filtered[idx];
       if (item) select(item.id);
     }
@@ -100,8 +103,7 @@ export function EntityPicker<T extends { id: string }>({
               size="sm"
               onClick={() => {
                 onValueChange("");
-                setSearchTerm("");
-                setHighlight(-1);
+                reset();
               }}
               className="h-6 w-6 p-0"
               aria-label="Clear selection"
@@ -127,7 +129,7 @@ export function EntityPicker<T extends { id: string }>({
             value={searchTerm}
             onChange={(v) => {
               setSearchTerm(v);
-              setHighlight(-1);
+              setHighlightedIndex(-1);
               setIsOpen(true);
             }}
             debounceMs={300}
@@ -154,12 +156,13 @@ export function EntityPicker<T extends { id: string }>({
                   <button
                     key={item.id}
                     type="button"
-                    onMouseEnter={() => setHighlight(index)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => select(item.id)}
                     className={cn(
                       "w-full px-3 py-2 text-left hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground transition-colors flex items-center justify-between",
                       value === item.id && "bg-accent text-accent-foreground",
-                      highlight === index && "bg-accent text-accent-foreground"
+                      highlightedIndex === index &&
+                        "bg-accent text-accent-foreground"
                     )}
                   >
                     <div className="flex-1">{label(item)}</div>
