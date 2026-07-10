@@ -1,31 +1,28 @@
-# Handoff — C3 (stock module) เสร็จ → ถัดไปเลือก issue มาทำ
+# Handoff — #7 (code-smell) เสร็จ + browser-verify C3 → ถัดไปเลือก C6/C7/C8
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-08):** ✅ **C3 (stock module) เสร็จ — merge develop + ปิด issue #3**
+> **สถานะล่าสุด (2026-07-10):** ✅ **#7 (code-smell EntityPicker/pickers) เสร็จ + browser-verify · C3 ก็ browser-verify ผ่านแล้ว**
 >
-> - สร้าง `src/server/stock.ts` — `validateAndDeductStock(tx, items) → Map<id,Product>` รวม validate+deduct ที่ซ้ำกันใน `sale.create`/`repair.create`
-> - `stock.test.ts` 7 cases (test แรกที่ test stock logic จริง + mock tx) · router ทั้งสอง **net −93 บรรทัด**
+> - **C3 browser-verify ผ่าน** (ผู้ใช้ตรวจเองบน dev — สร้าง sale/repair + ขายเกินสต็อก error)
+> - **#7** — refactor `EntityPicker.tsx` (extract `reset()` + rename `highlight`→`highlightedIndex`) + `pickers.tsx` (`VARIANT_CONFIG` Record + เอา `as number` ออก) · commit `dfb2d6c` · **browser-verify ผ่าน** (3 variants + filter + keyboard + clear + escape)
+> - ผ่าน `/code-review`: Standards 0 hard · Spec ครบ 4 (scope creep เล็กน้อยของ VARIANT_CONFIG แต่ defensible)
 > - **`npm test`: 52 suite / 639 pass / 0 skip / 0 fail** · lint + tsc สะอาด
-> - ผ่าน `/code-review` (Matt's): Standards 0 hard · Spec แก้หมด (dead branch + doc overclaim + order-change acknowledge)
-> - **merge develop → push origin** (`f3ba78b`) · Vercel dev deploy กำลัง build · **ปิด issue #3**
-> - **`develop` = `origin/develop`** · working tree สะอาด (เหลือ `docs/1.csv`/`docs/2.csv` scratch — ห้าม commit)
+> - **`develop` = `origin/develop`** (commit ล่าสด `dfb2d6c`) · Vercel dev deploy READY · **ปิด issue #7**
+> - working tree สะอาด (เหลือ `docs/1.csv`/`docs/2.csv` scratch — ห้าม commit)
 > - **ไม่แตะ `main`/prod ทั้งหมด**
-
-> ⚠️ **C3 ยังไม่ได้ browser-verify** — merge + push develop แล้ว แต่ยังไม่ได้ทดสอบจริงบน dev. เจ้าของร้านกำลังจะตรวจเอง. **เซสชันถัดไปควรเช็คก่อนว่าผู้ใช้ verify แล้วหรือยัง** ถ้ายัง → เช็ค Vercel deploy READY แล้วช่วยทดสอบ 4 ขั้น (สร้าง sale / สร้าง repair / ขายเกินสต็อก → error / ดู history+stock) ก่อนทำ issue ถัดไป
 
 ---
 
 ## 🎯 เป้าหมายเซสชันถัดไป
 
-Issue ที่เปิดอยู่ (ทุมี rationale + ตำแหน่งไฟล์ใน body เข้า `/grilling` ออกแบบ interface ก่อน — ยกเว้น #7):
+Issue ที่เปิดอยู่ (ทุก issue มี rationale + ตำแหน่งไฟล์ใน body เข้า `/grilling` ออกแบบ interface ก่อน):
 
-1. **#7 code-smell** — งานเล็ก ไม่ต้อง grill ทำอุ่นๆ ได้ (extract `reset()` + เอา `as number` ออก + ชื่อ + lookup)
-2. **#4 C6** — รวม switch date-range ซ้ำ ~150 บรรทัด ใน 6 ที่ (logic deepening คุ้ม)
-3. **#5 C7** — สร้าง DatePicker module เดียว (Reports ใช้ date input ต่างจากหน้าอื่น) · UI
-4. **#6 C8** — สร้าง DataTable module (6 หน้า list เขียน search เอง + ยังไม่มี pagination) · UI
+1. **#4 C6** — รวม switch date-range ซ้ำ ~150 บรรทัด ใน 6 ที่ (logic deepening คุ้ม) ← แนะน่ำถัดไป
+2. **#5 C7** — สร้าง DatePicker module เดียว (Reports ใช้ date input ต่างจากหน้าอื่น) · UI
+3. **#6 C8** — สร้าง DataTable module (6 หน้า list เขียน search เอง + ยังไม่มี pagination) · UI
 
 **C9 (money module ฝั่ง server) ยังไม่เปิด issue** — รอผู้ใช้ triage (ดู `docs/architecture-review-20260705-th.html` §C9)
 
@@ -33,7 +30,11 @@ Issue ที่เปิดอยู่ (ทุมี rationale + ตำแห�
 
 ## ✅ สถานะงานที่จบแล้ว
 
-- **C3 (stock module)** — ship + code-review ผ่าน · committed `1b9a16f` + `e211129` · merge develop `f3ba78b` · **ปิด #3**
+- **#7 (code-smell EntityPicker/pickers)** — refactor + code-review + browser-verify ผ่าน · commit `dfb2d6c` · **ปิด #7**
+  - `EntityPicker.tsx`: extract `reset()` (3 handler) + rename `highlight`→`highlightedIndex`
+  - `pickers.tsx`: `VARIANT_CONFIG` Record รวม variant branch + เอา `as number` ออก (priceField lock ใน type)
+  - browser-verify 3 variants (sale/part/purchase) + filter + keyboard nav + clear + escape — พฤติกรรมเหมือนเดิม 100%
+- **C3 (stock module)** — ship + code-review ผ่าน · committed `1b9a16f` + `e211129` · merge develop `f3ba78b` · **ปิด #3** · **browser-verify ผ่าน (ผู้ใช้ตรวจเอง)**
   - `validateAndDeductStock(tx, items)` ใน `src/server/stock.ts` (deep module)
   - แทน validate+deduct block ใน `sale.create`/`repair.create` · router net −93 บรรทัด
   - `stock.test.ts` 7 cases (happy/not-found/insufficient/exact/duplicate/multi-item-fail/empty)
@@ -55,16 +56,14 @@ Issue ที่เปิดอยู่ (ทุมี rationale + ตำแห�
 
 ---
 
-## 🧹 Code-review smell backlog (จาก skill `/code-review` 2026-07-07)
+## 🧹 Code-review smell backlog
 
-C1 ผ่านทั้ง Standards + Spec (0 hard violation). เก็บ smell minor 4 ข้อไว้ทำทีหลังได้ (judgement call, ไม่บล็อก) — **รวมเป็น issue #7 แล้ว**:
+~~C1 smell minor 4 ข้อ~~ → **จบหมดแล้วใน #7** (commit `dfb2d6c`):
 
-1. **Duplicated Code** (`EntityPicker.tsx`) — ลำดับ reset state (`setSearchTerm("")`/`setHighlight(-1)`) ซ้ำใน 3 handler (select/clear/Escape) → แยก `reset()` ตัวเดียว
-2. **Primitive Obsession** (`pickers.tsx` L25-50) — branch `variant === "part" ? "averageCost" : "salePrice"` ซ้ำ ~3 จุด → `Record<ProductVariant, {...}>`
-3. **Type hole** (`pickers.tsx` L57) — `(p[priceField] ?? 0) as number` cast ปิด type hole จริง → ควรแก้ที่ type
-4. **Mysterious Name** (`EntityPicker.tsx` L33) — `highlight` → `highlightedIndex`/`activeIndex`
-
-> ข้อคุ้มแก้ที่สุด = #1 (extract `reset()`) และ #3 (เอา `as number` ออก)
+1. ✅ Duplicated Code → extract `reset()`
+2. ✅ Primitive Obsession → `VARIANT_CONFIG` Record
+3. ✅ Type hole → เอา `as number` ออก
+4. ✅ Mysterious Name → `highlight`→`highlightedIndex`
 
 ---
 
@@ -84,16 +83,16 @@ C1 ผ่านทั้ง Standards + Spec (0 hard violation). เก็บ sm
 
 - **prod ค้าง deploy ~10 เดือน** — develop นำ main หลาย commit + C1 + C5 + C3. release = merge develop→main (ผู้ใช้ตัดสินใจ)
 - **ไม่มี GitHub CI/CD** — มีแค่ Vercel auto-deploy (build only), ไม่มี lint/typecheck/test gate บน remote, ไม่มี branch protection บน `main`. `gh` พร้อม (v2.92.0, login `konglife`). pre-commit hook (local) มีแล้ว แต่ GitHub CI ยังไม่มี
-- **candidate ที่เหลือ** — C6/C7/C8 (ยังไม่ทำ) · C9 (Float) รอ triage เป็น issue · C3 ปิดแล้ว
-- **smell backlog 4 ข้อ** — issue #7 (ดูด้านบน)
+- **candidate ที่เหลือ** — C6/C7/C8 (ยังไม่ทำ) · C9 (Float) รอ triage เป็น issue · C3 + #7 ปิดแล้ว
+- **smell backlog** — จบหมดแล้วใน #7
 
 ---
 
 ## 📍 สถานะไฟล์
 
-- **สาขา:** `develop` (ไม่แตะ `main`/prod) · **= `origin/develop`** (sync แล้ว · commit ล่าสด `f3ba78b`)
+- **สาขา:** `develop` (ไม่แตะ `main`/prod) · **= `origin/develop`** (sync แล้ว · commit ล่าสด `dfb2d6c`)
 - **working tree สะอาด** (เหลือแค่ `?? docs/1.csv` / `?? docs/2.csv` — scratch prod **ห้าม commit**)
-- **GitHub Issues เปิด:** `#4` `#5` `#6` `#7` (`enhancement,needs-triage`) · ปิดแล้ว: `#3` · ดูรายการ: `gh issue list`
+- **GitHub Issues เปิด:** `#4` `#5` `#6` (`enhancement,needs-triage`) · ปิดแล้ว: `#3` `#7` · ดูรายการ: `gh issue list`
 
 ---
 
@@ -113,13 +112,13 @@ C1 ผ่านทั้ง Standards + Spec (0 hard violation). เก็บ sm
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: C3 (stock module) เสร็จ — merge develop + ปิด issue #3 แล้ว
+สถานะ: #7 (code-smell EntityPicker/pickers) เสร็จ + browser-verify · C3 ก็ browser-verify ผ่านแล้ว
 - npm test: 52 suite / 639 pass / 0 skip / 0 fail · lint+tsc สะอาด
-- develop = origin/develop (commit ล่าสด f3ba78b) · Vercel dev deploy กำลัง build
-- GitHub Issues เปิด: #4 C6 / #5 C7 / #6 C8 / #7 code-smell (ปิด #3 แล้ว)
+- develop = origin/develop (commit ล่าสด dfb2d6c) · Vercel dev deploy READY
+- GitHub Issues เปิด: #4 C6 / #5 C7 / #6 C8 (ปิด #3 + #7 แล้ว)
 - ADR-0001: residual pricing model ถูกต้อง — ห้ามเสนอแยก labor/markup
 
-ถัดไป: เลือก issue มาทำ — แนะ #7 (งานเล็ก) หรือ #4 C6 (ลบซ้ำ ~150 บรรทัด) เข้า /grilling ออกแบบก่อน (ยกเว้น #7)
+ถัดไป: เลือก #4 C6 (ลบซ้ำ ~150 บรรทัด) / #5 C7 (DatePicker) / #6 C8 (DataTable) เข้า /grilling ออกแบบ interface ก่อน
 ```
 
 > copy ข้อความนี้ไปแปะในแชทใหม่ได้เลย
