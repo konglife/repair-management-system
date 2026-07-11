@@ -18,8 +18,21 @@
 candidate ที่เหลือ:
 
 - **C8 (#6 DataTable)** — UI ล้วน (ปลอดภัย ไม่แตะ DB) · ใช้ `/grilling` เริ่มเหมือน C7
-- **C9 (Float/money)** ⚠️ — **จุดเดียวที่จะแตะ DB จริง** (migration + backfill) · ต้อง triage เป็น issue ก่อน
+- **C9 (Float/money)** ⚠️ — **จุดเดียวที่จะแตะ DB จริง** · ดูรายละเอียดด้านล่าง ⬇
 - **release develop→main** — develop = superset ของ main (merge สะอาด) · ไม่มี migration ใหม่ (DB ไม่กระทบ) · ⚠️ ตัวเลข "1 เดือน" ของ dashboard จะเปลี่ยน (rolling แทน since-day-1) = intent ของ #4 · ผู้ใช้ตัดสินใจ
+
+### C9 คืออะไร (ย่อ)
+
+> ทุกคอลัมน์เงินใน DB เป็น **`Float`** → ทศนิยมลอย → บวก/คูณแล้วเกิด noise (เช่น `0.1+0.2 = 0.30000000000000004`) · เห็นจริงใน prod: **141 cell มี noise (~8.6% ของยอดเงินทั้งหมด)** ส่งผลต่อรายงาน/UI
+>
+> UI มี `CurrencyInput` (deep module) แล้ว แต่ **ฝั่ง server ไม่มีอะไรเลย** — money ไหลผ่าน zod (`z.number()`) → DB (Float) → aggregation (`Σ Float`) โดยไม่มี seam ดัก rounding/format
+>
+> **แบ่งเป็น 2 ชั้นงาน (ความเสี่ยงต่างกันมาก):**
+>
+> 1. **Money module (ฝั่ง server)** — สร้าง type/module `{ parse · round · format · add }` ที่เดียวที่จัดการทศนิยม · **ไม่แตะ DB** (logic + test) → ลงได้ก่อน ปลอดภัย
+> 2. **schema migration** — เปลี่ยนคอลัมน์เงิน `Float` → `Decimal` หรือ `Int` (เก็บเป็นสตางค์) · ⚠️ **แตะข้อมูล prod จริง** (migration + backfill) → ทำทีหลังสุด ระวังสูง
+>
+> อ้างอิง: `docs/architecture-review-20260705-th.html` §C9 · `CONTEXT.md` pain (Float rounding) · ยังไม่มี GitHub issue (ต้อง triage)
 
 ---
 
@@ -53,7 +66,7 @@ candidate ที่เหลือ:
 
 ## 📍 สถานะไฟล์ + git
 
-- **สาขาปัจจุบัน = `develop`** (หลัง merge feature/c7) · สาขา `feature/c7` ยังไม่ลบ (สามารถลดได้ local+remote)
+- **สาขาปัจจุบัน = `develop`** (= `c72bddd` = origin/develop) · `feature/c7` **ลบแล้ว** (local เท่านั้น — ไม่เคย push remote)
 - **`main` = `d95d433`** (prod, ไม่ถูกแตะ)
 - **working tree:** `docs/1.csv`, `docs/2.csv` (scratch ห้าม commit) — นอกนั้นสะอาด
 - **GitHub Issues เปิด:** `#6` C8 · ปิดแล้ว: `#3` `#4` `#5` `#7`
