@@ -42,6 +42,10 @@ _Avoid_: group, type
 ตัวเลือก entity เดียว (generic `<T>`) สำหรับเลือก Product/Customer ในทุกฟอร์ม — รับ list จาก caller, มี search + คีย์บอร์ด, ใช้แทน Product/Parts autocomplete เก่า + Customer `<Select>` ดิบ. ปิด pain #1 (picker ใช้ยาก). ดู `docs/c1-entitypicker-design.md`
 _Avoid_: สร้าง picker ใหม่เฉพาะที่ — ใช้ EntityPicker + adapter (ProductPicker/CustomerPicker) แทน
 
+**DatePicker**:
+ตัวเลือกวันที่เดียว (single date) รวม Popover+Calendar+format+label+a11y ไว้ในตัว — value `Date | undefined` เข้าออก, display ผูกตาย `dd/MM/yyyy` (ตรงตาราง). ใช้แทน inline Popover block ซ้ำใน sales/repairs/stock + raw `<input type="date">` ใน Reports. ปิด pain "ทุกหน้าดูไม่เหมือนกัน" + fix drift a11y (label/htmlFor). ดู `docs/c7-datepicker-design.md`
+_Avoid_: สร้าง date picker inline ใหม่เฉพาะที่ — ใช้ `<DatePicker>` แทน (อยากได้ช่วง = ใช้ 2 ตัว, อย่าทำ range component)
+
 ## รูปร่างธุรกิจจริง (จากข้อมูล production)
 
 > ข้อมูลจาก prod aggregate (สค 2025 – กค 2026, ~11 เดือน) — ยืนยันแล้วไม่อ่อนไหว ร้านเล็กในหมู่บ้าน

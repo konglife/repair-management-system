@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Receipt,
   Package,
-  CalendarIcon,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -36,13 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 // Type interfaces for tRPC query results
 interface Product {
@@ -430,34 +423,13 @@ export default function SalesPage() {
                   </div>
 
                   {/* Date Selection */}
-                  <div>
-                    <Label htmlFor="date">Date *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={`mt-1 w-full justify-start text-left font-normal ${
-                            !saleDate && "text-muted-foreground"
-                          }`}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {saleDate ? (
-                            format(saleDate, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={saleDate}
-                          onSelect={setSaleDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                  <DatePicker
+                    id="date"
+                    label="Date"
+                    value={saleDate}
+                    onChange={setSaleDate}
+                    required
+                  />
 
                   {/* Product Selection */}
                   <div className="border rounded-lg p-4 space-y-4">

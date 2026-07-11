@@ -9,10 +9,8 @@ import {
   Loader2,
   Ruler,
   ShoppingCart,
-  CalendarIcon,
 } from "lucide-react";
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
 import { api } from "~/app/providers";
 import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,12 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 export default function StockPage() {
   const [activeTab, setActiveTab] = useState<
@@ -1408,37 +1401,12 @@ export default function StockPage() {
                               min={0}
                             />
                           </div>
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">
-                              Purchase Date
-                            </label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal"
-                                  type="button"
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {purchaseDate ? (
-                                    format(purchaseDate, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <CalendarComponent
-                                  mode="single"
-                                  selected={purchaseDate}
-                                  onSelect={(date) =>
-                                    date && setPurchaseDate(date)
-                                  }
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                          <DatePicker
+                            id="purchase-date"
+                            label="Purchase Date"
+                            value={purchaseDate}
+                            onChange={(date) => date && setPurchaseDate(date)}
+                          />
                         </div>
                         <div className="flex gap-2">
                           <Button

@@ -9,11 +9,9 @@ import {
   TrendingUp,
   Receipt,
   Package,
-  CalendarIcon,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import { api } from "~/app/providers";
 import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,13 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "~/lib/utils";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 // Type interfaces for tRPC query results
 interface Product {
@@ -121,7 +113,7 @@ export default function RepairsPage() {
   const [usedParts, setUsedParts] = useState<UsedPart[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [partQuantity, setPartQuantity] = useState(1);
-  const [repairDate, setRepairDate] = useState<Date | undefined>(undefined);
+  const [repairDate, setRepairDate] = useState<Date | undefined>(new Date());
 
   // tRPC queries
   const {
@@ -185,7 +177,7 @@ export default function RepairsPage() {
     setUsedParts([]);
     setSelectedProductId("");
     setPartQuantity(1);
-    setRepairDate(undefined);
+    setRepairDate(new Date());
   };
 
   const addPartToRepair = () => {
@@ -558,35 +550,13 @@ export default function RepairsPage() {
                       className="mt-1"
                     />
                   </div>
-                  <div>
-                    <Label>Repair Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full mt-1 justify-start text-left font-normal",
-                            !repairDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {repairDate ? (
-                            format(repairDate, "PPP")
-                          ) : (
-                            <span>Pick a date (optional)</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={repairDate}
-                          onSelect={setRepairDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                  <DatePicker
+                    id="repair-date"
+                    label="Repair Date"
+                    value={repairDate}
+                    onChange={setRepairDate}
+                    required
+                  />
                 </div>
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold border-b pb-2">
