@@ -1,17 +1,16 @@
-# Handoff — C6 (date-range module) เสร็จ/verify/ปิด #4 → เหลือ candidate C7/C8 + release ค้าง
+# Handoff — C6 เสร็จครบ + รวม develop + ลดสาขา → เหลือ C7/C8 หรือ release
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-11):** 🟢 **C6 (date-range module) ทำครบ — commit + browser-verify + ปิด #4**
+> **สถานะล่าสุด (2026-07-11):** 🟢 **C6 ทำครบทุกขั้น — commit + merge develop + browser-verify + ปิด #4 + ลดสาขา**
 >
-> - **สาขา `feature/c6-daterange-module`** แตกจาก `develop` @ `9a18e52` · **commit ใหม่ `b44dbbd`** (feat) + docs commit
-> - **literal drift ฆ่าตายด้วย `DATE_RANGE_VALUES`** (single source: const + type derive + 6 zod schema ใช้ `z.enum(DATE_RANGE_VALUES)`)
-> - **browser-verify ผ่าน** (localhost:3000): สลับ Today/7 Days/1 Month → ตัวเลข summary เปลี่ยนตาม · label canonical ใหม่ขึ้น · รายการเก่ากว่า 1 เดือนถูกตัดออก ✓ · ดูภาพ `docs/c6-verify-last7days.png`
-> - **`npm test`: 53 suite / 647 pass / 0 skip / 0 fail** · tsc + lint สะอาด
+> - **`develop` = `6dee60e`** (= origin/develop, push แล้ว) — C6 รวมเข้า develop แล้ว (merge ff จาก feature/c6) · **browser-verify ผ่าน 2 ที่**: localhost:3000 + dev.vercel.app (ตัวเลขเท่ากัน)
+> - **C6 เสร็จจริง**: `parseDateRange` deep module + `DATE_RANGE_VALUES` (single source) ฆ่า enum/semantic/literal drift · routers −154 บรรทัด · `npm test` 53 suite/647 pass · tsc + lint สะอาด
 > - **issue #4 ปิดแล้ว** (konglife/repair-management-system#4)
-> - **รวมเข้า develop แล้ว + push** · `develop = 4cce701` (= origin/develop) · **browser-verify ผ่านบน dev.vercel.app** (ตัวเลขเท่า localhost) · **ยังไม่แตะ `main`/prod**
+> - **สาขาเหลือ 2 อัน**: `main` + `develop` (ลบ feature/c3, feature/c6 ทั้ง local+remote แล้ว) · มี `origin/vercel/...cve` ของ Vercel แก้ CVE (ไม่ใช่ของเรา ปล่อยไว้)
+> - **`main` ไม่ถูกแตะ** · prod ที่ร้านยังเดิม (ค้าง deploy ~10 เดือน)
 
 ---
 
@@ -21,16 +20,19 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 ### ตัวเลือก A — release (merge develop→main = production deploy)
 
-- C6 รวมเข้า `develop` แล้ว (`4cce701`) · verify ผ่านบน `dev.vercel.app`
-- **ขั้นต่อไป (release)**: merge `develop`→`main` = production deploy (ผู้ใช้ตัดสินใจ)
-- ⚠️ **เตือนชัด: C6 เปลี่ยนพฤติกรรม production dashboard (ตอน release)**:
-  - **"1 เดือน"**: จาก _ตั้งแต่วันที่ 1 ของเดือน_ → _ย้อนไป 1 เดือน_ (rolling) → **ตัวเลขแดชบอร์ดจะเปลี่ยน** (เช่น 15 ก.ค. เริ่มนับ 15 มิ.ย. แทน 1 ก.ค.)
+- **merge ปลอดภัย/สะอาด**: develop = superset ของ main (main ไม่มีอะไรที่ develop ไม่มี) → **ไม่มี code conflict แน่นอน**
+- **DB ปลอดภัย**: ทุก issue ปัจจุบัน (C1/C3/C5/#7/C6) เป็นโค้ดล้วน ไม่มี migration ใหม่ (migration ล่าสุด ส.ค. 2025 อยู่บน prod แล้ว) → deploy ไม่แตะข้อมูล/โครงสร้าง DB
+- ⚠️ **เตือนชัด: C6 เปลี่ยนพฤติกรรม production dashboard (ตอน release จริง)**:
+  - **"1 เดือน"**: จาก _ตั้งแต่วันที่ 1 ของเดือน_ → _ย้อน 1 เดือน_ (rolling) → **ตัวเลขแดชบอร์ดจะเปลี่ยน** (เช่น 15 ก.ค. เริ่มนับ 15 มิ.ย. แทน 1 ก.ค.) — เป็น intent ของ issue #4 ไม่ใช่บั๊ก
   - **"7 วัน"**: ขอบเขตขยับจาก `now−7` → `startOfDay−7` (เล็กน้อย)
+- **วิธี release**: `git checkout main && git merge --ff-only develop && git push origin main` (Vercel deploy prod อัตโนมัติ) · บอกผู้ใช้ก่อนทุกครั้งตามกฎเหล็ก
 
 ### ตัวเลือก B — ทำ candidate ถัดไป (ตาม `docs/agents/issue-tracker.md` flow)
 
-- **C7 (#5 DatePicker)** · **C8 (#6 DataTable)** · C9 (Float/money) รอ triage เป็น issue
-- โฟลว์: เลือก issue → `/grilling` (design doc) → implement (TDD) → `/code-review` → browser-verify → ปิด issue
+- **C7 (#5 DatePicker)** = UI ล้วน ❌ ไม่แตะ DB
+- **C8 (#6 DataTable)** = UI ล้วน ❌ ไม่แตะ DB
+- **C9 (Float/money)** ⚠️ รอ triage เป็น issue — **อันนี้น่าจะแตะ DB จริง** (เปลี่ยนวิธีเก็บเงิน → migration + backfill) → พอถึงคิวต้องวางแผนระวัง บอกผู้ใช้ก่อน
+- โฟลว์: แตกสาขาจาก develop → `/grilling` (design doc) → implement (TDD) → `/code-review` → browser-verify → merge develop → ปิด issue
 
 ---
 
@@ -40,10 +42,11 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 **สิ่งที่สร้าง/แก้:**
 
-- `src/server/dates.ts` (ใหม่) — `parseDateRange(range, now=new Date()) → {gte:Date}|undefined` + `export type DateRange`
+- `src/server/dates.ts` (ใหม่) — `parseDateRange(range, now=new Date()) → {gte:Date}|undefined` + `DATE_RANGE_VALUES as const` + `export type DateRange` (derive)
 - `src/server/dates.test.ts` (ใหม่) — 8 cases (today/7days/1month/undefined/inject now/startOfDay/cross-year/type coverage)
 - `sale.ts` / `repair.ts` — getAll + getAnalytics: switch 15+ บรรทัด → `parseDateRange(input?.dateRange)`
 - `dashboard.ts` — getSummary + getTopProducts: migrate enum `period`→`dateRange`, `today/last7days/thismonth`→`today/7days/1month`, ลบ switch
+- 6 zod schema ใช้ `z.enum(DATE_RANGE_VALUES)` (ฆ่า literal drift)
 - `dashboard/page.tsx` + `TopProductsChart.tsx` — TimePeriod→DateRange, prop `period`→`dateRange`, label "This Month"→"Last 1 Month"
 - tests ที่แตะ: `dashboard/page.test.tsx`, `TopProductsChart.test.tsx` (migrate enum/label ตาม canonical)
 - **ไม่แตะ**: `getTrendData` + `TrendGraph.tsx` (`last30days`) — ออกจากขอบเขต (คนละ concept)
@@ -56,6 +59,7 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 ## ✅ สถานะงานที่จบแล้ว
 
+- **C6 (#4 date-range module)** — commit `b44dbbd` + merge develop `4cce701`/`6dee60e` · browser-verify localhost+dev · **ปิด #4**
 - **#7 (code-smell EntityPicker/pickers)** — refactor + code-review + browser-verify ผ่าน · commit `dfb2d6c` · **ปิด #7**
 - **C3 (stock module)** — ship + code-review + browser-verify ผ่าน · **ปิด #3**
   - `validateAndDeductStock(tx, items)` ใน `src/server/stock.ts` · ⚠️ router test เดิมเป็น fake (test-debt) → `stock.test.ts` คือ safety net จริง
@@ -74,20 +78,26 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 **ทำไม C-series ข้าม /to-prd → /to-issues:** มาจาก architecture review (มี rationale แล้ว) + grill ให้ design doc (ทำหน้าที่ PRD) + งานเล็ก/single-user
 
+**ความปลอดภัยของ DB ตอน release (วิเคราะห์แล้ว 2026-07-11):**
+
+- ทุก issue ปัจจุบัน (C1/C3/C5/#7/C6) = โค้ดล้วน ไม่มี migration → merge develop→main **ไม่แตะข้อมูล/โครงสร้าง DB prod**
+- build script รัน `prisma migrate deploy` แต่ไม่มี migration ค้าง = no-op
+- ⚠️ **C9 (Float/money)** = จุดเดียวในอนาคตที่จะแตะ DB จริง (migration + backfill) → ต้องระวังเป็นพิเศษ บอกผู้ใช้ก่อนทำ
+
 ---
 
 ## 📌 งานแยก (ทำวันไหนก็ได้ ไม่รีบ)
 
-- **prod ค้าง deploy ~10 เดือน** — develop นำ main หลาย commit + C1/C5/C3/#7 + (เมื่อ commit) C6. release = merge develop→main (ผู้ใช้ตัดสินใจ)
+- **prod ค้าง deploy ~10 เดือน** — develop นำ main ~40 commit (C1/C5/C3/#7/C6 + docs). release = merge develop→main (ผู้ใช้ตัดสินใจ) · merge สะอาด (develop = superset)
 - **ไม่มี GitHub CI/CD** — มีแค่ Vercel auto-deploy (build only), ไม่มี lint/typecheck/test gate บน remote, ไม่มี branch protection บน `main`. `gh` พร้อม (v2.92.0, login `konglife`). pre-commit hook (local) มีแล้ว
-- **candidate ที่เหลือ** — C7 (#5 DatePicker) / C8 (#6 DataTable) · C9 (Float/money) รอ triage เป็น issue · C6/#4 ใกล้ปิด
+- **candidate ที่เหลือ** — C7 (#5 DatePicker) / C8 (#6 DataTable) · C9 (Float/money) รอ triage เป็น issue
 
 ---
 
 ## 📍 สถานะไฟล์
 
-- **สาขา `develop` = `4cce701`** (= origin/develop, push แล้ว) — **C6 รวมเข้า develop แล้ว** (merge ff จาก `feature/c6-daterange-module`) · สาขา feature ยังอยู่ (local + origin) · **`main` ไม่ถูกแตะ**
-- **C6 ทั้งหมด commit แล้ว** (`b44dbbd`): `dates.ts`, `dates.test.ts`, `dashboard.ts`, `repair.ts`, `sale.ts`, `dashboard/page.tsx`, `dashboard/page.test.tsx`, `TopProductsChart.tsx`, `TopProductsChart.test.tsx`, `docs/c6-daterange-design.md`
+- **สาขา `develop` = `6dee60e`** (= origin/develop, push แล้ว) · **`main` = `d95d433`** (prod, ไม่ถูกแตะ) · develop = superset ของ main
+- **สาขา feature ทั้งหมดลบแล้ว** (c3, c6 — local + remote) เพราะรวมเข้า develop หมด · เหลือแค่ develop + main (+ `origin/vercel/...cve` ของ bot)
 - **scratch ห้าม commit:** `docs/1.csv`, `docs/2.csv`
 - **GitHub Issues เปิด:** `#5` C7 · `#6` C8 · ปิดแล้ว: `#3` `#4` `#7`
 
@@ -95,11 +105,11 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 ## 🛠️ chrome-devtools MCP + CDP (verify UI)
 
-ใช้ตอน browser-verify C6. **อ่าน `docs/agents/chrome-cdp-mcp.md` ก่อน**
+ใช้ตอน browser-verify. **อ่าน `docs/agents/chrome-cdp-mcp.md` ก่อน**
 
 - launcher: `bash scripts/chrome-debug.sh [url]` (copy session จาก profile จริง → debug profile → port 9222)
 - ⚠️ ถ้า Chrome debug ปิด → รัน launcher ใหม่ · ถ้า restart Claude Code → MCP โหลด `--browserUrl` ใหม่อัตโนมัติ
-- **จุดตรวจ C6**: เปิดแดชบอร์ด → เลือก "Last 1 Month"/"Last 7 Days"/"Today" → ตัวเลข summary + top products เปลี่ยนตาม · เทียบกับหน้า sales/repairs ช่วงเดียวกัน = ต้องตรงกัน (เพราะ unified semantic แล้ว)
+- กฎสำคัญ: เปิด Chrome debug ครั้งเดียว ใช้ยาวทั้ง session (เปิดซ้ำจะสะสมแท็บ)
 
 ---
 
@@ -108,16 +118,15 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: C6 (date-range module) implement เสร็จ + /code-review ผ่านทั้ง 2 แกน แต่ยังไม่ commit
-- สาขา feature/c6-daterange-module · ทุกอย่างใน working tree (UNCOMMITTED)
+สถานะ: C6 ทำครบ — commit + merge develop (6dee60e) + browser-verify + ปิด #4 + ลดสาขา
+- develop = origin/develop (6dee60e) · main ไม่ถูกแตะ (prod ค้าง ~10 เดือน)
+- สาขาเหลือแค่ develop + main (ลบ feature/c3, feature/c6 แล้ว)
 - npm test: 53 suite / 647 pass · tsc + lint สะอาด
-- develop = origin/develop (9a18e52) · ไม่แตะ main/prod
 
-Decision ค้าง 1 ข้อก่อน commit: zod literal ซ้ำ ×6 — แกะก่อน commit (เพิ่ม DATE_RANGE_VALUES) หรือปล่อย+follow-up? (แนะแกะก่อน)
-หลัง commit: browser-verify (ดูตัวเลขแดชบอร์ดเปลี่ยนตามช่วงวัน) → ปิด #4
-
-ถัดไป: ตัดสินใจข้อ literal นั้น → commit → browser-verify → ปิด #4
-ก่อนทำ: อ่าน docs/c6-daterange-design.md (decision log 8 ข้อ)
+ถัดไปเลือก 1 ทาง (ผู้ใช้ตัดสินใจ):
+  A. release = merge develop→main (สะอาด ไม่มี conflict, DB ไม่กระทบ, แต่ตัวเลข "1 เดือน" เปลี่ยน)
+  B. ทำ C7 (#5 DatePicker) หรือ C8 (#6 DataTable) — UI ล้วน ไม่แตะ DB
+     หรือ C9 (Float/money) ⚠️ อันนี้จะแตะ DB (migration + backfill)
 ```
 
 > copy ข้อความนี้ไปแปะในแชทใหม่ได้เลย
