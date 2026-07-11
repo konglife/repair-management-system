@@ -66,11 +66,13 @@ export function Sidebar({ className, isCollapsed = false }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <div className={cn(
-      "flex h-full flex-col bg-white border-r border-gray-200 transition-all duration-300",
-      isCollapsed ? "w-16" : "w-64",
-      className
-    )}>
+    <div
+      className={cn(
+        "flex h-full flex-col bg-white border-r border-gray-200 transition-all duration-300",
+        isCollapsed ? "w-16" : "w-64",
+        className
+      )}
+    >
       <div className="flex h-16 items-center border-b border-gray-200">
         {isCollapsed ? (
           <div className="flex w-full justify-center">
@@ -78,7 +80,9 @@ export function Sidebar({ className, isCollapsed = false }: SidebarProps) {
           </div>
         ) : (
           <div className="px-6">
-            <h1 className="text-xl font-semibold text-gray-900">Repair Shop 2.3.0.DEV</h1>
+            <h1 className="text-xl font-semibold text-gray-900">
+              Repair Shop 1.1.0
+            </h1>
           </div>
         )}
       </div>
@@ -86,7 +90,7 @@ export function Sidebar({ className, isCollapsed = false }: SidebarProps) {
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
-          
+
           return (
             <Link
               key={item.name}
@@ -104,7 +108,9 @@ export function Sidebar({ className, isCollapsed = false }: SidebarProps) {
                 className={cn(
                   "h-5 w-5 flex-shrink-0",
                   isCollapsed ? "mr-0" : "mr-3",
-                  isActive ? "text-blue-700" : "text-gray-500 group-hover:text-gray-900"
+                  isActive
+                    ? "text-blue-700"
+                    : "text-gray-500 group-hover:text-gray-900"
                 )}
               />
               {!isCollapsed && item.name}

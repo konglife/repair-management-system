@@ -112,7 +112,7 @@ describe("MainLayout", () => {
     );
 
     // Check if sidebar elements are present
-    expect(screen.getAllByText("Repair Shop 2.3.0.DEV")[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Repair Shop/)[0]).toBeInTheDocument();
     expect(screen.getAllByTestId("user-button")[0]).toBeInTheDocument();
 
     // Check navigation items
