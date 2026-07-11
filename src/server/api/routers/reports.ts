@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { db } from "~/lib/db";
 import { getLocalDateString } from "~/lib/utils";
 
@@ -67,7 +67,7 @@ interface SummaryData {
 }
 
 export const reportsRouter = createTRPCRouter({
-  getMonthlySummary: publicProcedure
+  getMonthlySummary: protectedProcedure
     .input(getMonthlySummaryInput)
     .query(async ({ input }): Promise<SummaryData> => {
       try {

@@ -1,8 +1,16 @@
 "use client";
 
-import { Package, FolderOpen, Plus, Edit, Trash2, Loader2, Ruler, ShoppingCart, CalendarIcon } from "lucide-react";
+import {
+  Package,
+  FolderOpen,
+  Plus,
+  Edit,
+  Trash2,
+  Loader2,
+  Ruler,
+  ShoppingCart,
+} from "lucide-react";
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
 import { api } from "~/app/providers";
 import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,38 +18,69 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "~/components/ui/CurrencyInput";
 import { SearchInput } from "~/components/ui/SearchInput";
-import { ProductAutocomplete } from "~/components/ui/ProductAutocomplete";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ProductPicker } from "~/components/ui/pickers";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 export default function StockPage() {
-  const [activeTab, setActiveTab] = useState<"categories" | "units" | "products" | "purchases">("products");
-  
+  const [activeTab, setActiveTab] = useState<
+    "categories" | "units" | "products" | "purchases"
+  >("products");
+
   // Search state
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const [unitSearchTerm, setUnitSearchTerm] = useState("");
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [purchaseSearchTerm, setPurchaseSearchTerm] = useState("");
-  
+
   // Categories state
   const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<{ id: string; name: string } | null>(null);
-  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState<
+    string | null
+  >(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [editCategoryName, setEditCategoryName] = useState("");
 
   // Units state
   const [showCreateUnitForm, setShowCreateUnitForm] = useState(false);
-  const [editingUnit, setEditingUnit] = useState<{ id: string; name: string } | null>(null);
-  const [deleteUnitConfirm, setDeleteUnitConfirm] = useState<string | null>(null);
+  const [editingUnit, setEditingUnit] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deleteUnitConfirm, setDeleteUnitConfirm] = useState<string | null>(
+    null
+  );
   const [newUnitName, setNewUnitName] = useState("");
   const [editUnitName, setEditUnitName] = useState("");
 
   // Products state
   const [showCreateProductForm, setShowCreateProductForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<{ id: string; name: string; salePrice: number; categoryId: string; unitId: string } | null>(null);
+  const [editingProduct, setEditingProduct] = useState<{
+    id: string;
+    name: string;
+    salePrice: number;
+    categoryId: string;
+    unitId: string;
+  } | null>(null);
   const [newProductName, setNewProductName] = useState("");
   const [newProductPrice, setNewProductPrice] = useState("");
   const [newProductCategoryId, setNewProductCategoryId] = useState("");
@@ -53,18 +92,28 @@ export default function StockPage() {
 
   // Purchase recording state
   const [showCreatePurchaseForm, setShowCreatePurchaseForm] = useState(false);
-  const [selectedProductForPurchase, setSelectedProductForPurchase] = useState("");
+  const [selectedProductForPurchase, setSelectedProductForPurchase] =
+    useState("");
   const [purchaseQuantity, setPurchaseQuantity] = useState("");
   const [purchaseCostPerUnit, setPurchaseCostPerUnit] = useState("");
   const [purchaseDate, setPurchaseDate] = useState<Date>(new Date());
-  const [selectedProductForHistory, setSelectedProductForHistory] = useState("");
+  const [selectedProductForHistory, setSelectedProductForHistory] =
+    useState("");
 
   // tRPC queries and mutations for categories
-  const { data: categories = [], refetch: refetchCategories, isLoading: categoriesLoading } = api.categories.getAll.useQuery();
-  
+  const {
+    data: categories = [],
+    refetch: refetchCategories,
+    isLoading: categoriesLoading,
+  } = api.categories.getAll.useQuery();
+
   // tRPC query for total stock value
-  const { data: totalValue = 0, isLoading: totalValueLoading, error: totalValueError } = api.products.getTotalValue.useQuery();
-  
+  const {
+    data: totalValue = 0,
+    isLoading: totalValueLoading,
+    error: totalValueError,
+  } = api.products.getTotalValue.useQuery();
+
   const createCategoryMutation = api.categories.create.useMutation({
     onSuccess: () => {
       refetchCategories();
@@ -99,21 +148,39 @@ export default function StockPage() {
   });
 
   // tRPC queries and mutations for units
-  const { data: units = [], refetch: refetchUnits, isLoading: unitsLoading } = api.units.getAll.useQuery();
+  const {
+    data: units = [],
+    refetch: refetchUnits,
+    isLoading: unitsLoading,
+  } = api.units.getAll.useQuery();
 
   // tRPC queries and mutations for products
-  const { data: products = [], refetch: refetchProducts, isLoading: productsLoading } = api.products.getAll.useQuery();
+  const {
+    data: products = [],
+    refetch: refetchProducts,
+    isLoading: productsLoading,
+  } = api.products.getAll.useQuery();
 
   // tRPC queries and mutations for purchases
-  const { data: allPurchases = [], refetch: refetchAllPurchases, isLoading: allPurchasesLoading } = api.purchases.getAll.useQuery();
-  
-  const { data: productPurchases = [], refetch: refetchProductPurchases, isLoading: productPurchasesLoading } = api.purchases.getByProduct.useQuery(
+  const {
+    data: allPurchases = [],
+    refetch: refetchAllPurchases,
+    isLoading: allPurchasesLoading,
+  } = api.purchases.getAll.useQuery();
+
+  const {
+    data: productPurchases = [],
+    refetch: refetchProductPurchases,
+    isLoading: productPurchasesLoading,
+  } = api.purchases.getByProduct.useQuery(
     { productId: selectedProductForHistory },
     { enabled: !!selectedProductForHistory }
   );
 
   // Determine loading state for purchases
-  const purchaseHistoryLoading = selectedProductForHistory ? productPurchasesLoading : allPurchasesLoading;
+  const purchaseHistoryLoading = selectedProductForHistory
+    ? productPurchasesLoading
+    : allPurchasesLoading;
 
   // Filtered data for search functionality
   const filteredCategories = useMemo(() => {
@@ -135,44 +202,75 @@ export default function StockPage() {
   const filteredProducts = useMemo(() => {
     if (!productSearchTerm.trim()) return products;
     const searchTerm = productSearchTerm.toLowerCase();
-    return products.filter((product: { name: string; category?: { name: string } }) =>
-      product.name.toLowerCase().includes(searchTerm) ||
-      product.category?.name.toLowerCase().includes(searchTerm)
+    return products.filter(
+      (product: { name: string; category?: { name: string } }) =>
+        product.name.toLowerCase().includes(searchTerm) ||
+        product.category?.name.toLowerCase().includes(searchTerm)
     );
   }, [products, productSearchTerm]);
 
   // Filtered purchase history for search functionality
   const filteredPurchaseHistory = useMemo(() => {
-    const dataToFilter = selectedProductForHistory ? productPurchases : allPurchases;
-    
+    const dataToFilter = selectedProductForHistory
+      ? productPurchases
+      : allPurchases;
+
     if (!purchaseSearchTerm.trim()) return dataToFilter;
-    
+
     const searchTerm = purchaseSearchTerm.toLowerCase();
-    return dataToFilter.filter((purchase: { product: { name: string }; purchaseDate: Date | string; quantity: number; costPerUnit: number }) => {
-      // Search by product name
-      const productNameMatch = purchase.product?.name.toLowerCase().includes(searchTerm);
-      
-      // Search by date (various formats)
-      const dateString = formatDisplayDate(purchase.purchaseDate).toLowerCase();
-      const dateMatch = dateString.includes(searchTerm);
-      
-      // Search by quantity
-      const quantityMatch = purchase.quantity.toString().includes(searchTerm);
-      
-      // Search by cost per unit (both number and formatted currency)
-      const costPerUnitString = purchase.costPerUnit.toString();
-      const formattedCostPerUnit = formatCurrency(purchase.costPerUnit).toLowerCase();
-      const costPerUnitMatch = costPerUnitString.includes(searchTerm) || formattedCostPerUnit.includes(searchTerm);
-      
-      // Search by total cost
-      const totalCost = purchase.quantity * purchase.costPerUnit;
-      const totalCostString = totalCost.toString();
-      const formattedTotalCost = formatCurrency(totalCost).toLowerCase();
-      const totalCostMatch = totalCostString.includes(searchTerm) || formattedTotalCost.includes(searchTerm);
-      
-      return productNameMatch || dateMatch || quantityMatch || costPerUnitMatch || totalCostMatch;
-    });
-  }, [allPurchases, productPurchases, selectedProductForHistory, purchaseSearchTerm]);
+    return dataToFilter.filter(
+      (purchase: {
+        product: { name: string };
+        purchaseDate: Date | string;
+        quantity: number;
+        costPerUnit: number;
+      }) => {
+        // Search by product name
+        const productNameMatch = purchase.product?.name
+          .toLowerCase()
+          .includes(searchTerm);
+
+        // Search by date (various formats)
+        const dateString = formatDisplayDate(
+          purchase.purchaseDate
+        ).toLowerCase();
+        const dateMatch = dateString.includes(searchTerm);
+
+        // Search by quantity
+        const quantityMatch = purchase.quantity.toString().includes(searchTerm);
+
+        // Search by cost per unit (both number and formatted currency)
+        const costPerUnitString = purchase.costPerUnit.toString();
+        const formattedCostPerUnit = formatCurrency(
+          purchase.costPerUnit
+        ).toLowerCase();
+        const costPerUnitMatch =
+          costPerUnitString.includes(searchTerm) ||
+          formattedCostPerUnit.includes(searchTerm);
+
+        // Search by total cost
+        const totalCost = purchase.quantity * purchase.costPerUnit;
+        const totalCostString = totalCost.toString();
+        const formattedTotalCost = formatCurrency(totalCost).toLowerCase();
+        const totalCostMatch =
+          totalCostString.includes(searchTerm) ||
+          formattedTotalCost.includes(searchTerm);
+
+        return (
+          productNameMatch ||
+          dateMatch ||
+          quantityMatch ||
+          costPerUnitMatch ||
+          totalCostMatch
+        );
+      }
+    );
+  }, [
+    allPurchases,
+    productPurchases,
+    selectedProductForHistory,
+    purchaseSearchTerm,
+  ]);
 
   const createPurchaseMutation = api.purchases.create.useMutation({
     onSuccess: () => {
@@ -192,7 +290,7 @@ export default function StockPage() {
       alert(`Failed to record purchase: ${error.message}`);
     },
   });
-  
+
   const createUnitMutation = api.units.create.useMutation({
     onSuccess: () => {
       refetchUnits();
@@ -264,9 +362,9 @@ export default function StockPage() {
   const handleUpdateCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCategory || !editCategoryName.trim()) return;
-    updateCategoryMutation.mutate({ 
-      id: editingCategory.id, 
-      name: editCategoryName.trim() 
+    updateCategoryMutation.mutate({
+      id: editingCategory.id,
+      name: editCategoryName.trim(),
     });
   };
 
@@ -294,9 +392,9 @@ export default function StockPage() {
   const handleUpdateUnit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUnit || !editUnitName.trim()) return;
-    updateUnitMutation.mutate({ 
-      id: editingUnit.id, 
-      name: editUnitName.trim() 
+    updateUnitMutation.mutate({
+      id: editingUnit.id,
+      name: editUnitName.trim(),
     });
   };
 
@@ -317,38 +415,57 @@ export default function StockPage() {
   // Product handlers
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProductName.trim() || !newProductPrice.trim() || !newProductCategoryId || !newProductUnitId) return;
+    if (
+      !newProductName.trim() ||
+      !newProductPrice.trim() ||
+      !newProductCategoryId ||
+      !newProductUnitId
+    )
+      return;
     const salePrice = parseFloat(newProductPrice);
     if (isNaN(salePrice) || salePrice < 0) {
       alert("Please enter a valid sale price");
       return;
     }
-    createProductMutation.mutate({ 
+    createProductMutation.mutate({
       name: newProductName.trim(),
       salePrice,
       categoryId: newProductCategoryId,
-      unitId: newProductUnitId
+      unitId: newProductUnitId,
     });
   };
 
   const handleUpdateProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingProduct || !editProductName.trim() || !editProductPrice.trim() || !editProductCategoryId || !editProductUnitId) return;
+    if (
+      !editingProduct ||
+      !editProductName.trim() ||
+      !editProductPrice.trim() ||
+      !editProductCategoryId ||
+      !editProductUnitId
+    )
+      return;
     const salePrice = parseFloat(editProductPrice);
     if (isNaN(salePrice) || salePrice < 0) {
       alert("Please enter a valid sale price");
       return;
     }
-    updateProductMutation.mutate({ 
+    updateProductMutation.mutate({
       id: editingProduct.id,
       name: editProductName.trim(),
       salePrice,
       categoryId: editProductCategoryId,
-      unitId: editProductUnitId
+      unitId: editProductUnitId,
     });
   };
 
-  const startEditProduct = (product: { id: string; name: string; salePrice: number; categoryId: string; unitId: string }) => {
+  const startEditProduct = (product: {
+    id: string;
+    name: string;
+    salePrice: number;
+    categoryId: string;
+    unitId: string;
+  }) => {
     setEditingProduct(product);
     setEditProductName(product.name);
     setEditProductPrice(product.salePrice.toString());
@@ -367,26 +484,38 @@ export default function StockPage() {
   // Purchase handlers
   const handleRecordPurchase = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProductForPurchase || !purchaseQuantity.trim() || !purchaseCostPerUnit.trim()) return;
-    
+    if (
+      !selectedProductForPurchase ||
+      !purchaseQuantity.trim() ||
+      !purchaseCostPerUnit.trim()
+    )
+      return;
+
     const quantity = parseInt(purchaseQuantity);
     const costPerUnit = parseFloat(purchaseCostPerUnit);
-    
+
     if (isNaN(quantity) || quantity <= 0) {
       alert("Please enter a valid quantity");
       return;
     }
-    
+
     if (isNaN(costPerUnit) || costPerUnit < 0) {
       alert("Please enter a valid cost per unit");
       return;
     }
-    
+
     createPurchaseMutation.mutate({
       productId: selectedProductForPurchase,
       quantity,
       costPerUnit,
-      purchaseDate: new Date(purchaseDate.getFullYear(), purchaseDate.getMonth(), purchaseDate.getDate(), 12, 0, 0)
+      purchaseDate: new Date(
+        purchaseDate.getFullYear(),
+        purchaseDate.getMonth(),
+        purchaseDate.getDate(),
+        12,
+        0,
+        0
+      ),
     });
   };
 
@@ -394,25 +523,29 @@ export default function StockPage() {
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Stock Management</h2>
-          <p className="text-muted-foreground">Manage your inventory, categories, and stock levels</p>
+          <h2 className="text-3xl font-bold tracking-tight">
+            Stock Management
+          </h2>
+          <p className="text-muted-foreground">
+            Manage your inventory, categories, and stock levels
+          </p>
         </div>
       </div>
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Categories</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Categories
+            </CardTitle>
             <FolderOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{categories.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Product categories
-            </p>
+            <p className="text-xs text-muted-foreground">Product categories</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Units</CardTitle>
@@ -420,25 +553,23 @@ export default function StockPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{units.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Measurement units
-            </p>
+            <p className="text-xs text-muted-foreground">Measurement units</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Products
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{products.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Items in inventory
-            </p>
+            <p className="text-xs text-muted-foreground">Items in inventory</p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Value</CardTitle>
@@ -455,7 +586,9 @@ export default function StockPage() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {totalValueError ? "Failed to load inventory value" : "Inventory value"}
+              {totalValueError
+                ? "Failed to load inventory value"
+                : "Inventory value"}
             </p>
           </CardContent>
         </Card>
@@ -504,7 +637,11 @@ export default function StockPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Categories</CardTitle>
-                  <Button onClick={() => setShowCreateCategoryForm(!showCreateCategoryForm)}>
+                  <Button
+                    onClick={() =>
+                      setShowCreateCategoryForm(!showCreateCategoryForm)
+                    }
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Category
                   </Button>
@@ -523,7 +660,10 @@ export default function StockPage() {
                 {/* Create Category Form */}
                 {showCreateCategoryForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
-                    <form onSubmit={handleCreateCategory} className="flex gap-2">
+                    <form
+                      onSubmit={handleCreateCategory}
+                      className="flex gap-2"
+                    >
                       <Input
                         type="text"
                         value={newCategoryName}
@@ -534,7 +674,10 @@ export default function StockPage() {
                       />
                       <Button
                         type="submit"
-                        disabled={createCategoryMutation.isPending || !newCategoryName.trim()}
+                        disabled={
+                          createCategoryMutation.isPending ||
+                          !newCategoryName.trim()
+                        }
                       >
                         {createCategoryMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -568,78 +711,108 @@ export default function StockPage() {
                     <TableBody>
                       {categoriesLoading ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-muted-foreground"
+                          >
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           </TableCell>
                         </TableRow>
                       ) : filteredCategories.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            {categorySearchTerm ? "No categories found matching your search." : "No categories found. Create your first category to get started."}
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-muted-foreground"
+                          >
+                            {categorySearchTerm
+                              ? "No categories found matching your search."
+                              : "No categories found. Create your first category to get started."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredCategories.map((category: { id: string; name: string; _count: { products: number } }) => (
-                          <TableRow key={category.id}>
-                            <TableCell>
-                              {editingCategory?.id === category.id ? (
-                                <form onSubmit={handleUpdateCategory} className="flex gap-2">
-                                  <Input
-                                    type="text"
-                                    value={editCategoryName}
-                                    onChange={(e) => setEditCategoryName(e.target.value)}
-                                    className="flex-1 h-8"
-                                    autoFocus
-                                  />
-                                  <Button
-                                    type="submit"
-                                    size="sm"
-                                    disabled={updateCategoryMutation.isPending || !editCategoryName.trim()}
+                        filteredCategories.map(
+                          (category: {
+                            id: string;
+                            name: string;
+                            _count: { products: number };
+                          }) => (
+                            <TableRow key={category.id}>
+                              <TableCell>
+                                {editingCategory?.id === category.id ? (
+                                  <form
+                                    onSubmit={handleUpdateCategory}
+                                    className="flex gap-2"
                                   >
-                                    {updateCategoryMutation.isPending ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      "Save"
-                                    )}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={cancelEditCategory}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </form>
-                              ) : (
-                                <span className="font-medium">{category.name}</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{category._count?.products ?? 0}</TableCell>
-                            <TableCell>
-                              {editingCategory?.id === category.id ? null : (
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => startEditCategory(category)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setDeleteCategoryConfirm(category.id)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
+                                    <Input
+                                      type="text"
+                                      value={editCategoryName}
+                                      onChange={(e) =>
+                                        setEditCategoryName(e.target.value)
+                                      }
+                                      className="flex-1 h-8"
+                                      autoFocus
+                                    />
+                                    <Button
+                                      type="submit"
+                                      size="sm"
+                                      disabled={
+                                        updateCategoryMutation.isPending ||
+                                        !editCategoryName.trim()
+                                      }
+                                    >
+                                      {updateCategoryMutation.isPending ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        "Save"
+                                      )}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={cancelEditCategory}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </form>
+                                ) : (
+                                  <span className="font-medium">
+                                    {category.name}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {category._count?.products ?? 0}
+                              </TableCell>
+                              <TableCell>
+                                {editingCategory?.id === category.id ? null : (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        startEditCategory(category)
+                                      }
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        setDeleteCategoryConfirm(category.id)
+                                      }
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )
                       )}
                     </TableBody>
                   </Table>
@@ -652,7 +825,9 @@ export default function StockPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Units</CardTitle>
-                  <Button onClick={() => setShowCreateUnitForm(!showCreateUnitForm)}>
+                  <Button
+                    onClick={() => setShowCreateUnitForm(!showCreateUnitForm)}
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Unit
                   </Button>
@@ -682,7 +857,9 @@ export default function StockPage() {
                       />
                       <Button
                         type="submit"
-                        disabled={createUnitMutation.isPending || !newUnitName.trim()}
+                        disabled={
+                          createUnitMutation.isPending || !newUnitName.trim()
+                        }
                       >
                         {createUnitMutation.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -716,78 +893,106 @@ export default function StockPage() {
                     <TableBody>
                       {unitsLoading ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-muted-foreground"
+                          >
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           </TableCell>
                         </TableRow>
                       ) : filteredUnits.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">
-                            {unitSearchTerm ? "No units found matching your search." : "No units found. Create your first unit to get started."}
+                          <TableCell
+                            colSpan={3}
+                            className="text-center text-muted-foreground"
+                          >
+                            {unitSearchTerm
+                              ? "No units found matching your search."
+                              : "No units found. Create your first unit to get started."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredUnits.map((unit: { id: string; name: string; _count: { products: number } }) => (
-                          <TableRow key={unit.id}>
-                            <TableCell>
-                              {editingUnit?.id === unit.id ? (
-                                <form onSubmit={handleUpdateUnit} className="flex gap-2">
-                                  <Input
-                                    type="text"
-                                    value={editUnitName}
-                                    onChange={(e) => setEditUnitName(e.target.value)}
-                                    className="flex-1 h-8"
-                                    autoFocus
-                                  />
-                                  <Button
-                                    type="submit"
-                                    size="sm"
-                                    disabled={updateUnitMutation.isPending || !editUnitName.trim()}
+                        filteredUnits.map(
+                          (unit: {
+                            id: string;
+                            name: string;
+                            _count: { products: number };
+                          }) => (
+                            <TableRow key={unit.id}>
+                              <TableCell>
+                                {editingUnit?.id === unit.id ? (
+                                  <form
+                                    onSubmit={handleUpdateUnit}
+                                    className="flex gap-2"
                                   >
-                                    {updateUnitMutation.isPending ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      "Save"
-                                    )}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={cancelEditUnit}
-                                  >
-                                    Cancel
-                                  </Button>
-                                </form>
-                              ) : (
-                                <span className="font-medium">{unit.name}</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{unit._count?.products ?? 0}</TableCell>
-                            <TableCell>
-                              {editingUnit?.id === unit.id ? null : (
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => startEditUnit(unit)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => setDeleteUnitConfirm(unit.id)}
-                                    className="h-8 w-8 text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
+                                    <Input
+                                      type="text"
+                                      value={editUnitName}
+                                      onChange={(e) =>
+                                        setEditUnitName(e.target.value)
+                                      }
+                                      className="flex-1 h-8"
+                                      autoFocus
+                                    />
+                                    <Button
+                                      type="submit"
+                                      size="sm"
+                                      disabled={
+                                        updateUnitMutation.isPending ||
+                                        !editUnitName.trim()
+                                      }
+                                    >
+                                      {updateUnitMutation.isPending ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        "Save"
+                                      )}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={cancelEditUnit}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </form>
+                                ) : (
+                                  <span className="font-medium">
+                                    {unit.name}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {unit._count?.products ?? 0}
+                              </TableCell>
+                              <TableCell>
+                                {editingUnit?.id === unit.id ? null : (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => startEditUnit(unit)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() =>
+                                        setDeleteUnitConfirm(unit.id)
+                                      }
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )
                       )}
                     </TableBody>
                   </Table>
@@ -800,7 +1005,11 @@ export default function StockPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Products</CardTitle>
-                  <Button onClick={() => setShowCreateProductForm(!showCreateProductForm)}>
+                  <Button
+                    onClick={() =>
+                      setShowCreateProductForm(!showCreateProductForm)
+                    }
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Product
                   </Button>
@@ -822,7 +1031,9 @@ export default function StockPage() {
                     <form onSubmit={handleCreateProduct} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Product Name</label>
+                          <label className="text-sm font-medium mb-2 block">
+                            Product Name
+                          </label>
                           <Input
                             type="text"
                             value={newProductName}
@@ -832,34 +1043,52 @@ export default function StockPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Sale Price (฿)</label>
+                          <label className="text-sm font-medium mb-2 block">
+                            Sale Price (฿)
+                          </label>
                           <CurrencyInput
-                            value={newProductPrice ? parseFloat(newProductPrice) : undefined}
-                            onChange={(value) => setNewProductPrice(value?.toString() ?? "")}
+                            value={
+                              newProductPrice
+                                ? parseFloat(newProductPrice)
+                                : undefined
+                            }
+                            onChange={(value) =>
+                              setNewProductPrice(value?.toString() ?? "")
+                            }
                             placeholder="Sale price"
                             min={0}
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Category</label>
+                          <label className="text-sm font-medium mb-2 block">
+                            Category
+                          </label>
                           <select
                             value={newProductCategoryId}
-                            onChange={(e) => setNewProductCategoryId(e.target.value)}
+                            onChange={(e) =>
+                              setNewProductCategoryId(e.target.value)
+                            }
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <option value="">Select category</option>
-                            {categories.map((category: { id: string; name: string }) => (
-                              <option key={category.id} value={category.id}>
-                                {category.name}
-                              </option>
-                            ))}
+                            {categories.map(
+                              (category: { id: string; name: string }) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.name}
+                                </option>
+                              )
+                            )}
                           </select>
                         </div>
                         <div>
-                          <label className="text-sm font-medium mb-2 block">Unit</label>
+                          <label className="text-sm font-medium mb-2 block">
+                            Unit
+                          </label>
                           <select
                             value={newProductUnitId}
-                            onChange={(e) => setNewProductUnitId(e.target.value)}
+                            onChange={(e) =>
+                              setNewProductUnitId(e.target.value)
+                            }
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <option value="">Select unit</option>
@@ -874,7 +1103,13 @@ export default function StockPage() {
                       <div className="flex gap-2">
                         <Button
                           type="submit"
-                          disabled={createProductMutation.isPending || !newProductName.trim() || !newProductPrice.trim() || !newProductCategoryId || !newProductUnitId}
+                          disabled={
+                            createProductMutation.isPending ||
+                            !newProductName.trim() ||
+                            !newProductPrice.trim() ||
+                            !newProductCategoryId ||
+                            !newProductUnitId
+                          }
                         >
                           {createProductMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -916,119 +1151,177 @@ export default function StockPage() {
                     <TableBody>
                       {productsLoading ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
+                          <TableCell
+                            colSpan={7}
+                            className="text-center text-muted-foreground"
+                          >
                             <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                           </TableCell>
                         </TableRow>
                       ) : filteredProducts.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">
-                            {productSearchTerm ? "No products found matching your search." : "No products found. Create your first product to get started."}
+                          <TableCell
+                            colSpan={7}
+                            className="text-center text-muted-foreground"
+                          >
+                            {productSearchTerm
+                              ? "No products found matching your search."
+                              : "No products found. Create your first product to get started."}
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredProducts.map((product: { id: string; name: string; salePrice: number; quantity: number; averageCost: number; categoryId: string; unitId: string; category: { name: string }; unit: { name: string } }) => (
-                          <TableRow key={product.id}>
-                            <TableCell>
-                              {editingProduct?.id === product.id ? (
-                                <Input
-                                  type="text"
-                                  value={editProductName}
-                                  onChange={(e) => setEditProductName(e.target.value)}
-                                  className="h-8"
-                                  autoFocus
-                                />
-                              ) : (
-                                <span className="font-medium">{product.name}</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingProduct?.id === product.id ? (
-                                <select
-                                  value={editProductCategoryId}
-                                  onChange={(e) => setEditProductCategoryId(e.target.value)}
-                                  className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                                >
-                                  {categories.map((category: { id: string; name: string }) => (
-                                    <option key={category.id} value={category.id}>
-                                      {category.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span>{product.category?.name}</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingProduct?.id === product.id ? (
-                                <select
-                                  value={editProductUnitId}
-                                  onChange={(e) => setEditProductUnitId(e.target.value)}
-                                  className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                                >
-                                  {units.map((unit: { id: string; name: string }) => (
-                                    <option key={unit.id} value={unit.id}>
-                                      {unit.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              ) : (
-                                <span>{product.unit?.name}</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {editingProduct?.id === product.id ? (
-                                <CurrencyInput
-                                  value={editProductPrice ? parseFloat(editProductPrice) : undefined}
-                                  onChange={(value) => setEditProductPrice(value?.toString() ?? "")}
-                                  className="h-8 w-20"
-                                  min={0}
-                                />
-                              ) : (
-                                <span>{formatCurrency(product.salePrice)}</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{product.quantity}</TableCell>
-                            <TableCell className="text-muted-foreground">{formatCurrency(product.averageCost)}</TableCell>
-                            <TableCell>
-                              {editingProduct?.id === product.id ? (
-                                <div className="flex gap-1">
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={handleUpdateProduct}
-                                    disabled={updateProductMutation.isPending || !editProductName.trim() || !editProductPrice.trim() || !editProductCategoryId || !editProductUnitId}
+                        filteredProducts.map(
+                          (product: {
+                            id: string;
+                            name: string;
+                            salePrice: number;
+                            quantity: number;
+                            averageCost: number;
+                            categoryId: string;
+                            unitId: string;
+                            category: { name: string };
+                            unit: { name: string };
+                          }) => (
+                            <TableRow key={product.id}>
+                              <TableCell>
+                                {editingProduct?.id === product.id ? (
+                                  <Input
+                                    type="text"
+                                    value={editProductName}
+                                    onChange={(e) =>
+                                      setEditProductName(e.target.value)
+                                    }
+                                    className="h-8"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span className="font-medium">
+                                    {product.name}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {editingProduct?.id === product.id ? (
+                                  <select
+                                    value={editProductCategoryId}
+                                    onChange={(e) =>
+                                      setEditProductCategoryId(e.target.value)
+                                    }
+                                    className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
                                   >
-                                    {updateProductMutation.isPending ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
-                                    ) : (
-                                      "Save"
+                                    {categories.map(
+                                      (category: {
+                                        id: string;
+                                        name: string;
+                                      }) => (
+                                        <option
+                                          key={category.id}
+                                          value={category.id}
+                                        >
+                                          {category.name}
+                                        </option>
+                                      )
                                     )}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={cancelEditProduct}
+                                  </select>
+                                ) : (
+                                  <span>{product.category?.name}</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {editingProduct?.id === product.id ? (
+                                  <select
+                                    value={editProductUnitId}
+                                    onChange={(e) =>
+                                      setEditProductUnitId(e.target.value)
+                                    }
+                                    className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
                                   >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => startEditProduct(product)}
-                                    className="h-8 w-8"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))
+                                    {units.map(
+                                      (unit: { id: string; name: string }) => (
+                                        <option key={unit.id} value={unit.id}>
+                                          {unit.name}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                ) : (
+                                  <span>{product.unit?.name}</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {editingProduct?.id === product.id ? (
+                                  <CurrencyInput
+                                    value={
+                                      editProductPrice
+                                        ? parseFloat(editProductPrice)
+                                        : undefined
+                                    }
+                                    onChange={(value) =>
+                                      setEditProductPrice(
+                                        value?.toString() ?? ""
+                                      )
+                                    }
+                                    className="h-8 w-20"
+                                    min={0}
+                                  />
+                                ) : (
+                                  <span>
+                                    {formatCurrency(product.salePrice)}
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {product.quantity}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {formatCurrency(product.averageCost)}
+                              </TableCell>
+                              <TableCell>
+                                {editingProduct?.id === product.id ? (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      onClick={handleUpdateProduct}
+                                      disabled={
+                                        updateProductMutation.isPending ||
+                                        !editProductName.trim() ||
+                                        !editProductPrice.trim() ||
+                                        !editProductCategoryId ||
+                                        !editProductUnitId
+                                      }
+                                    >
+                                      {updateProductMutation.isPending ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        "Save"
+                                      )}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={cancelEditProduct}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => startEditProduct(product)}
+                                      className="h-8 w-8"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )
                       )}
                     </TableBody>
                   </Table>
@@ -1041,7 +1334,11 @@ export default function StockPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Record Stock Purchase</CardTitle>
-                  <Button onClick={() => setShowCreatePurchaseForm(!showCreatePurchaseForm)}>
+                  <Button
+                    onClick={() =>
+                      setShowCreatePurchaseForm(!showCreatePurchaseForm)
+                    }
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Purchase
                   </Button>
@@ -1052,72 +1349,74 @@ export default function StockPage() {
                   {/* Purchase Recording Form */}
                   {showCreatePurchaseForm && (
                     <div className="p-4 border rounded-lg bg-muted/50">
-                      <h3 className="text-lg font-medium mb-4">Record New Purchase</h3>
-                      <form onSubmit={handleRecordPurchase} className="space-y-4">
+                      <h3 className="text-lg font-medium mb-4">
+                        Record New Purchase
+                      </h3>
+                      <form
+                        onSubmit={handleRecordPurchase}
+                        className="space-y-4"
+                      >
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div>
-                            <label className="text-sm font-medium mb-2 block">Product</label>
-                            <ProductAutocomplete
-                              products={products.map((product: { id: string; name: string; unit?: { name: string }; salePrice?: number; quantity?: number }) => ({
-                                id: product.id,
-                                name: product.unit ? `${product.name} (${product.unit.name})` : product.name,
-                                salePrice: product.salePrice || 0,
-                                quantity: product.quantity || 0
-                              }))}
+                            <label className="text-sm font-medium mb-2 block">
+                              Product
+                            </label>
+                            <ProductPicker
+                              products={products}
+                              variant="purchase"
                               value={selectedProductForPurchase}
                               onValueChange={setSelectedProductForPurchase}
                               placeholder="Search for a product to purchase..."
-                              showOutOfStock={true}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium mb-2 block">Quantity</label>
+                            <label className="text-sm font-medium mb-2 block">
+                              Quantity
+                            </label>
                             <Input
                               type="number"
                               min="1"
                               step="1"
                               value={purchaseQuantity}
-                              onChange={(e) => setPurchaseQuantity(e.target.value)}
+                              onChange={(e) =>
+                                setPurchaseQuantity(e.target.value)
+                              }
                               placeholder="Enter quantity"
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium mb-2 block">Cost Per Unit (฿)</label>
+                            <label className="text-sm font-medium mb-2 block">
+                              Cost Per Unit (฿)
+                            </label>
                             <CurrencyInput
-                              value={purchaseCostPerUnit ? parseFloat(purchaseCostPerUnit) : undefined}
-                              onChange={(value) => setPurchaseCostPerUnit(value?.toString() ?? "")}
+                              value={
+                                purchaseCostPerUnit
+                                  ? parseFloat(purchaseCostPerUnit)
+                                  : undefined
+                              }
+                              onChange={(value) =>
+                                setPurchaseCostPerUnit(value?.toString() ?? "")
+                              }
                               placeholder="Enter cost per unit"
                               min={0}
                             />
                           </div>
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Purchase Date</label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal"
-                                  type="button"
-                                >
-                                  <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {purchaseDate ? format(purchaseDate, "PPP") : <span>Pick a date</span>}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0">
-                                <CalendarComponent
-                                  mode="single"
-                                  selected={purchaseDate}
-                                  onSelect={(date) => date && setPurchaseDate(date)}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                          <DatePicker
+                            id="purchase-date"
+                            label="Purchase Date"
+                            value={purchaseDate}
+                            onChange={(date) => date && setPurchaseDate(date)}
+                          />
                         </div>
                         <div className="flex gap-2">
                           <Button
                             type="submit"
-                            disabled={createPurchaseMutation.isPending || !selectedProductForPurchase || !purchaseQuantity.trim() || !purchaseCostPerUnit.trim()}
+                            disabled={
+                              createPurchaseMutation.isPending ||
+                              !selectedProductForPurchase ||
+                              !purchaseQuantity.trim() ||
+                              !purchaseCostPerUnit.trim()
+                            }
                           >
                             {createPurchaseMutation.isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -1145,8 +1444,10 @@ export default function StockPage() {
 
                   {/* Purchase History */}
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Purchase History</h3>
-                    
+                    <h3 className="text-lg font-medium mb-4">
+                      Purchase History
+                    </h3>
+
                     {/* Search Input */}
                     <div className="mb-4">
                       <SearchInput
@@ -1156,28 +1457,40 @@ export default function StockPage() {
                         className="max-w-sm"
                       />
                     </div>
-                    
+
                     <div className="mb-4">
-                      <label className="text-sm font-medium mb-2 block">Filter by product</label>
+                      <label className="text-sm font-medium mb-2 block">
+                        Filter by product
+                      </label>
                       <select
                         value={selectedProductForHistory}
-                        onChange={(e) => setSelectedProductForHistory(e.target.value)}
+                        onChange={(e) =>
+                          setSelectedProductForHistory(e.target.value)
+                        }
                         className="flex h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="">All Purchases</option>
-                        {products.map((product: { id: string; name: string; unit: { name: string } }) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name} ({product.unit?.name})
-                          </option>
-                        ))}
+                        {products.map(
+                          (product: {
+                            id: string;
+                            name: string;
+                            unit: { name: string };
+                          }) => (
+                            <option key={product.id} value={product.id}>
+                              {product.name} ({product.unit?.name})
+                            </option>
+                          )
+                        )}
                       </select>
                     </div>
-                    
+
                     <div className="rounded-md border">
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            {!selectedProductForHistory && <TableHead>Product</TableHead>}
+                            {!selectedProductForHistory && (
+                              <TableHead>Product</TableHead>
+                            )}
                             <TableHead>Date</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Cost Per Unit</TableHead>
@@ -1187,36 +1500,56 @@ export default function StockPage() {
                         <TableBody>
                           {purchaseHistoryLoading ? (
                             <TableRow>
-                              <TableCell colSpan={!selectedProductForHistory ? 5 : 4} className="text-center text-muted-foreground">
+                              <TableCell
+                                colSpan={!selectedProductForHistory ? 5 : 4}
+                                className="text-center text-muted-foreground"
+                              >
                                 <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                               </TableCell>
                             </TableRow>
                           ) : filteredPurchaseHistory.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={!selectedProductForHistory ? 5 : 4} className="text-center text-muted-foreground">
-                                {purchaseSearchTerm 
+                              <TableCell
+                                colSpan={!selectedProductForHistory ? 5 : 4}
+                                className="text-center text-muted-foreground"
+                              >
+                                {purchaseSearchTerm
                                   ? "No purchase records found matching your search."
-                                  : selectedProductForHistory 
+                                  : selectedProductForHistory
                                     ? "No purchase history found for this product."
                                     : "No purchase records found."}
                               </TableCell>
                             </TableRow>
                           ) : (
-                            filteredPurchaseHistory.map((purchase: { id: string; quantity: number; costPerUnit: number; purchaseDate: Date | string; product: { name: string } }) => (
-                              <TableRow key={purchase.id}>
-                                {!selectedProductForHistory && (
-                                  <TableCell className="font-medium">
-                                    {purchase.product?.name}
+                            filteredPurchaseHistory.map(
+                              (purchase: {
+                                id: string;
+                                quantity: number;
+                                costPerUnit: number;
+                                purchaseDate: Date | string;
+                                product: { name: string };
+                              }) => (
+                                <TableRow key={purchase.id}>
+                                  {!selectedProductForHistory && (
+                                    <TableCell className="font-medium">
+                                      {purchase.product?.name}
+                                    </TableCell>
+                                  )}
+                                  <TableCell>
+                                    {formatDisplayDate(purchase.purchaseDate)}
                                   </TableCell>
-                                )}
-                                <TableCell>
-                                  {formatDisplayDate(purchase.purchaseDate)}
-                                </TableCell>
-                                <TableCell>{purchase.quantity}</TableCell>
-                                <TableCell>{formatCurrency(purchase.costPerUnit)}</TableCell>
-                                <TableCell>{formatCurrency(purchase.quantity * purchase.costPerUnit)}</TableCell>
-                              </TableRow>
-                            ))
+                                  <TableCell>{purchase.quantity}</TableCell>
+                                  <TableCell>
+                                    {formatCurrency(purchase.costPerUnit)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatCurrency(
+                                      purchase.quantity * purchase.costPerUnit
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            )
                           )}
                         </TableBody>
                       </Table>
@@ -1227,16 +1560,19 @@ export default function StockPage() {
             </Card>
           )}
         </div>
-
       </div>
 
       {/* Delete Category Confirmation Dialog */}
-      <Dialog open={!!deleteCategoryConfirm} onOpenChange={() => setDeleteCategoryConfirm(null)}>
+      <Dialog
+        open={!!deleteCategoryConfirm}
+        onOpenChange={() => setDeleteCategoryConfirm(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Delete Category</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this category? This action cannot be undone.
+              Are you sure you want to delete this category? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1248,7 +1584,10 @@ export default function StockPage() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleteCategoryConfirm && handleDeleteCategory(deleteCategoryConfirm)}
+              onClick={() =>
+                deleteCategoryConfirm &&
+                handleDeleteCategory(deleteCategoryConfirm)
+              }
               disabled={deleteCategoryMutation.isPending}
             >
               {deleteCategoryMutation.isPending ? (
@@ -1262,12 +1601,16 @@ export default function StockPage() {
       </Dialog>
 
       {/* Delete Unit Confirmation Dialog */}
-      <Dialog open={!!deleteUnitConfirm} onOpenChange={() => setDeleteUnitConfirm(null)}>
+      <Dialog
+        open={!!deleteUnitConfirm}
+        onOpenChange={() => setDeleteUnitConfirm(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Delete Unit</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this unit? This action cannot be undone.
+              Are you sure you want to delete this unit? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1279,7 +1622,9 @@ export default function StockPage() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => deleteUnitConfirm && handleDeleteUnit(deleteUnitConfirm)}
+              onClick={() =>
+                deleteUnitConfirm && handleDeleteUnit(deleteUnitConfirm)
+              }
               disabled={deleteUnitMutation.isPending}
             >
               {deleteUnitMutation.isPending ? (

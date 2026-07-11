@@ -32,16 +32,17 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
+
+# claude code (local-only — เก็บเฉพาะเครื่อง ไม่ commit ทั้งโฟลเดอร์)
+.claude/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
 
-/.bmad-core/
-/web-bundles/
-/.claude/
 /.github/

@@ -1,0 +1,4 @@
+# Normalize line endings: store and check out as LF everywhere.
+# Fixes the CRLF/LF "every line changed" noise permanently, overriding the
+# per-machine core.autocrlf setting.
+* text=auto eol=lf

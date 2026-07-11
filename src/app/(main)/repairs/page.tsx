@@ -1,9 +1,17 @@
 "use client";
 
-import { Wrench, Plus, Loader2, Eye, DollarSign, TrendingUp, Receipt, Package, CalendarIcon } from "lucide-react";
+import {
+  Wrench,
+  Plus,
+  Loader2,
+  Eye,
+  DollarSign,
+  TrendingUp,
+  Receipt,
+  Package,
+} from "lucide-react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 import { api } from "~/app/providers";
 import { formatCurrency, formatDisplayDate } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,14 +19,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "~/components/ui/CurrencyInput";
 import { SearchInput } from "~/components/ui/SearchInput";
-import { PartsAutocomplete } from "~/components/ui/PartsAutocomplete";
+import { CustomerPicker, ProductPicker } from "~/components/ui/pickers";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "~/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 // Type interfaces for tRPC query results
 interface Product {
@@ -87,15 +113,19 @@ export default function RepairsPage() {
   const [usedParts, setUsedParts] = useState<UsedPart[]>([]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [partQuantity, setPartQuantity] = useState(1);
-  const [repairDate, setRepairDate] = useState<Date | undefined>(undefined);
+  const [repairDate, setRepairDate] = useState<Date | undefined>(new Date());
 
   // tRPC queries
-  const { data: repairs = [], refetch: refetchRepairs, isLoading: repairsLoading } = api.repairs.getAll.useQuery(
-    dateRange ? { dateRange } : undefined
-  );
-  const { data: analytics, refetch: refetchAnalytics, isLoading: analyticsLoading } = api.repairs.getAnalytics.useQuery(
-    dateRange ? { dateRange } : undefined
-  );
+  const {
+    data: repairs = [],
+    refetch: refetchRepairs,
+    isLoading: repairsLoading,
+  } = api.repairs.getAll.useQuery(dateRange ? { dateRange } : undefined);
+  const {
+    data: analytics,
+    refetch: refetchAnalytics,
+    isLoading: analyticsLoading,
+  } = api.repairs.getAnalytics.useQuery(dateRange ? { dateRange } : undefined);
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
 
@@ -103,18 +133,28 @@ export default function RepairsPage() {
   const filteredRepairs = useMemo(() => {
     if (!repairsSearchTerm.trim()) return repairs;
     const searchTerm = repairsSearchTerm.toLowerCase();
-    return repairs.filter((repair: { customer: { name: string }; description: string; status?: string }) => {
-      // Search by customer name
-      const customerNameMatch = repair.customer.name.toLowerCase().includes(searchTerm);
+    return repairs.filter(
+      (repair: {
+        customer: { name: string };
+        description: string;
+        status?: string;
+      }) => {
+        // Search by customer name
+        const customerNameMatch = repair.customer.name
+          .toLowerCase()
+          .includes(searchTerm);
 
-      // Search by device/description
-      const descriptionMatch = repair.description.toLowerCase().includes(searchTerm);
+        // Search by device/description
+        const descriptionMatch = repair.description
+          .toLowerCase()
+          .includes(searchTerm);
 
-      // Search by status if available (optional field)
-      const statusMatch = repair.status?.toLowerCase().includes(searchTerm);
+        // Search by status if available (optional field)
+        const statusMatch = repair.status?.toLowerCase().includes(searchTerm);
 
-      return customerNameMatch || descriptionMatch || statusMatch;
-    });
+        return customerNameMatch || descriptionMatch || statusMatch;
+      }
+    );
   }, [repairs, repairsSearchTerm]);
 
   // tRPC mutations
@@ -137,7 +177,7 @@ export default function RepairsPage() {
     setUsedParts([]);
     setSelectedProductId("");
     setPartQuantity(1);
-    setRepairDate(undefined);
+    setRepairDate(new Date());
   };
 
   const addPartToRepair = () => {
@@ -147,7 +187,9 @@ export default function RepairsPage() {
     if (!product) return;
 
     // Check if part is already in the repair
-    const existingPartIndex = usedParts.findIndex(part => part.productId === selectedProductId);
+    const existingPartIndex = usedParts.findIndex(
+      (part) => part.productId === selectedProductId
+    );
 
     if (existingPartIndex >= 0) {
       // Update existing part quantity
@@ -155,7 +197,9 @@ export default function RepairsPage() {
       updatedParts[existingPartIndex] = {
         ...updatedParts[existingPartIndex]!,
         quantity: updatedParts[existingPartIndex]!.quantity + partQuantity,
-        partCost: (updatedParts[existingPartIndex]!.quantity + partQuantity) * product.averageCost,
+        partCost:
+          (updatedParts[existingPartIndex]!.quantity + partQuantity) *
+          product.averageCost,
       };
       setUsedParts(updatedParts);
     } else {
@@ -175,7 +219,7 @@ export default function RepairsPage() {
   };
 
   const removePartFromRepair = (productId: string) => {
-    setUsedParts(usedParts.filter(part => part.productId !== productId));
+    setUsedParts(usedParts.filter((part) => part.productId !== productId));
   };
 
   const updatePartQuantity = (productId: string, quantity: number) => {
@@ -184,7 +228,7 @@ export default function RepairsPage() {
       return;
     }
 
-    const updatedParts = usedParts.map(part => {
+    const updatedParts = usedParts.map((part) => {
       if (part.productId === productId) {
         return {
           ...part,
@@ -207,14 +251,29 @@ export default function RepairsPage() {
 
   const handleCreateRepair = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomerId || !repairDescription || totalCost <= 0 || usedParts.length === 0) return;
+    if (
+      !selectedCustomerId ||
+      !repairDescription ||
+      totalCost <= 0 ||
+      usedParts.length === 0
+    )
+      return;
 
     createRepairMutation.mutate({
       customerId: selectedCustomerId,
       description: repairDescription,
       totalCost: totalCost,
-      repairDate: repairDate ? new Date(repairDate.getFullYear(), repairDate.getMonth(), repairDate.getDate(), 12, 0, 0) : undefined,
-      usedParts: usedParts.map(part => ({
+      repairDate: repairDate
+        ? new Date(
+            repairDate.getFullYear(),
+            repairDate.getMonth(),
+            repairDate.getDate(),
+            12,
+            0,
+            0
+          )
+        : undefined,
+      usedParts: usedParts.map((part) => ({
         productId: part.productId,
         quantity: part.quantity,
       })),
@@ -237,11 +296,20 @@ export default function RepairsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Repairs</h2>
-          <p className="text-muted-foreground">Manage repair jobs and view repair history</p>
+          <p className="text-muted-foreground">
+            Manage repair jobs and view repair history
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor="date-range" className="text-sm font-medium">Filter by:</Label>
-          <Select value={dateRange || "all"} onValueChange={(value) => setDateRange(value === "all" ? undefined : value as DateRange)}>
+          <Label htmlFor="date-range" className="text-sm font-medium">
+            Filter by:
+          </Label>
+          <Select
+            value={dateRange || "all"}
+            onValueChange={(value) =>
+              setDateRange(value === "all" ? undefined : (value as DateRange))
+            }
+          >
             <SelectTrigger className="w-40" id="date-range">
               <SelectValue placeholder="All time" />
             </SelectTrigger>
@@ -268,16 +336,18 @@ export default function RepairsPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{analytics?.totalRepairs ?? 0}</div>
+              <div className="text-2xl font-bold">
+                {analytics?.totalRepairs ?? 0}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Total repair jobs
-            </p>
+            <p className="text-xs text-muted-foreground">Total repair jobs</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Repair Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Repair Revenue
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -286,16 +356,18 @@ export default function RepairsPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalRevenue ?? 0)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics?.totalRevenue ?? 0)}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Total revenue
-            </p>
+            <p className="text-xs text-muted-foreground">Total revenue</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Repair</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Average Repair
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -304,11 +376,11 @@ export default function RepairsPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(analytics?.averageRepairCost ?? 0)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics?.averageRepairCost ?? 0)}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Per repair job
-            </p>
+            <p className="text-xs text-muted-foreground">Per repair job</p>
           </CardContent>
         </Card>
         <Card>
@@ -322,16 +394,18 @@ export default function RepairsPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalLaborRevenue ?? 0)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics?.totalLaborRevenue ?? 0)}
+              </div>
             )}
-            <p className="text-xs text-muted-foreground">
-              Total labor revenue
-            </p>
+            <p className="text-xs text-muted-foreground">Total labor revenue</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Parts Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Parts Cost
+            </CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -340,7 +414,9 @@ export default function RepairsPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             ) : (
-              <div className="text-2xl font-bold">{formatCurrency(analytics?.totalPartsCost ?? 0)}</div>
+              <div className="text-2xl font-bold">
+                {formatCurrency(analytics?.totalPartsCost ?? 0)}
+              </div>
             )}
             <p className="text-xs text-muted-foreground">
               Parts used in repairs
@@ -386,14 +462,22 @@ export default function RepairsPage() {
               <TableBody>
                 {repairsLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center text-muted-foreground"
+                    >
                       <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                     </TableCell>
                   </TableRow>
                 ) : filteredRepairs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      {repairsSearchTerm ? "No repairs found matching your search." : "No repairs found. Create your first repair job to get started."}
+                    <TableCell
+                      colSpan={7}
+                      className="text-center text-muted-foreground"
+                    >
+                      {repairsSearchTerm
+                        ? "No repairs found matching your search."
+                        : "No repairs found. Create your first repair job to get started."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -403,7 +487,9 @@ export default function RepairsPage() {
                         {formatDisplayDate(repair.createdAt)}
                       </TableCell>
                       <TableCell>{repair.customer.name}</TableCell>
-                      <TableCell className="max-w-xs truncate">{repair.description}</TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {repair.description}
+                      </TableCell>
                       <TableCell>{repair.usedParts.length} part(s)</TableCell>
                       <TableCell>{formatCurrency(repair.totalCost)}</TableCell>
                       <TableCell>{formatCurrency(repair.laborCost)}</TableCell>
@@ -432,7 +518,8 @@ export default function RepairsPage() {
           <DialogHeader>
             <DialogTitle>Create New Repair Job</DialogTitle>
             <DialogDescription>
-              Select a customer, describe the job, add parts used, and set the total repair cost.
+              Select a customer, describe the job, add parts used, and set the
+              total repair cost.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateRepair}>
@@ -440,21 +527,18 @@ export default function RepairsPage() {
               {/* Basic Information Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold border-b pb-2">Basic Information</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2">
+                    Basic Information
+                  </h3>
                   <div>
                     <Label htmlFor="customer">Customer *</Label>
-                    <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select a customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.map((customer: Customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name} {customer.phone && `(${customer.phone})`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <CustomerPicker
+                      customers={customers}
+                      value={selectedCustomerId}
+                      onValueChange={setSelectedCustomerId}
+                      placeholder="Search for a customer..."
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="description">Job Description *</Label>
@@ -466,34 +550,18 @@ export default function RepairsPage() {
                       className="mt-1"
                     />
                   </div>
-                  <div>
-                    <Label>Repair Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full mt-1 justify-start text-left font-normal",
-                            !repairDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {repairDate ? format(repairDate, "PPP") : <span>Pick a date (optional)</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={repairDate}
-                          onSelect={setRepairDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                  <DatePicker
+                    id="repair-date"
+                    label="Repair Date"
+                    value={repairDate}
+                    onChange={setRepairDate}
+                    required
+                  />
                 </div>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold border-b pb-2">Cost Information</h3>
+                  <h3 className="text-lg font-semibold border-b pb-2">
+                    Cost Information
+                  </h3>
                   <div>
                     <Label htmlFor="totalCost">Total Repair Cost *</Label>
                     <CurrencyInput
@@ -514,15 +582,18 @@ export default function RepairsPage() {
 
               {/* Parts Management Section */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Parts Management</h3>
+                <h3 className="text-lg font-semibold border-b pb-2">
+                  Parts Management
+                </h3>
                 <div className="border rounded-lg p-4 space-y-4">
                   <h4 className="font-medium">Add Parts Used</h4>
                   <div className="flex gap-4 items-end">
                     <div className="flex-1">
                       <Label htmlFor="product">Product/Part</Label>
                       <div className="mt-1">
-                        <PartsAutocomplete
+                        <ProductPicker
                           products={products}
+                          variant="part"
                           value={selectedProductId}
                           onValueChange={setSelectedProductId}
                           placeholder="Search for a part..."
@@ -536,7 +607,9 @@ export default function RepairsPage() {
                         type="number"
                         min="1"
                         value={partQuantity}
-                        onChange={(e) => setPartQuantity(Number(e.target.value))}
+                        onChange={(e) =>
+                          setPartQuantity(Number(e.target.value))
+                        }
                         className="mt-1"
                       />
                     </div>
@@ -556,9 +629,14 @@ export default function RepairsPage() {
                     <h4 className="font-medium mb-4">Parts Used</h4>
                     <div className="space-y-2">
                       {usedParts.map((part) => (
-                        <div key={part.productId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div
+                          key={part.productId}
+                          className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                        >
                           <div className="flex-1">
-                            <span className="font-medium">{part.productName}</span>
+                            <span className="font-medium">
+                              {part.productName}
+                            </span>
                             <span className="text-sm text-gray-500 ml-2">
                               {formatCurrency(part.costAtTime || 0)} each
                             </span>
@@ -568,7 +646,12 @@ export default function RepairsPage() {
                               type="number"
                               min="1"
                               value={part.quantity}
-                              onChange={(e) => updatePartQuantity(part.productId, Number(e.target.value))}
+                              onChange={(e) =>
+                                updatePartQuantity(
+                                  part.productId,
+                                  Number(e.target.value)
+                                )
+                              }
                               className="w-20"
                             />
                             <span className="w-20 text-right font-medium">
@@ -578,7 +661,9 @@ export default function RepairsPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => removePartFromRepair(part.productId)}
+                              onClick={() =>
+                                removePartFromRepair(part.productId)
+                              }
                             >
                               Remove
                             </Button>
@@ -589,7 +674,9 @@ export default function RepairsPage() {
                     <div className="mt-4 pt-4 border-t">
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-medium">Parts Cost:</span>
-                        <span className="text-lg font-medium">{formatCurrency(calculatePartsCost())}</span>
+                        <span className="text-lg font-medium">
+                          {formatCurrency(calculatePartsCost())}
+                        </span>
                       </div>
                     </div>
                   </div>

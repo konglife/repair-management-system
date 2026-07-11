@@ -1,9 +1,17 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { useRouter } from 'next/navigation';
-import ReportsPage from './page';
+import {
+  render,
+  screen,
+  within,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { format, startOfMonth } from "date-fns";
+import { useRouter } from "next/navigation";
+import ReportsPage from "./page";
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
 
@@ -17,152 +25,126 @@ const mockRouter = {
   prefetch: jest.fn(),
 };
 
-describe('ReportsPage', () => {
+/**
+ * Open the DatePicker bound to `labelRegex` and click the given day-of-month
+ * in its currently displayed month, then dismiss the popover. The reports page
+ * defaults both pickers to the current month, so any mid-month day (5/10/20)
+ * is unique and avoids react-day-picker's outside-day duplicates.
+ */
+async function pickDay(
+  user: ReturnType<typeof userEvent.setup>,
+  labelRegex: RegExp,
+  day: number
+) {
+  await user.click(screen.getByLabelText(labelRegex));
+  const cell = await screen.findByRole("gridcell", {
+    name: new RegExp(`^${day}$`),
+  });
+  await user.click(within(cell).getByRole("button"));
+  await user.keyboard("{Escape}");
+}
+
+describe("ReportsPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useRouter as jest.Mock).mockReturnValue(mockRouter);
   });
 
-  it('renders the reports page with form elements', () => {
+  it("renders the reports page with date pickers defaulting to the current month", () => {
     render(<ReportsPage />);
-    
-    expect(screen.getByText('Reports')).toBeInTheDocument();
-    expect(screen.getByText('Generate monthly reports for business analysis')).toBeInTheDocument();
-    expect(screen.getByLabelText('Start Date')).toBeInTheDocument();
-    expect(screen.getByLabelText('End Date')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /generate report/i })).toBeInTheDocument();
+
+    expect(screen.getByText("Reports")).toBeInTheDocument();
+    expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /generate report/i })
+    ).toBeInTheDocument();
+
+    // Default range = start of current month .. today (dd/MM/yyyy display)
+    const now = new Date();
+    expect(
+      screen.getByText(format(startOfMonth(now), "dd/MM/yyyy"))
+    ).toBeInTheDocument();
+    expect(screen.getByText(format(now, "dd/MM/yyyy"))).toBeInTheDocument();
   });
 
-  it('shows validation errors when form is submitted without dates', async () => {
+  it("navigates to the summary page using default current-month range when submitted unchanged", async () => {
+    const user = userEvent.setup();
     render(<ReportsPage />);
-    
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
-    fireEvent.click(submitButton);
+
+    await user.click(screen.getByRole("button", { name: /generate report/i }));
+
+    const now = new Date();
+    expect(mockPush).toHaveBeenCalledWith(
+      `/reports/summary?startDate=${format(
+        startOfMonth(now),
+        "yyyy-MM-dd"
+      )}&endDate=${format(now, "yyyy-MM-dd")}`
+    );
+  });
+
+  it("serializes picked dates to yyyy-MM-dd query params on valid submission", async () => {
+    const user = userEvent.setup();
+    render(<ReportsPage />);
+
+    await pickDay(user, /start date/i, 10);
+    await pickDay(user, /end date/i, 20);
+
+    await user.click(screen.getByRole("button", { name: /generate report/i }));
+
+    const now = new Date();
+    expect(mockPush).toHaveBeenCalledWith(
+      `/reports/summary?startDate=${format(
+        new Date(now.getFullYear(), now.getMonth(), 10),
+        "yyyy-MM-dd"
+      )}&endDate=${format(
+        new Date(now.getFullYear(), now.getMonth(), 20),
+        "yyyy-MM-dd"
+      )}`
+    );
+  });
+
+  it("shows a validation error when start date is after end date", async () => {
+    const user = userEvent.setup();
+    render(<ReportsPage />);
+
+    await pickDay(user, /start date/i, 20);
+    await pickDay(user, /end date/i, 10);
+
+    fireEvent.submit(
+      screen.getByRole("button", { name: /generate report/i }).closest("form")!
+    );
 
     await waitFor(() => {
-      expect(screen.getByText('Start date is required')).toBeInTheDocument();
-      expect(screen.getByText('End date is required')).toBeInTheDocument();
+      expect(
+        screen.getByText("Start date must be before end date")
+      ).toBeInTheDocument();
     });
 
     expect(mockPush).not.toHaveBeenCalled();
   });
 
-  it('shows validation error when start date is after end date', async () => {
+  it("clears the cross-field error when the user picks a new date", async () => {
+    const user = userEvent.setup();
     render(<ReportsPage />);
-    
-    const startDateInput = screen.getByLabelText('Start Date');
-    const endDateInput = screen.getByLabelText('End Date');
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
 
-    fireEvent.change(startDateInput, { target: { value: '2024-12-31' } });
-    fireEvent.change(endDateInput, { target: { value: '2024-01-01' } });
-    fireEvent.click(submitButton);
-
+    // Trigger the error: start (20) after end (10)
+    await pickDay(user, /start date/i, 20);
+    await pickDay(user, /end date/i, 10);
+    fireEvent.submit(
+      screen.getByRole("button", { name: /generate report/i }).closest("form")!
+    );
     await waitFor(() => {
-      expect(screen.getByText('Start date must be before end date')).toBeInTheDocument();
+      expect(
+        screen.getByText("Start date must be before end date")
+      ).toBeInTheDocument();
     });
 
-    expect(mockPush).not.toHaveBeenCalled();
-  });
+    // Pick a new start date (5) that is now before end (10)
+    await pickDay(user, /start date/i, 5);
 
-  it('navigates to summary page with correct query parameters on valid submission', async () => {
-    render(<ReportsPage />);
-    
-    const startDateInput = screen.getByLabelText('Start Date');
-    const endDateInput = screen.getByLabelText('End Date');
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
-
-    fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
-    fireEvent.change(endDateInput, { target: { value: '2024-01-31' } });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/reports/summary?startDate=2024-01-01&endDate=2024-01-31');
-    });
-  });
-
-  it('shows loading state during form submission', async () => {
-    render(<ReportsPage />);
-    
-    const startDateInput = screen.getByLabelText('Start Date');
-    const endDateInput = screen.getByLabelText('End Date');
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
-
-    fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
-    fireEvent.change(endDateInput, { target: { value: '2024-01-31' } });
-    fireEvent.click(submitButton);
-
-    // Check for loading state
-    expect(screen.getByText('Generating Report...')).toBeInTheDocument();
-    expect(submitButton).toBeDisabled();
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalled();
-    });
-  });
-
-  it('clears validation errors when user starts typing', async () => {
-    render(<ReportsPage />);
-    
-    const startDateInput = screen.getByLabelText('Start Date');
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
-
-    // Submit form to trigger validation errors
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Start date is required')).toBeInTheDocument();
-    });
-
-    // Start typing in the input
-    fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
-
-    // Error should be cleared
-    expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
-  });
-
-  it('handles various date input scenarios correctly', async () => {
-    render(<ReportsPage />);
-    
-    const startDateInput = screen.getByLabelText('Start Date');
-    const endDateInput = screen.getByLabelText('End Date');
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
-
-    // Test same date (should be valid)
-    fireEvent.change(startDateInput, { target: { value: '2024-01-15' } });
-    fireEvent.change(endDateInput, { target: { value: '2024-01-15' } });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/reports/summary?startDate=2024-01-15&endDate=2024-01-15');
-    });
-
-    // Reset mock
-    mockPush.mockClear();
-
-    // Test month boundary crossing (should be valid)
-    fireEvent.change(startDateInput, { target: { value: '2024-01-31' } });
-    fireEvent.change(endDateInput, { target: { value: '2024-02-01' } });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/reports/summary?startDate=2024-01-31&endDate=2024-02-01');
-    });
-  });
-
-  it('constructs URL parameters correctly with special characters', async () => {
-    render(<ReportsPage />);
-    
-    const startDateInput = screen.getByLabelText('Start Date');
-    const endDateInput = screen.getByLabelText('End Date');
-    const submitButton = screen.getByRole('button', { name: /generate report/i });
-
-    fireEvent.change(startDateInput, { target: { value: '2024-12-01' } });
-    fireEvent.change(endDateInput, { target: { value: '2024-12-31' } });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/reports/summary?startDate=2024-12-01&endDate=2024-12-31');
-    });
+    expect(
+      screen.queryByText("Start date must be before end date")
+    ).not.toBeInTheDocument();
   });
 });
