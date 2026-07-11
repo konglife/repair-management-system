@@ -60,8 +60,17 @@ const p=process.argv[1];
 const j=JSON.parse(fs.readFileSync(p,"utf8"));
 j.profile=j.profile||{}; j.profile.exit_type="Normal"; j.profile.exited_cleanly=true;
 j.browser=j.browser||{}; j.browser.has_seen_welcome_page=true; j.browser.check_default_browser=false;
+// 5 = เปิด New Tab Page ไม่ restore เซสชันเก่า (คู่กับการลบ Sessions/ ด้านล่าง → ไม่ติดแท็บเก่า)
+j.session=j.session||{}; j.session.restore_on_startup=5;
 fs.writeFileSync(p,JSON.stringify(j));
 ' "$DST_PROFILE/Default/Preferences"
+
+# 3b. ลบ session/tab state ที่ค้าง → Chrome ไม่มีอะไรจะ restore (ปลอดภัย: auth อยู่ใน Cookies/Login Data ไม่โดน)
+echo "→ ลบ Sessions/ + tab state ค้าง (กันแท็บเก่าติดมา)..."
+rm -rf "$DST_PROFILE/Default/Sessions" 2>/dev/null || true
+rm -f "$DST_PROFILE/Default/Last Tabs" \
+      "$DST_PROFILE/Default/Current Tabs" \
+      "$DST_PROFILE/Default/Current Session" 2>/dev/null || true
 
 # 4. เปิด Chrome ด้วย debug port + flag ปิด popup
 URL="${1:-http://localhost:3000}"
