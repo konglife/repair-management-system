@@ -11,7 +11,7 @@
 > - **browser-verify ผ่าน** (localhost:3000): สลับ Today/7 Days/1 Month → ตัวเลข summary เปลี่ยนตาม · label canonical ใหม่ขึ้น · รายการเก่ากว่า 1 เดือนถูกตัดออก ✓ · ดูภาพ `docs/c6-verify-last7days.png`
 > - **`npm test`: 53 suite / 647 pass / 0 skip / 0 fail** · tsc + lint สะอาด
 > - **issue #4 ปิดแล้ว** (konglife/repair-management-system#4)
-> - **ยังไม่ได้ push/merge** · **develop = origin/develop** (`9a18e52`) · **ไม่แตะ `main`/prod**
+> - **รวมเข้า develop แล้ว + push** · `develop = 4cce701` (= origin/develop) · **browser-verify ผ่านบน dev.vercel.app** (ตัวเลขเท่า localhost) · **ยังไม่แตะ `main`/prod**
 
 ---
 
@@ -21,8 +21,8 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 ### ตัวเลือก A — release (merge develop→main = production deploy)
 
-- C6 อยู่บน `feature/c6-daterange-module` (commit `b44dbbd`) ยังไม่ merge เข้า `develop`
-- **ก่อน release**: push feature → รวมเข้า `develop` → ตรวจบน `dev.vercel.app` → merge develop→main
+- C6 รวมเข้า `develop` แล้ว (`4cce701`) · verify ผ่านบน `dev.vercel.app`
+- **ขั้นต่อไป (release)**: merge `develop`→`main` = production deploy (ผู้ใช้ตัดสินใจ)
 - ⚠️ **เตือนชัด: C6 เปลี่ยนพฤติกรรม production dashboard (ตอน release)**:
   - **"1 เดือน"**: จาก _ตั้งแต่วันที่ 1 ของเดือน_ → _ย้อนไป 1 เดือน_ (rolling) → **ตัวเลขแดชบอร์ดจะเปลี่ยน** (เช่น 15 ก.ค. เริ่มนับ 15 มิ.ย. แทน 1 ก.ค.)
   - **"7 วัน"**: ขอบเขตขยับจาก `now−7` → `startOfDay−7` (เล็กน้อย)
@@ -86,7 +86,7 @@ C6 ปิดจบสมบูรณ์. ทางเลือกถัดไป
 
 ## 📍 สถานะไฟล์
 
-- **สาขา:** `feature/c6-daterange-module` · **HEAD = `b44dbbd`** (C6 commit) บน develop @ `9a18e52` · **develop = origin/develop** (`9a18e52`, sync) · **ยังไม่ push/merge**
+- **สาขา `develop` = `4cce701`** (= origin/develop, push แล้ว) — **C6 รวมเข้า develop แล้ว** (merge ff จาก `feature/c6-daterange-module`) · สาขา feature ยังอยู่ (local + origin) · **`main` ไม่ถูกแตะ**
 - **C6 ทั้งหมด commit แล้ว** (`b44dbbd`): `dates.ts`, `dates.test.ts`, `dashboard.ts`, `repair.ts`, `sale.ts`, `dashboard/page.tsx`, `dashboard/page.test.tsx`, `TopProductsChart.tsx`, `TopProductsChart.test.tsx`, `docs/c6-daterange-design.md`
 - **scratch ห้าม commit:** `docs/1.csv`, `docs/2.csv`
 - **GitHub Issues เปิด:** `#5` C7 · `#6` C8 · ปิดแล้ว: `#3` `#4` `#7`
