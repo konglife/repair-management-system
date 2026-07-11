@@ -1,59 +1,63 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { 
-  DollarSign, 
+} from "@/components/ui/select";
+import {
+  DollarSign,
   TrendingUp,
   TrendingDown,
   Wrench,
   ShoppingCart,
   Package,
-  Target
-} from "lucide-react"
-import { api } from "~/lib/trpc"
-import { formatCurrency } from "~/lib/utils"
-import TrendGraph from "./components/TrendGraph"
-import TopProductsChart from "~/components/charts/TopProductsChart"
-import RecentActivities from "~/components/dashboard/RecentActivities"
-import LowStockAlerts from "~/components/dashboard/LowStockAlerts"
-
-type TimePeriod = 'today' | 'last7days' | 'thismonth'
+  Target,
+} from "lucide-react";
+import { api } from "~/lib/trpc";
+import { formatCurrency } from "~/lib/utils";
+import TrendGraph from "./components/TrendGraph";
+import TopProductsChart from "~/components/charts/TopProductsChart";
+import RecentActivities from "~/components/dashboard/RecentActivities";
+import LowStockAlerts from "~/components/dashboard/LowStockAlerts";
+import type { DateRange } from "~/server/dates";
 
 const timeRangeOptions = [
-  { value: 'today' as TimePeriod, label: 'Today' },
-  { value: 'last7days' as TimePeriod, label: 'Last 7 Days' },
-  { value: 'thismonth' as TimePeriod, label: 'This Month' },
-]
-
+  { value: "today" as DateRange, label: "Today" },
+  { value: "7days" as DateRange, label: "Last 7 Days" },
+  { value: "1month" as DateRange, label: "Last 1 Month" },
+];
 
 export default function Dashboard() {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('thismonth')
-  
-  const { data: summaryData, isLoading, error } = api.dashboard.getSummary.useQuery({
-    period: selectedPeriod
-  })
+  const [selectedRange, setSelectedRange] = useState<DateRange>("1month");
 
-  const handlePeriodChange = (value: TimePeriod) => {
-    setSelectedPeriod(value)
-  }
+  const {
+    data: summaryData,
+    isLoading,
+    error,
+  } = api.dashboard.getSummary.useQuery({
+    dateRange: selectedRange,
+  });
+
+  const handleRangeChange = (value: DateRange) => {
+    setSelectedRange(value);
+  };
 
   if (error) {
     return (
       <div className="p-6">
         <div className="text-center py-10">
-          <h2 className="text-lg font-semibold text-red-600">Error loading dashboard</h2>
+          <h2 className="text-lg font-semibold text-red-600">
+            Error loading dashboard
+          </h2>
           <p className="text-muted-foreground mt-2">{error.message}</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -65,8 +69,8 @@ export default function Dashboard() {
             Welcome to your repair shop management dashboard
           </p>
         </div>
-        
-        <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
+
+        <Select value={selectedRange} onValueChange={handleRangeChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select time range" />
           </SelectTrigger>
@@ -216,7 +220,13 @@ export default function Dashboard() {
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Total profit ({selectedPeriod === 'today' ? 'Today' : selectedPeriod === 'last7days' ? 'Last 7 days' : 'This month'})
+              Total profit (
+              {selectedRange === "today"
+                ? "Today"
+                : selectedRange === "7days"
+                  ? "Last 7 days"
+                  : "Last 1 month"}
+              )
             </p>
           </CardContent>
         </Card>
@@ -230,10 +240,10 @@ export default function Dashboard() {
             <TrendGraph />
           </div>
           <div className="w-full">
-            <TopProductsChart period={selectedPeriod} />
+            <TopProductsChart dateRange={selectedRange} />
           </div>
         </div>
-        
+
         {/* Right Column - Recent Activities and Low Stock Alerts */}
         <div className="space-y-6">
           <RecentActivities />
@@ -241,5 +251,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

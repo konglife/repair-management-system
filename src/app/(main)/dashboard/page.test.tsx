@@ -156,7 +156,7 @@ describe("Dashboard", () => {
       expect(
         screen.getByText("Welcome to your repair shop management dashboard")
       ).toBeInTheDocument();
-      expect(screen.getByText("This Month")).toBeInTheDocument();
+      expect(screen.getByText("Last 1 Month")).toBeInTheDocument();
     });
 
     it("calls tRPC getSummary query with correct parameters", () => {
@@ -177,7 +177,7 @@ describe("Dashboard", () => {
       );
 
       expect(mockGetSummaryQuery).toHaveBeenCalledWith({
-        period: "thismonth",
+        dateRange: "1month",
       });
     });
 
@@ -256,7 +256,7 @@ describe("Dashboard", () => {
       fireEvent.click(selectTrigger);
 
       // Options render in a portal; query by role 'option' to avoid clashing
-      // with the trigger's currently-selected value text ('This Month').
+      // with the trigger's currently-selected value text ('Last 1 Month').
       await waitFor(() => {
         expect(
           screen.getByRole("option", { name: "Today" })
@@ -265,7 +265,7 @@ describe("Dashboard", () => {
           screen.getByRole("option", { name: "Last 7 Days" })
         ).toBeInTheDocument();
         expect(
-          screen.getByRole("option", { name: "This Month" })
+          screen.getByRole("option", { name: "Last 1 Month" })
         ).toBeInTheDocument();
       });
     });
@@ -300,12 +300,12 @@ describe("Dashboard", () => {
       // Verify the API is called with new parameter
       await waitFor(() => {
         expect(mockGetSummaryQuery).toHaveBeenCalledWith({
-          period: "today",
+          dateRange: "today",
         });
       });
     });
 
-    it('defaults to "This Month" time range selection', () => {
+    it('defaults to "Last 1 Month" time range selection', () => {
       mockGetSummaryQuery.mockReturnValue({
         data: mockSummaryData,
         isLoading: false,
@@ -323,9 +323,9 @@ describe("Dashboard", () => {
       );
 
       expect(mockGetSummaryQuery).toHaveBeenCalledWith({
-        period: "thismonth",
+        dateRange: "1month",
       });
-      expect(screen.getByText("This Month")).toBeInTheDocument();
+      expect(screen.getByText("Last 1 Month")).toBeInTheDocument();
     });
 
     it("triggers new API call when time range changes", async () => {
@@ -347,7 +347,7 @@ describe("Dashboard", () => {
 
       // Initial call
       expect(mockGetSummaryQuery).toHaveBeenCalledWith({
-        period: "thismonth",
+        dateRange: "1month",
       });
 
       // Change to "Last 7 Days"
@@ -362,7 +362,7 @@ describe("Dashboard", () => {
       // Verify new API call
       await waitFor(() => {
         expect(mockGetSummaryQuery).toHaveBeenCalledWith({
-          period: "last7days",
+          dateRange: "7days",
         });
       });
     });
@@ -505,7 +505,7 @@ describe("Dashboard", () => {
       const todayData = { ...mockSummaryData, totalExpenses: 1000 };
       const thisMonthData = { ...mockSummaryData, totalExpenses: 5000 };
 
-      // Start with "This Month" data
+      // Start with "Last 1 Month" data
       mockGetSummaryQuery.mockReturnValue({
         data: thisMonthData,
         isLoading: false,
@@ -522,7 +522,7 @@ describe("Dashboard", () => {
         </TestWrapper>
       );
 
-      // Verify initial "This Month" data
+      // Verify initial "Last 1 Month" data
       expect(screen.getByText("฿5,000.00")).toBeInTheDocument();
 
       // Change to "Today" and mock new data
@@ -547,7 +547,7 @@ describe("Dashboard", () => {
       // Verify API was called with new period
       await waitFor(() => {
         expect(mockGetSummaryQuery).toHaveBeenCalledWith({
-          period: "today",
+          dateRange: "today",
         });
       });
     });

@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import type { Prisma } from "@prisma/client";
 import { validateAndDeductStock } from "~/server/stock";
+import { DATE_RANGE_VALUES, parseDateRange } from "~/server/dates";
 
 // Type interfaces for database operations
 interface Repair {
@@ -17,43 +18,14 @@ export const repairRouter = createTRPCRouter({
     .input(
       z
         .object({
-          dateRange: z.enum(["today", "7days", "1month"]).optional(),
+          dateRange: z.enum(DATE_RANGE_VALUES).optional(),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
       // Calculate date range filter
-      let dateFilter = undefined;
-      if (input?.dateRange) {
-        const now = new Date();
-        const startOfDay = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
+      const dateFilter = parseDateRange(input?.dateRange);
 
-        switch (input.dateRange) {
-          case "today":
-            dateFilter = {
-              gte: startOfDay,
-            };
-            break;
-          case "7days":
-            const sevenDaysAgo = new Date(startOfDay);
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            dateFilter = {
-              gte: sevenDaysAgo,
-            };
-            break;
-          case "1month":
-            const oneMonthAgo = new Date(startOfDay);
-            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-            dateFilter = {
-              gte: oneMonthAgo,
-            };
-            break;
-        }
-      }
       const repairs = await ctx.db.repair.findMany({
         where: dateFilter
           ? {
@@ -194,43 +166,13 @@ export const repairRouter = createTRPCRouter({
     .input(
       z
         .object({
-          dateRange: z.enum(["today", "7days", "1month"]).optional(),
+          dateRange: z.enum(DATE_RANGE_VALUES).optional(),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
       // Calculate date range filter (same logic as getAll)
-      let dateFilter = undefined;
-      if (input?.dateRange) {
-        const now = new Date();
-        const startOfDay = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
-
-        switch (input.dateRange) {
-          case "today":
-            dateFilter = {
-              gte: startOfDay,
-            };
-            break;
-          case "7days":
-            const sevenDaysAgo = new Date(startOfDay);
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            dateFilter = {
-              gte: sevenDaysAgo,
-            };
-            break;
-          case "1month":
-            const oneMonthAgo = new Date(startOfDay);
-            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-            dateFilter = {
-              gte: oneMonthAgo,
-            };
-            break;
-        }
-      }
+      const dateFilter = parseDateRange(input?.dateRange);
 
       // Get repairs data for analytics calculations
       const repairs = await ctx.db.repair.findMany({
