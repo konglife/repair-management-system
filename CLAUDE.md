@@ -96,6 +96,15 @@ Vercel แต่ละ project deploy อัตโนมัติเมื่อ
 - **ไม่มี `.env.production.local`** (ตัดทิ้งโดยเจตนา — เพื่อไม่ให้เครื่อง local เชื่อม DB production โดยไม่จำเป็น)
 - หากจำเป็นต้องทดสอบ production build จริงๆ → `vercel env pull` ชั่วคราว แล้วลบทิ้งเมื่อเสร็จ
 
+#### 📥 ข้อยกเว้น: โคลนข้อมูล prod → dev เพื่อทดสอบ (read-only)
+
+> script `npm run db:clone-prod-to-dev` (`scripts/clone-prod-to-dev.ts`) — โคลนข้อมูลจริงจาก prod ลง dev เพื่อทดสอบ UI/logic ก่อน merge main
+
+- prod DIRECT_URL เก็บใน **`.env.prod-readonly.local`** (gitignored) ใต้ชื่อ `PROD_DIRECT_URL` — เป็นข้อยกเว้นเดียวที่เครื่อง local เชื่อม prod โดยมีวัตถุประสงค์จำกัด
+- กรอกครั้งเดียว — ดู `.env.prod-readonly.example` (สลับ `vercel link` ไป prod project → pull → เปลี่ยนชื่อตัวแปรเป็น `PROD_DIRECT_URL` → สลับ link กลับ dev)
+- 🛡️ script อ่าน prod **(`findMany`/`count`)** เท่านั้น เขียนแค่ dev · abort ถ้า prod URL == dev URL · clone ทั้งหมดใน `dev.$transaction` (พัง→rollback dev) · confirm `YES` ก่อนลบ dev
+- ตรงกฎเหล็กข้อ 2 (ห้ามแตะ prod) เพราะไม่เขียน prod — แต่ยังต้องเตือนผู้ใช้ก่อนรันทุกครั้งตามปกติ
+
 ### env บน Vercel (แยก 2 project)
 
 - `repair-management-system` (prod) → DB prod
@@ -214,12 +223,14 @@ The API follows domain-driven router organization (ดู `src/server/api/root.t
 ### Commit Conventions
 
 - ทุก commit ลงท้ายด้วย trailer นี้ (เพื่อให้ github.com/claude ขึ้นเป็น contributor):
+
   ```
   Co-Authored-By: claude <81847+claude@users.noreply.github.com>
   ```
 
   - ใช้ email นี้ (GitHub-native noreply ของบัญชี `claude` ID 81847) **ห้าม** ใช้ `noreply@anthropic.com` (มีบั๊ก misattribution — ถูกคนอื่น claim)
   - commit-level attribution (avatar บนหน้า commit) ขึ้นทันทีที่ push; sidebar **Contributors** ขึ้นหลัง commit นั้นถูก merge เข้า `main`
+
 - ภาษา commit message: ไทย (ตามสไตล์ repo)
 
 ## Business Context
