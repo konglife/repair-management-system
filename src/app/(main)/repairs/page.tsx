@@ -449,6 +449,7 @@ export default function RepairsPage() {
             loading={repairsLoading}
             emptyMessage="No repairs found. Create your first repair job to get started."
             emptySearchMessage="No repairs found matching your search."
+            pagination={{ pageSize: 25 }}
           />
         </CardContent>
       </Card>

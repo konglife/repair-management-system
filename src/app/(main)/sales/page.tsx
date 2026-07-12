@@ -563,6 +563,7 @@ export default function SalesPage() {
             loading={salesLoading}
             emptyMessage="No sales found. Create your first sale to get started."
             emptySearchMessage="No sales found matching your search."
+            pagination={{ pageSize: 25 }}
           />
         </CardContent>
       </Card>

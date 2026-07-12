@@ -286,6 +286,7 @@ export default function CustomersPage() {
             loading={customersLoading}
             emptyMessage="No customers found. Add your first customer to get started."
             emptySearchMessage="No customers found matching your search."
+            pagination={{ pageSize: 25 }}
           />
         </CardContent>
       </Card>
