@@ -13,6 +13,23 @@ _ยังไม่มีการเปลี่ยนแปลง_
 
 ---
 
+## [1.2.0] — 2026-07-12
+
+Release UI ล้วน — รวม logic ค้นหา + ตารางของทุกหน้า list เป็น deep module เดียว · **ไม่มี DB migration** (ของเดิมยังใช้ได้ปกติ ข้อมูลจริงไม่กระทบ)
+
+### Added
+
+- **DataTable\<T\> module** — รวม SearchInput + filter + table + loading/empty states + optional pagination เป็น deep module (`src/components/ui/DataTable.tsx`) (#6 · `e1b76f2`)
+  - migrate call sites 7 ตาราง: customers · sales · repairs · stock (categories/units/products/purchase history)
+  - pagination = optional config (`pageSize`) พร้อม reset-on-search/clamp/hide-when-small — ยังไม่บังคับใช้ทุกหน้า (ข้อมูลร้านยังน้อย) ไว้เปิดทีหลังเมื่อข้อมูลโต
+- **`matchesAmount(amount, term)` helper** (`src/lib/utils.ts`) — รวม pattern ค้นหาเงิน (raw number + formatted currency) · ฝากไว้ใช้ตอน C9 (Money type)
+
+### Changed
+
+- คำศัพท์ module ใน `CONTEXT.md` — เพิ่ม DataTable ตาม deep-module precedent ของ C7/C6/C3
+
+---
+
 ## [1.1.0] — 2026-07-11
 
 Release แรกหลัง v1.0.0 (~11 เดือน) — รวมงาน architecture review ทุก Strong badge + แยก environment dev/prod ชัดเจน · ไม่มี DB migration (ของเดิมยังใช้ได้ปกติ)
