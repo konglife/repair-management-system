@@ -1,148 +1,71 @@
-# Handoff — C8: implement ครบ 4 ขั้น + 7 call sites → แชทใหม่ "code-review + ปิด #6"
+# Handoff — C8 ปิดจบ loop · เป้าถัดไป = release MINOR 1.2.0
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-12, session 6):** 🟢 **C8 implement ครบทุกขั้น** — `DataTable<T>` + test สร้าง + **7 call sites migrate หมด** (customers · sales · repairs · stock×4) → 671/671 tests เขียว + tsc + lint สะอาด + browser-verify ผ่านทุกตาราง · ⚠️ **ยังไม่ commit / ยังไม่ code-review / ยังไม่ release**
+> **สถานะล่าสุด (2026-07-12, session 7):** 🟢 **C8 ปิดจบ loop สมบูรณ์** — code-review ผ่าน (2 แกน) · `matchesAmount()` extract · commit `e1b76f2` บน develop + push origin/develop → Vercel preview · **issue #6 CLOSED** · 671/671 tests + tsc + lint เขียว · working tree สะอาด (เหลือแค่ scratch csv 2 ไฟล์ที่ไม่ commit ตามปกติ)
 >
-> - **C8 grilling + design จบแล้ว (session 5)** → `docs/c8-datatable-design.md` (interface + ขั้นตอน + verify ครบ)
-> - **implement (session 6 นี้):** TDD DataTable.test (21/21 แดง→เขียว) → migrate customers (47/47) → sales+repairs (88/88) → stock×4 (63/63) → full suite 671/671
-> - **dead code ตัดระหว่าง migrate:** repairs predicate `repair.status` (Repair model ไม่มี field นี้ = `undefined?.` = falsy เสมอ) + stock `?.` guards ซ้ำซ้อน
-> - ⚠️ **ยังไม่ commit** — ทำงานอยู่บน working tree ของ `develop` (design doc + handoff + journal + 7 page files + DataTable + CONTEXT.md แก้)
+> - **เป้าถัดไป = release MINOR 1.2.0** (UI ล้วน ไม่มี migration = ปลอดภัย เหมือน C7) — ดู flow ด้านล่าง
+> - C8 implement + design + grilling (session 5–6) · C8 code-review + commit + ปิด #6 (session 7 นี้)
 
 ---
 
-## 🎯 เป้าหมายเซสชันถัดไป = **`/code-review` C8 → ปิด issue #6 → (ระยะไกล) release MINOR**
+## 🎯 เป้าหมายเซสชันถัดไป = **release MINOR `1.2.0`** (หรือเลือก C4/C9)
 
-C8 implement **เสร็จทุกขั้นแล้ว** — flow ถัดไป:
+C8 ปิดจบ loop แล้ว — flow ถัดไปคือ release สิ่งที่สะสมบน develop ตั้งแต่ v1.1.0:
 
-1. **`/code-review`** — รีวิว 2 แกน (Standards + Spec) เทียบ `docs/c8-datatable-design.md` + issue #6
-   - ⚠️ ชนชื่อ built-in — ใช้ Matt's `/code-review` (ดู `.claude/skills/README.md`) หรือ built-in `/code-review` แล้วแต่ที่ตั้งไว้
-2. แก้ findings (ถ้ามี) → ทำให้เขียว
-3. **commit** (บน `develop`) — ยังไม่ push/main
-4. ปิด **issue #6** (`gh issue close 6`)
-5. (ระยะไกล) release MINOR (`1.2.0`) ตามกฎ versioning ใน `CLAUDE.md`
+1. **ตรวจ preview** บน Vercel dev project (`repair-management-system-dev`) ก่อน release — C8 + งานอื่นๆ ที่สะสม
+2. **release MINOR `1.2.0`** ตามกฎ versioning ใน `CLAUDE.md` (ดู flow ด้านล่าง) — UI ล้วน ปลอดภัย
+3. (ระยะไกล) เลือก candidate ถัดไป: **C4** (financial aggregation — ทบทวนจำเป็นไหมก่อน) หรือ **C9** (Money type — ⚠️ จะแตะ DB migration)
 
-> ⚠️ **C8 = UI ล้วน ไม่มี DB migration** → release ปลอดภัย (เหมือน C7) · แตะแค่ UI layer
+### 🏷️ Flow release (ทำบน develop → merge main → tag → push)
 
----
+> กฎเต็ม → `CLAUDE.md` section 🏷️ Versioning · ห้ามแก้บน main ตรงๆ
 
-## 🧨 สถานะ working tree (สำคัญ — ยังไม่ commit)
+1. แก้บน `develop` (3 ไฟล์):
+   - `package.json` → bump `version` `1.1.0` → `1.2.0`
+   - `CHANGELOG.md` → `[Unreleased]` → `[1.2.0] - วันที่` พร้อมสรุปงาน (C8 DataTable + matchesAmount + งานอื่นที่สะสม) + เปิด `[Unreleased]` ใหม่ว่างด้านบน
+   - `src/components/layout/sidebar.tsx` → เลข version label ต้องตรง `package.json` (**ห้ามปล่อยให้ label โกหก**)
+2. commit บน develop → `git merge --no-ff develop` ลง `main`
+3. `git tag v1.2.0` ที่ merge commit บน main
+4. push: `develop` + `main` + tag (push main/tag **โดน hook → ผู้ใช้กดเอง**)
+5. `gh release create v1.2.0 --notes "..."` บน GitHub
 
-**ไฟล์ใหม่/แก้ (ทั้งหมด C8):**
-
-- `src/components/ui/DataTable.tsx` (ใหม่ — deep module)
-- `src/components/ui/DataTable.test.tsx` (ใหม่ — 21 tests)
-- `src/app/(main)/customers/page.tsx` (migrate)
-- `src/app/(main)/sales/page.tsx` (migrate)
-- `src/app/(main)/repairs/page.tsx` (migrate)
-- `src/app/(main)/stock/page.tsx` (migrate × 4 tables)
-- `CONTEXT.md` (+ DataTable module term)
-- `docs/HANDOFF.md` (ไฟล์นี้, session 6)
-- `docs/journal/2026-07-12.md` (session 5+6)
-- `docs/c8-datatable-design.md` (จาก session 5 — ยัง untracked)
-
-**Untracked scratch ห้าม commit:** `docs/1.csv`, `docs/2.csv`
+> ⚠️ release = "release housekeeping" → ทำบน develop ตรงๆ ได้ ไม่ต้องแตกสาขา feature/
 
 ---
 
-## 🧭 Matt Pocock skills — flow ปัจจุบัน
+## 💎 สรุปงานที่สะสมรอ release (ตั้งแต่ v1.1.0)
 
-> 24 skills ใน `.claude/skills/` (local-only ไม่ commit) · รายการ + วิธี re-sync → `.claude/skills/README.md`
-> **user** = พิมพ์ `/<ชื่อ>` เท่านั้น · **model** = agent หยิบใช้เองได้
-
-**ตำแหน่ง C8 ใน flow:**
-
-```
-/to-prd → /to-issues → /triage → /grill-me(/grilling) → [design doc] → /implement → /code-review → /handoff
-                                          ✅ (s5)         ✅ (s5)        ✅ (s6)      🔜 เริ่มที่นี่   ✅ (s6)
-```
-
-| skill          | ทำอะไร                         | สถานะ                                   |
-| -------------- | ------------------------------ | --------------------------------------- |
-| `/grilling`    | สัมภาษณ์ดีไซน์หนักๆ            | ✅ จบ (s5)                              |
-| `/implement`   | implement ตามแผนที่ grill ได้  | ✅ จบ (s6 — 4 ขั้นครบ)                  |
-| `/tdd`         | red-green-refactor             | ✅ ใช้ข้างใน implement                  |
-| `/code-review` | รีวิว Standards + Spec (2 แกน) | 🔜 **เริ่มที่นี่** · ⚠️ ชนชื่อ built-in |
-| `/handoff`     | อัดเซสชันส่งต่อ                | ✅ ใช้อยู่ (เอกสารนี้)                  |
+- **C8 — DataTable module** _(session 5–7)_ — `DataTable<T>` deep module + 7 call sites migrate + `matchesAmount()` helper · `e1b76f2` · issue #6 CLOSED
+- _(ดู `git log v1.1.0..develop --oneline` สำหรับ commit อื่นๆ ที่อาจสะสมถึงจะ release)_
 
 ---
 
-## 🗺️ แผนหลัก C1–C10 + ตำแหน่งปัจจุจบ
+## 🧨 สถานะ working tree (สะอาด)
+
+- **develop = `e1b76f2`** (= origin/develop) — ทุกอย่าง commit หมดแล้ว
+- **เหลือ untracked:** `docs/1.csv`, `docs/2.csv` — scratch ห้าม commit (ตามปกติ)
+
+---
+
+## 🗺️ แผนหลัก C1–C10 + ตำแหน่งปัจจุบัน
 
 > แผนหลัก = `docs/architecture-review-20260705-th.html` (badge = ความสำคัญ)
 
-| C       | ชื่อ                       | badge                       | สถานะ                                                             |
-| ------- | -------------------------- | --------------------------- | ----------------------------------------------------------------- |
-| **C1**  | EntityPicker               | 🟢 Strong                   | ✅ ทำแล้ว (`7f498c9`) · อยู่ใน v1.1.0                             |
-| **C2**  | Repair pricing             | 🟡 Worth exploring          | ⚙️ จบด้วย ADR-0001 (คง residual model ไม่แก้โค้ด)                 |
-| **C3**  | Stock deduction            | 🟢 Strong                   | ✅ ทำแล้ว (#3) · อยู่ใน v1.1.0                                    |
-| **C4**  | Financial aggregation      | 🟢 Strong                   | ❌ **ค้าง** (คู่ C2 · ยังไม่มี issue · ต้องทบทวนจำเป็นไหม)        |
-| **C5**  | Auth seam                  | 🟢 Strong                   | ✅ ทำแล้ว (`b262c18`) · อยู่ใน v1.1.0                             |
-| **C6**  | Date-range                 | 🟢 Strong                   | ✅ ทำแล้ว (#4) · อยู่ใน v1.1.0                                    |
-| **C7**  | Date input (DatePicker)    | 🟢 Strong                   | ✅ ทำแล้ว (#5) · อยู่ใน v1.1.0                                    |
-| **C8**  | List + search + pagination | 🟡 Worth exploring          | 🔨 **implement เสร็จ (ยังไม่ commit/review)** · issue #6 เปิดอยู่ |
-| **C9**  | Money type                 | 🟡 Worth exploring          | ⬜ ยังไม่เริ่ม · ยังไม่มี issue · ⚠️ แตะ DB (ชั้น migration)      |
-| **C10** | แยกหน้า stock 1295 บรรทัด  | ⚪ Speculative / in-process | ⬜ ยังไม่เริ่ม · ยังไม่มี issue (ลำดับต่ำสุด)                     |
-
----
-
-## 💎 สรุป C8 งานที่ทำ (session 6) — อ่าน `docs/c8-datatable-design.md` ประกอบ
-
-### DataTable<T> (deep module)
-
-`src/components/ui/DataTable.tsx` — ครอง: SearchInput (uncontrolled term state) + empty short-circuit + `.filter(predicate)` + Table render + loading/empty states + optional pagination (reset/clamp/hide).
-
-```tsx
-interface Column<T> {
-  header;
-  cell: (row) => ReactNode;
-  className?;
-  headerClassName?;
-}
-interface DataTableProps<T extends { id: string }> {
-  rows;
-  columns;
-  search?: { placeholder?; predicate: (row, term) => boolean };
-  loading?;
-  emptyMessage?;
-  emptySearchMessage?;
-  pagination?: { pageSize };
-}
-```
-
-### ผล verify แต่ละขั้น
-
-| ขั้น | งาน                    | test                     | browser                                            |
-| ---- | ---------------------- | ------------------------ | -------------------------------------------------- |
-| 1    | DataTable + test (TDD) | 21/21                    | —                                                  |
-| 2    | customers              | 47/47                    | ✅ search + edit dialog                            |
-| 3    | sales + repairs        | 88/88                    | ✅ nested `customer.name` + format/currency search |
-| 4    | stock ×4               | 63/63                    | ✅ inline edit + conditional column + pre-filter   |
-| —    | **ทั้งระบบ**           | **671/671 · tsc · lint** | —                                                  |
-
-### สิ่งที่ validate ได้จากการ migrate (design ถูกต้อง)
-
-- **Q2 cell render fn** รองรับ cell variety ทั้งหมดจริง: nested field · format date · currency · truncate · null fallback · **inline edit (`<form>`/`<select>`/`<CurrencyInput>` ใน cell)** · action button
-- **Q3 predicate fn** (ไม่ใช่ keys) จำเป็นจริง: nested `customer.name` + formatted date/currency ทำด้วย keys ไม่ได้
-- **purchase history edge case**: conditional column (5↔4) + pre-filter base rows (product/all) + 3 empty messages → map เป็น `columns` array สลับ + `emptyMessage` conditional + `emptySearchMessage` ได้พอดี
-- **pagination = optional ทุกหน้า** (omit = show all = current behavior เป๊ะ ไม่ regress)
-
-### การตัดสินใจเล็กน้อยที่ทำระหว่าง migrate (จดไว้ review)
-
-- **reorder UI เล็กน้อยใน stock**: create form + "Filter by product" select ย้ายไปไว้ **ก่อน** `<DataTable>` (เดิมอยู่ระหว่าง SearchInput กับ Table) — เพราะ DataTable ครอง search+table ไว้ด้วยกัน · ไม่ใช่ regress (table appearance เหมือนเดิม)
-- **repairs placeholder แก้** "Search by customer name, device, or status..." → "Search by customer name or description..." (เดิมโกหก — ค้น status ไม่ได้เพราะ model ไม่มี field)
-- **repairs/stock predicate ตัด dead `?.` guard** ที่ไม่จำเป็น (type-safe อยู่แล้วใน row type)
-
----
-
-## ✅ สถานะงานที่จบแล้ว
-
-- **C8 implement** _(session 6)_ — DataTable + 7 call sites · 671/671 + browser · **พร้อม code-review**
-- **C8 design + grilling** _(session 5)_ — `docs/c8-datatable-design.md` + CONTEXT module term
-- **release v1.1.0** _(session 4)_ — merge develop→main `742513e` + tag + GitHub Release + bump 1.1.0 + กฎ versioning
-- **C7 (#5)** `2558599` · **C6 (#4)** `b44dbbd` · **#7** `dfb2d6c` · **C3 (#3)** · **C1** `7f498c9` · **C5** `b262c18` — ทั้งหมดอยู่ใน v1.1.0
+| C       | ชื่อ                       | badge                       | สถานะ                                                        |
+| ------- | -------------------------- | --------------------------- | ------------------------------------------------------------ |
+| **C1**  | EntityPicker               | 🟢 Strong                   | ✅ ทำแล้ว (`7f498c9`) · อยู่ใน v1.1.0                        |
+| **C2**  | Repair pricing             | 🟡 Worth exploring          | ⚙️ จบด้วย ADR-0001 (คง residual model ไม่แก้โค้ด)            |
+| **C3**  | Stock deduction            | 🟢 Strong                   | ✅ ทำแล้ว (#3) · อยู่ใน v1.1.0                               |
+| **C4**  | Financial aggregation      | 🟢 Strong                   | ❌ **ค้าง** (คู่ C2 · ยังไม่มี issue · ต้องทบทวนจำเป็นไหม)   |
+| **C5**  | Auth seam                  | 🟢 Strong                   | ✅ ทำแล้ว (`b262c18`) · อยู่ใน v1.1.0                        |
+| **C6**  | Date-range                 | 🟢 Strong                   | ✅ ทำแล้ว (#4) · อยู่ใน v1.1.0                               |
+| **C7**  | Date input (DatePicker)    | 🟢 Strong                   | ✅ ทำแล้ว (#5) · อยู่ใน v1.1.0                               |
+| **C8**  | List + search + pagination | 🟡 Worth exploring          | ✅ **เสร็จ + ปิด #6** (`e1b76f2`) · รอ release 1.2.0         |
+| **C9**  | Money type                 | 🟡 Worth exploring          | ⬜ ยังไม่เริ่ม · ยังไม่มี issue · ⚠️ แตะ DB (ชั้น migration) |
+| **C10** | แยกหน้า stock 1295 บรรทัด  | ⚪ Speculative / in-process | ⬜ ยังไม่เริ่ม · ยังไม่มี issue (ลำดับต่ำสุด)                |
 
 ---
 
@@ -150,8 +73,19 @@ interface DataTableProps<T extends { id: string }> {
 
 - **ADR-0001: Repair pricing = residual margin model** — `laborCost` semantic = margin ไม่ใช่ค่าแรง · `docs/adr/0001-repair-pricing-residual-margin.md`
 - **กฎ versioning** → `CLAUDE.md` section 🏷️ Versioning (release = แก้ package.json + CHANGELOG + sidebar บน develop → merge → tag → `gh release create`)
-- **C8 = UI ล้วน ไม่มี migration** → release ปลอดภัย · ⚠️ **C9 (Float/money)** = จุดเดียวที่จะแตะ DB จริง
+- **C8 = UI ล้วน ไม่มี migration** → release ปลอดภัย · ⚠️ **C9 (Float/money)** = จุดเดียวที่จะแตะ DB จริง (MAJOR candidate)
 - **C8 design decisions** → `docs/c8-datatable-design.md` (8 ข้อ Q1–Q8)
+- **`matchesAmount(amount, term)` helper** อยู่ใน `src/lib/utils.ts` — รวม pattern ค้นหาเงิน (raw number + formatted currency) · ไว้ใช้ตอน C9 (Money type)
+
+---
+
+## ✅ สถานะงานที่จบแล้ว
+
+- **C8 code-review + commit + ปิด #6** _(session 7)_ — `e1b76f2` · matchesAmount extract + doc fix · 2-axis review ผ่าน
+- **C8 implement** _(session 6)_ — DataTable + 7 call sites · 671/671 + browser
+- **C8 design + grilling** _(session 5)_ — `docs/c8-datatable-design.md` + CONTEXT module term
+- **release v1.1.0** _(session 4)_ — merge develop→main `742513e` + tag + GitHub Release + bump 1.1.0 + กฎ versioning
+- **C7 (#5)** `2558599` · **C6 (#4)** `b44dbbd` · **#7** `dfb2d6c` · **C3 (#3)** · **C1** `7f498c9` · **C5** `b262c18` — ทั้งหมดอยู่ใน v1.1.0
 
 ---
 
@@ -164,11 +98,11 @@ interface DataTableProps<T extends { id: string }> {
 
 ## 📍 สถานะ git
 
-- **สาขาปัจจุบัน = `develop`** (= `c2371c3` = origin/develop)
+- **สาขาปัจจุบัน = `develop`** (= `e1b76f2` = origin/develop)
 - **`main` = `742513e`** (= origin/main = tag `v1.1.0` = GitHub Release Latest)
 - **tag บน GitHub:** `v1.0.0`, `v1.1.0`
-- **working tree:** ไฟล์ C8 ทั้งหมด (ดู section "สถานะ working tree" ด้านบน) — **uncommitted**
-- **GitHub Issues เปิด:** `#6` C8 (implement เสร็จ รอ code-review → close) · ปิดแล้ว: `#3` `#4` `#5` `#7`
+- **working tree:** สะอาด (เหลือแค่ scratch csv)
+- **GitHub Issues เปิด:** ไม่มี · ปิดแล้ว: `#3` `#4` `#5` `#6` `#7`
 
 ---
 
@@ -178,7 +112,7 @@ interface DataTableProps<T extends { id: string }> {
 
 - launcher: `bash scripts/chrome-debug.sh [url]` (copy session จาก profile จริง → debug profile → port 9222)
 - ⚠️ ถ้า Chrome debug ปิด → รัน launcher ใหม่ · กฎ: เปิดครั้งเดียว ใช้ยาวทั้ง session
-- dev server: `npm run dev` (CLAUDE.md บอกรันอยู่แล้ว — **แต่ session นี้ปิดอยู่จริง ต้อง start เอง** · บทเรียน: verify จริงก่อน อย่าเชื่อ doc ตาบอด)
+- dev server: `npm run dev` (CLAUDE.md บอกรันอยู่แล้ว — **แต่ session ใหม่อาจปิดอยู่จริง ต้อง start เอง** · บทเรียน: verify จริงก่อน อย่าเชื่อ doc ตาบอด)
 
 ---
 
@@ -187,12 +121,11 @@ interface DataTableProps<T extends { id: string }> {
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: C8 implement ครบ 4 ขั้น + 7 call sites — 671/671 tests เขียว + browser-verify ผ่าน
-- develop = c2371c3 · งานทั้งหมดยัง uncommitted บน working tree · ไม่มี DB migration
+สถานะ: C8 ปิดจบ loop — code-review ผ่าน · commit e1b76f2 บน develop + push · issue #6 CLOSED · 671/671 เขียว
+- develop = e1b76f2 · working tree สะอาด · ไม่มี DB migration
 
-เป้าหมายถัดไป: /code-review C8 (2 แกน Standards+Spec เทียบ docs/c8-datatable-design.md + issue #6)
-- รีวิวแล้ว → แก้ findings → commit บน develop → ปิด #6
-- (ระยะไกล) release MINOR 1.2.0
+เป้าหมายถัดไป: release MINOR 1.2.0 (UI ล้วน ปลอดภัย) — แก้ package.json + CHANGELOG + sidebar → merge main → tag → push → gh release create
+- (ระยะไกล) เลือก candidate ถัดไป: C4 (ทบทวน) หรือ C9 (⚠️ แตะ DB)
 ```
 
 ---
@@ -202,7 +135,7 @@ interface DataTableProps<T extends { id: string }> {
 |                                                         | ที่อยู่                                                     |
 | ------------------------------------------------------- | ----------------------------------------------------------- |
 | Domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog   | `CONTEXT.md`                                                |
-| **กฎ versioning**                                       | `CLAUDE.md` → section 🏷️ Versioning                         |
+| **กฎ versioning + flow release**                        | `CLAUDE.md` → section 🏷️ Versioning                         |
 | **C8 design doc** (interface + 8 ข้อ decision + verify) | `docs/c8-datatable-design.md`                               |
 | **C7/C6/C3 design doc** (deep-module precedent)         | `docs/c{7,6,3}-*.md`                                        |
 | หนี้เทส pattern 11 ข้อ + root cause                     | `docs/test-debt-fix-plan.md`                                |
