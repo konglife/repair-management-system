@@ -104,6 +104,7 @@ Vercel แต่ละ project deploy อัตโนมัติเมื่อ
 - กรอกครั้งเดียว — ดู `.env.prod-readonly.example` (สลับ `vercel link` ไป prod project → pull → เปลี่ยนชื่อตัวแปรเป็น `PROD_DIRECT_URL` → สลับ link กลับ dev)
 - 🛡️ script อ่าน prod **(`findMany`/`count`)** เท่านั้น เขียนแค่ dev · abort ถ้า prod URL == dev URL · clone ทั้งหมดใน `dev.$transaction` (พัง→rollback dev) · confirm `YES` ก่อนลบ dev
 - ตรงกฎเหล็กข้อ 2 (ห้ามแตะ prod) เพราะไม่เขียน prod — แต่ยังต้องเตือนผู้ใช้ก่อนรันทุกครั้งตามปกติ
+- 🔁 **โคลนซ้ำในอนาคต** = แค่ `npm run db:clone-prod-to-dev` (prod URL อยู่ใน `.env.prod-readonly.local` แล้ว ไม่ต้องกรอกใหม่ ไม่ต้องสลับ `vercel link` อีก) — ใช้ทุกครั้งที่อยาก sync ข้อมูลล่าสุดจากร้านมาทดสอบ
 
 ### env บน Vercel (แยก 2 project)
 

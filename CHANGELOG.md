@@ -13,6 +13,22 @@ _ยังไม่มีการเปลี่ยนแปลง_
 
 ---
 
+## [1.2.1] — 2026-07-12
+
+Patch — เปิดใช้ pagination ที่สร้างไว้ใน 1.2.0 (UI ล้วน ไม่มี DB migration · ข้อมูลจริงไม่กระทบ) + เครื่องมือโคลนข้อมูลทดสอบ (ภายใน)
+
+### Changed
+
+- **เปิด pagination ทุกหน้า list** (pageSize 25 แถว/หน้า) — 7 ตาราง: customers · sales · repairs · stock (categories/units/products/purchase history) · เปิดใช้ความสามารถที่สร้างไว้ใน 1.2.0 ตอนข้อมูลร้านยังน้อย ตอนนี้ข้อมูลโตพอแล้ว (`7aa083f`)
+  - reset หน้า 1 ตอนค้นหา · clamp ตอน filtered ลด · ซ่อนปุ่มอัตโนมัติเมื่อข้อมูล ≤ 25
+
+### Internal — เครื่องมือพัฒนา
+
+- **clone script** `npm run db:clone-prod-to-dev` — โคลนข้อมูลจริง prod → dev เพื่อทดสอบ UI/logic ก่อน merge main (read-only จาก prod, guard กันทำลาย prod) (`db387a9` · `e5fd4b1`)
+- prod DIRECT_URL เก็บใน `.env.prod-readonly.local` (gitignored) — ข้อยกเว้นเดียวที่เครื่อง local เชื่อม prod แบบจำกัดวัตถุประสงค์ (อ่านอย่างเดียว) บันทึกไว้ใน `CLAUDE.md`
+
+---
+
 ## [1.2.0] — 2026-07-12
 
 Release UI ล้วน — รวม logic ค้นหา + ตารางของทุกหน้า list เป็น deep module เดียว · **ไม่มี DB migration** (ของเดิมยังใช้ได้ปกติ ข้อมูลจริงไม่กระทบ)
