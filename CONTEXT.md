@@ -46,6 +46,10 @@ _Avoid_: สร้าง picker ใหม่เฉพาะที่ — ใช�
 ตัวเลือกวันที่เดียว (single date) รวม Popover+Calendar+format+label+a11y ไว้ในตัว — value `Date | undefined` เข้าออก, display ผูกตาย `dd/MM/yyyy` (ตรงตาราง). ใช้แทน inline Popover block ซ้ำใน sales/repairs/stock + raw `<input type="date">` ใน Reports. ปิด pain "ทุกหน้าดูไม่เหมือนกัน" + fix drift a11y (label/htmlFor). ดู `docs/c7-datepicker-design.md`
 _Avoid_: สร้าง date picker inline ใหม่เฉพาะที่ — ใช้ `<DatePicker>` แทน (อยากได้ช่วง = ใช้ 2 ตัว, อย่าทำ range component)
 
+**DataTable**:
+ตาราง list แบบ generic `<T extends { id: string }>` ที่รวม search + filter + table render + loading/empty states + optional pagination ไว้ในตัว — caller ส่งแค่ `rows + columns + predicate`. ใช้แทน pattern ซ้ำ (~70 บรรทัด/ตาราง × 7 ตาราง: customers/sales/repairs/stock×4) ที่เขียน `useState`+`useMemo`+`.filter`+`<SearchInput>`+`<Table>`+states ของตัวเอง. `cell` เป็น render fn (รองรับ nested field / format date / currency / inline edit / action button ได้หมด). pagination = optional (omit = show all). ดู `docs/c8-datatable-design.md`
+_Avoid_: เขียน search+filter+table block เองในหน้าใหม่ — ใช้ `<DataTable>` แทน (column-def + predicate เท่านั้นที่ส่งเข้า)
+
 ## รูปร่างธุรกิจจริง (จากข้อมูล production)
 
 > ข้อมูลจาก prod aggregate (สค 2025 – กค 2026, ~11 เดือน) — ยืนยันแล้วไม่อ่อนไหว ร้านเล็กในหมู่บ้าน

@@ -1,27 +1,52 @@
-# Handoff — C7 จบครบ + push develop → แชทใหม่ "คุยเลือกทางถัดไป"
+# Handoff — C8 ปิดจบ loop · เป้าถัดไป = release MINOR 1.2.0
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-11, หลัง session 3 + คุยต่อ):** 🟢 **C7 จบครบ + push develop + ลด feature/c7 → ผู้ใช้อยาก "คุยเลือกทาง" ในแชทใหม่ (ไม่ใช่ implement ทันที)**
+> **สถานะล่าสุด (2026-07-12, session 7):** 🟢 **C8 ปิดจบ loop สมบูรณ์** — code-review ผ่าน (2 แกน) · `matchesAmount()` extract · commit `e1b76f2` บน develop + push origin/develop → Vercel preview · **issue #6 CLOSED** · 671/671 tests + tsc + lint เขียว · working tree สะอาด (เหลือแค่ scratch csv 2 ไฟล์ที่ไม่ commit ตามปกติ)
 >
-> - **C7 ทำครบ 8 ขั้น:** `<DatePicker>` + test → migrate 4 หน้า → reports test ใหม่ → `npm test` 650/650 + tsc + lint → browser-verify 4 หน้า → review 0 blocker
-> - **commit/push:** feat `2558599` + docs → **merge develop + push origin** → develop = `60f8492` (= origin) · `feature/c7` ลบแล้ว
-> - **`main` ไม่ถูกแตะ** · prod ที่ร้านยังเดิม · ไม่มี DB migration (value Date เหมือนเดิม, router schema เดิม, URL contract เดิม)
-> - **คุยกันจบในแชทนี้ (บันทึกไว้ใน doc):** แผนหลัก C1–C10 เต็ม + ตำแหน่งปัจจุบัน + ความรู้ Liquid Glass trade-off (ด้านล่าง)
+> - **เป้าถัดไป = release MINOR 1.2.0** (UI ล้วน ไม่มี migration = ปลอดภัย เหมือน C7) — ดู flow ด้านล่าง
+> - C8 implement + design + grilling (session 5–6) · C8 code-review + commit + ปิด #6 (session 7 นี้)
 
 ---
 
-## 🎯 เป้าหมายเซสชันถัดไป = **คุยกันเพื่อเลือกทางถัดไป** (ผู้ใช้บอก "อยากพูดคุยต่อ")
+## 🎯 เป้าหมายเซสชันถัดไป = **release MINOR `1.2.0`** (หรือเลือก C4/C9)
 
-⚠️ **อย่าเริ่ม implement ทันที** — เริ่มจากคุย/ตัดสินใจเลือกทางก่อน ตัวเลือก:
+C8 ปิดจบ loop แล้ว — flow ถัดไปคือ release สิ่งที่สะสมบน develop ตั้งแต่ v1.1.0:
 
-1. **C8 (#6 DataTable)** — UI ล้วน (ปลอดภัย ไม่แตะ DB) · มี issue เปิดอยู่พร้อมทำ · ใช้ `/grilling` เริ่มเหมือน C7
-2. **C9 (Float/money)** ⚠️ — **จุดเดียวที่จะแตะ DB จริง** (ชั้น migration) · ยังไม่มี issue ต้อง triage · มีชั้นปลอดภัย (Money module อย่างเดียว ไม่แตะ DB) → ดู "C9 คืออะไร" ด้านล่าง
-3. **C4 (financial aggregation)** — Strong badge ตัวเดียวที่ค้าง · "เข้าคู่กับ C2" ซึ่ง C2 ปิดด้วย ADR ไปแล้ว → **ต้องทบทวนว่ายังจำเป็นไหม** ก่อนทำ
-4. **release develop→main** — develop = superset ของ main (merge สะอาด) · ไม่มี migration ใหม่ (DB ไม่กระทบ) · ⚠️ ตัวเลข "1 เดือน" ของ dashboard จะเปลี่ยน (rolling แทน since-day-1) = intent ของ #4 · ผู้ใช้ตัดสินใจ · เป็นจังหวะเหมาะเพราะทำครบแทบทุก Strong แล้ว
-5. (ลำดับต่ำสุด) **C10** — Speculative · ยังไม่มี issue · ไม่รีบ
+1. **ตรวจ preview** บน Vercel dev project (`repair-management-system-dev`) ก่อน release — C8 + งานอื่นๆ ที่สะสม
+2. **release MINOR `1.2.0`** ตามกฎ versioning ใน `CLAUDE.md` (ดู flow ด้านล่าง) — UI ล้วน ปลอดภัย
+3. (ระยะไกล) เลือก candidate ถัดไป: **C4** (financial aggregation — ทบทวนจำเป็นไหมก่อน) หรือ **C9** (Money type — ⚠️ จะแตะ DB migration)
+
+### 🏷️ Flow release (ทำบน develop → merge main → tag → push)
+
+> กฎเต็ม → `CLAUDE.md` section 🏷️ Versioning · ห้ามแก้บน main ตรงๆ
+
+1. แก้บน `develop` (3 ไฟล์):
+   - `package.json` → bump `version` `1.1.0` → `1.2.0`
+   - `CHANGELOG.md` → `[Unreleased]` → `[1.2.0] - วันที่` พร้อมสรุปงาน (C8 DataTable + matchesAmount + งานอื่นที่สะสม) + เปิด `[Unreleased]` ใหม่ว่างด้านบน
+   - `src/components/layout/sidebar.tsx` → เลข version label ต้องตรง `package.json` (**ห้ามปล่อยให้ label โกหก**)
+2. commit บน develop → `git merge --no-ff develop` ลง `main`
+3. `git tag v1.2.0` ที่ merge commit บน main
+4. push: `develop` + `main` + tag (push main/tag **โดน hook → ผู้ใช้กดเอง**)
+5. `gh release create v1.2.0 --notes "..."` บน GitHub
+
+> ⚠️ release = "release housekeeping" → ทำบน develop ตรงๆ ได้ ไม่ต้องแตกสาขา feature/
+
+---
+
+## 💎 สรุปงานที่สะสมรอ release (ตั้งแต่ v1.1.0)
+
+- **C8 — DataTable module** _(session 5–7)_ — `DataTable<T>` deep module + 7 call sites migrate + `matchesAmount()` helper · `e1b76f2` · issue #6 CLOSED
+- _(ดู `git log v1.1.0..develop --oneline` สำหรับ commit อื่นๆ ที่อาจสะสมถึงจะ release)_
+
+---
+
+## 🧨 สถานะ working tree (สะอาด)
+
+- **develop = `e1b76f2`** (= origin/develop) — ทุกอย่าง commit หมดแล้ว
+- **เหลือ untracked:** `docs/1.csv`, `docs/2.csv` — scratch ห้าม commit (ตามปกติ)
 
 ---
 
@@ -31,95 +56,63 @@
 
 | C       | ชื่อ                       | badge                       | สถานะ                                                        |
 | ------- | -------------------------- | --------------------------- | ------------------------------------------------------------ |
-| **C1**  | EntityPicker               | 🟢 Strong                   | ✅ ทำแล้ว (`7f498c9`)                                        |
+| **C1**  | EntityPicker               | 🟢 Strong                   | ✅ ทำแล้ว (`7f498c9`) · อยู่ใน v1.1.0                        |
 | **C2**  | Repair pricing             | 🟡 Worth exploring          | ⚙️ จบด้วย ADR-0001 (คง residual model ไม่แก้โค้ด)            |
-| **C3**  | Stock deduction            | 🟢 Strong                   | ✅ ทำแล้ว (#3)                                               |
+| **C3**  | Stock deduction            | 🟢 Strong                   | ✅ ทำแล้ว (#3) · อยู่ใน v1.1.0                               |
 | **C4**  | Financial aggregation      | 🟢 Strong                   | ❌ **ค้าง** (คู่ C2 · ยังไม่มี issue · ต้องทบทวนจำเป็นไหม)   |
-| **C5**  | Auth seam                  | 🟢 Strong                   | ✅ ทำแล้ว (`b262c18`)                                        |
-| **C6**  | Date-range                 | 🟢 Strong                   | ✅ ทำแล้ว (#4)                                               |
-| **C7**  | Date input (DatePicker)    | 🟢 Strong                   | ✅ ทำแล้ว (#5) · _วันนี้_                                    |
-| **C8**  | List + search + pagination | 🟡 Worth exploring          | 🟡 **เปิด issue #6 ยังไม่ทำ**                                |
+| **C5**  | Auth seam                  | 🟢 Strong                   | ✅ ทำแล้ว (`b262c18`) · อยู่ใน v1.1.0                        |
+| **C6**  | Date-range                 | 🟢 Strong                   | ✅ ทำแล้ว (#4) · อยู่ใน v1.1.0                               |
+| **C7**  | Date input (DatePicker)    | 🟢 Strong                   | ✅ ทำแล้ว (#5) · อยู่ใน v1.1.0                               |
+| **C8**  | List + search + pagination | 🟡 Worth exploring          | ✅ **เสร็จ + ปิด #6** (`e1b76f2`) · รอ release 1.2.0         |
 | **C9**  | Money type                 | 🟡 Worth exploring          | ⬜ ยังไม่เริ่ม · ยังไม่มี issue · ⚠️ แตะ DB (ชั้น migration) |
 | **C10** | แยกหน้า stock 1295 บรรทัด  | ⚪ Speculative / in-process | ⬜ ยังไม่เริ่ม · ยังไม่มี issue (ลำดับต่ำสุด)                |
-
-> แยกต่างหาก: **#7** (code-smell EntityPicker/pickers) ✅ — ไม่ใช่ C-series แต่อยู่ใน issue tracker
-
-**สรุปตำแหน่ง:** ✅ ทำครบทุก Strong badge แล้ว ยกเว้น **C4** · 🟡 เหลือ Worth exploring (C8, C9) · ⚪ Speculative (C10) · 🚀 มีตัวเลือก release prod ค้าง ~10 เดือน
-
----
-
-## 💎 ความรู้ที่คุยกัน (บันทึกไว้ อย่าทำซ้ำ)
-
-### C9 คืออะไร (ย่อ)
-
-> ทุกคอลัมน์เงินใน DB เป็น **`Float`** → ทศนิยมลอย → บวก/คูณแล้วเกิด noise (เช่น `0.1+0.2 = 0.30000000000000004`) · เห็นจริงใน prod: **141 cell มี noise (~8.6% ของยอดเงินทั้งหมด)** ส่งผลต่อรายงาน/UI
->
-> UI มี `CurrencyInput` (deep module) แล้ว แต่ **ฝั่ง server ไม่มีอะไรเลย** — money ไหลผ่าน zod (`z.number()`) → DB (Float) → aggregation (`Σ Float`) โดยไม่มี seam ดัก rounding/format
->
-> **แบ่งเป็น 2 ชั้นงาน (ความเสี่ยงต่างกันมาก):**
->
-> 1. **Money module (ฝั่ง server)** — สร้าง type/module `{ parse · round · format · add }` ที่เดียวที่จัดการทศนิยม · **ไม่แตะ DB** (logic + test) → ลงได้ก่อน ปลอดภัย
-> 2. **schema migration** — เปลี่ยนคอลัมน์เงิน `Float` → `Decimal` หรือ `Int` (เก็บเป็นสตางค์) · ⚠️ **แตะข้อมูล prod จริง** (migration + backfill) → ทำทีหลังสุด ระวังสูง
->
-> อ้างอิง: `docs/architecture-review-20260705-th.html` §C9 · `CONTEXT.md` pain (Float rounding) · ยังไม่มี GitHub issue (ต้อง triage)
-
-### Liquid Glass trade-off (ความรู้เสริมจากการคุย C7)
-
-> - reports **เดิม** = native `<input type="date">` (OS/เบราว์เซอร์เป็นคนวาด) → บน iPadOS 26 Safari ได้ **Liquid Glass อัตโนมัติ** (Apple 2025)
-> - reports **ใหม่** (+ sales/repairs/stock มาก่อน) = **custom popover** (Radix Popover + react-day-picker, แอปวาดเอง) → **ไม่ได้รับ** styling ของ OS → ไม่มี Liquid Glass บน iPad
-> - trade-off = "ความสม่ำเสมอ + ควบคุมหน้าตา" (custom) vs "native feel ต่อ platform" (native input) · C7 เลือก **ความสม่ำเสมอ** ตาม pain point จริงของเจ้าของร้าน ("ทุกหน้าดูไม่เหมือนกัน")
-> - ถ้าอยากได้ Liquid Glass คืน ต้องเปลี่ยนทั้ง 4 หน้ากลับเป็น native input แต่จะเสีย: format ผูกตาย `dd/MM/yyyy`, required-asterisk/label a11y แบบเดียวกัน, และหน้าตาจะต่างกันตาม platform อีกครั้ง
-
-### `CONTEXT.md` คือไฟล์อะไร (ถามกันในแชทนี้)
-
-> = เอกสาร **domain หลักของร้าน** ("ใครเป็นคนใช้ ทำอะไร ยังไง เจ็บตรงไหน") · แยกจาก `CLAUDE.md` (กฎเทคนิค) และ `HANDOFF.md` (สถานะงาน) · มี 5 ส่วน: ภาพรวมร้าน · ภาษาธุรกิจ (ubiquitous language + module terms) · รูปร่างธุรกิจจริง (repair-first 92%/95.7% ของเงิน) · workflow + โมเดลราคา residual · pain backlog 4 theme
-
----
-
-## ✅ สถานะงานที่จบแล้ว
-
-- **C7 (#5 DatePicker)** _(session 3)_ — commit `2558599` + merge develop · browser-verify 4 หน้า · review ผ่าน · **ปิด #5**
-- **C7 grill + design** _(session 2)_ — design doc + drift fix พร้อม → implement
-- **C6 (#4 date-range module)** — commit `b44dbbd` + merge develop `6dee60e` · browser-verify · **ปิด #4**
-- **#7 (code-smell EntityPicker/pickers)** — refactor + review + verify · commit `dfb2d6c` · **ปิด #7**
-- **C3 (stock module)** — ship + review + verify · **ปิด #3**
-- **C1 (EntityPicker)** — `7f498c9` · **C5 (auth seam)** — `b262c18` · **setup-pre-commit** — `69f8944`
 
 ---
 
 ## 🔑 Decision สำคัญที่ต้องรู้ก่อนทำงานต่อ
 
-**ADR-0001: Repair pricing = residual margin model** — `laborCost` semantic = margin ไม่ใช่ค่าแรง · ดู `docs/adr/0001-repair-pricing-residual-margin.md`
+- **ADR-0001: Repair pricing = residual margin model** — `laborCost` semantic = margin ไม่ใช่ค่าแรง · `docs/adr/0001-repair-pricing-residual-margin.md`
+- **กฎ versioning** → `CLAUDE.md` section 🏷️ Versioning (release = แก้ package.json + CHANGELOG + sidebar บน develop → merge → tag → `gh release create`)
+- **C8 = UI ล้วน ไม่มี migration** → release ปลอดภัย · ⚠️ **C9 (Float/money)** = จุดเดียวที่จะแตะ DB จริง (MAJOR candidate)
+- **C8 design decisions** → `docs/c8-datatable-design.md` (8 ข้อ Q1–Q8)
+- **`matchesAmount(amount, term)` helper** อยู่ใน `src/lib/utils.ts` — รวม pattern ค้นหาเงิน (raw number + formatted currency) · ไว้ใช้ตอน C9 (Money type)
 
-**C7 ไม่กระทบ DB:** value = `Date` เหมือนเดิม → ไม่มี migration / ไม่แตะข้อมูลเดิม · mutation/router รับ Date เหมือนเดิม · Reports URL contract (`startDate/endDate` yyyy-MM-dd) คงเดิม · repairs router `repairDate: z.date().optional()` **ยัง optional** (required เป็น UI-level เท่านั้น)
+---
 
-**ความปลอดภัยของ DB ตอน release:** ทุก issue ปัจจุบัน (C1/C3/C5/#7/C6/C7) = โค้ดล้วน ไม่มี migration → merge develop→main **ไม่แตะ DB prod** · ⚠️ **C9 (Float/money)** = จุดเดียวที่จะแตะ DB จริง (migration + backfill)
+## ✅ สถานะงานที่จบแล้ว
+
+- **C8 code-review + commit + ปิด #6** _(session 7)_ — `e1b76f2` · matchesAmount extract + doc fix · 2-axis review ผ่าน
+- **C8 implement** _(session 6)_ — DataTable + 7 call sites · 671/671 + browser
+- **C8 design + grilling** _(session 5)_ — `docs/c8-datatable-design.md` + CONTEXT module term
+- **release v1.1.0** _(session 4)_ — merge develop→main `742513e` + tag + GitHub Release + bump 1.1.0 + กฎ versioning
+- **C7 (#5)** `2558599` · **C6 (#4)** `b44dbbd` · **#7** `dfb2d6c` · **C3 (#3)** · **C1** `7f498c9` · **C5** `b262c18` — ทั้งหมดอยู่ใน v1.1.0
 
 ---
 
 ## 📌 งานแยก (ทำวันไหนก็ได้ ไม่รีบ)
 
-- **prod ค้าง deploy ~10 เดือน** — develop นำ main · release = merge develop→main (ผู้ใช้ตัดสินใจ) · merge สะอาด (develop = superset)
-- **`docs/1.csv`, `docs/2.csv`** — scratch ห้าม commit (ยัง untracked อยู่)
+- **C4 (financial aggregation)** — Strong badge เดียวที่ค้าง · แต่คู่กับ C2 ปิดด้วย ADR แล้ว → ทบทวนจำเป็นไหมก่อนทำ
+- **`docs/1.csv`, `docs/2.csv`** — scratch ห้าม commit (untracked)
 
 ---
 
-## 📍 สถานะไฟล์ + git
+## 📍 สถานะ git
 
-- **สาขาปัจจุบัน = `develop`** (= `c72bddd` = origin/develop) · `feature/c7` **ลบแล้ว** (local เท่านั้น — ไม่เคย push remote)
-- **`main` = `d95d433`** (prod, ไม่ถูกแตะ)
-- **working tree:** `docs/1.csv`, `docs/2.csv` (scratch ห้าม commit) — นอกนั้นสะอาด
-- **GitHub Issues เปิด:** `#6` C8 · ปิดแล้ว: `#3` `#4` `#5` `#7`
+- **สาขาปัจจุบัน = `develop`** (= `e1b76f2` = origin/develop)
+- **`main` = `742513e`** (= origin/main = tag `v1.1.0` = GitHub Release Latest)
+- **tag บน GitHub:** `v1.0.0`, `v1.1.0`
+- **working tree:** สะอาด (เหลือแค่ scratch csv)
+- **GitHub Issues เปิด:** ไม่มี · ปิดแล้ว: `#3` `#4` `#5` `#6` `#7`
 
 ---
 
-## 🛠️ chrome-devtools MCP + CDP (verify UI)
+## 🛠️ chrome-debugtools MCP + CDP (verify UI)
 
 ใช้ตอน browser-verify. **อ่าน `docs/agents/chrome-cdp-mcp.md` ก่อน**
 
 - launcher: `bash scripts/chrome-debug.sh [url]` (copy session จาก profile จริง → debug profile → port 9222)
 - ⚠️ ถ้า Chrome debug ปิด → รัน launcher ใหม่ · กฎ: เปิดครั้งเดียว ใช้ยาวทั้ง session
-- บทเรียน session 3: dev server + Chrome debug อาจปิดอยู่ทั้งคู่ → curl เช็คก่อน อย่าเชื่อ doc ตาบอด
+- dev server: `npm run dev` (CLAUDE.md บอกรันอยู่แล้ว — **แต่ session ใหม่อาจปิดอยู่จริง ต้อง start เอง** · บทเรียน: verify จริงก่อน อย่าเชื่อ doc ตาบอด)
 
 ---
 
@@ -128,24 +121,24 @@
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: C7 จบครบ + push develop (60f8492) + ลด feature/c7
-- npm test 650/650 · browser-verify 4 หน้าผ่าน · code-review 0 blocker
-- main ไม่ถูกแตะ · ไม่มี DB migration
+สถานะ: C8 ปิดจบ loop — code-review ผ่าน · commit e1b76f2 บน develop + push · issue #6 CLOSED · 671/671 เขียว
+- develop = e1b76f2 · working tree สะอาด · ไม่มี DB migration
 
-อยากคุยเลือกทางถัดไปก่อน (ยังไม่ลงมือทำ): C8 / C9 / C4 / release develop→main / C10
+เป้าหมายถัดไป: release MINOR 1.2.0 (UI ล้วน ปลอดภัย) — แก้ package.json + CHANGELOG + sidebar → merge main → tag → push → gh release create
+- (ระยะไกล) เลือก candidate ถัดไป: C4 (ทบทวน) หรือ C9 (⚠️ แตะ DB)
 ```
 
 ---
 
 ## 📚 อ้างอิง (อย่าทำซ้ำ — ไปอ่านที่ไฟล์)
 
-|                                                       | ที่อยู่                                                     |
-| ----------------------------------------------------- | ----------------------------------------------------------- |
-| Domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog | `CONTEXT.md`                                                |
-| **C7 design doc** (decision log 7 ข้อ)                | `docs/c7-datepicker-design.md`                              |
-| **C6 design doc** (deep-module precedent)             | `docs/c6-daterange-design.md`                               |
-| **C3 design doc** (deep-module precedent + test-debt) | `docs/c3-stock-design.md`                                   |
-| หนี้เทส pattern 11 ข้อ + root cause                   | `docs/test-debt-fix-plan.md`                                |
-| ระบบ chrome CDP+MCP (verify UI)                       | `docs/agents/chrome-cdp-mcp.md` + `scripts/chrome-debug.sh` |
-| ADR: residual margin model                            | `docs/adr/0001-repair-pricing-residual-margin.md`           |
-| สถาปัตยกรรม + deployment                              | `docs/ARCHITECTURE.md`                                      |
+|                                                         | ที่อยู่                                                     |
+| ------------------------------------------------------- | ----------------------------------------------------------- |
+| Domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog   | `CONTEXT.md`                                                |
+| **กฎ versioning + flow release**                        | `CLAUDE.md` → section 🏷️ Versioning                         |
+| **C8 design doc** (interface + 8 ข้อ decision + verify) | `docs/c8-datatable-design.md`                               |
+| **C7/C6/C3 design doc** (deep-module precedent)         | `docs/c{7,6,3}-*.md`                                        |
+| หนี้เทส pattern 11 ข้อ + root cause                     | `docs/test-debt-fix-plan.md`                                |
+| ระบบ chrome CDP+MCP (verify UI)                         | `docs/agents/chrome-cdp-mcp.md` + `scripts/chrome-debug.sh` |
+| ADR: residual margin model                              | `docs/adr/0001-repair-pricing-residual-margin.md`           |
+| สถาปัตยกรรม + deployment                                | `docs/ARCHITECTURE.md`                                      |

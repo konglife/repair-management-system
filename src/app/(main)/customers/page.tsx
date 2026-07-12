@@ -1,63 +1,80 @@
 "use client";
 
 import { Users, Plus, Loader2, Edit, Eye, UserPlus } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SearchInput } from "~/components/ui/SearchInput";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DataTable, type Column } from "~/components/ui/DataTable";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+type Customer = {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  createdAt: Date;
+};
+
+// Raw (trimmed, non-empty) term — DataTable handles the empty short-circuit.
+const customerPredicate = (customer: Customer, term: string) => {
+  const t = term.toLowerCase();
+  return (
+    customer.name.toLowerCase().includes(t) ||
+    !!customer.phone?.toLowerCase().includes(t) ||
+    !!customer.address?.toLowerCase().includes(t)
+  );
+};
 
 export default function CustomersPage() {
   const router = useRouter();
-  
-  // Search state
-  const [customersSearchTerm, setCustomersSearchTerm] = useState("");
-  
+
   // State for Add Customer form
   const [showCreateCustomerForm, setShowCreateCustomerForm] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
   const [newCustomerAddress, setNewCustomerAddress] = useState("");
-  
+
   // State for Edit Customer form
   const [showEditCustomerForm, setShowEditCustomerForm] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<{ id: string; name: string; phone: string | null; address: string | null } | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<{
+    id: string;
+    name: string;
+    phone: string | null;
+    address: string | null;
+  } | null>(null);
   const [editCustomerName, setEditCustomerName] = useState("");
   const [editCustomerPhone, setEditCustomerPhone] = useState("");
   const [editCustomerAddress, setEditCustomerAddress] = useState("");
 
   // tRPC queries and mutations for customers
-  const { data: customers = [], isLoading: customersLoading } = api.customers.getAll.useQuery();
-  
+  const { data: customers = [], isLoading: customersLoading } =
+    api.customers.getAll.useQuery();
+
   // Analytics queries
-  const { data: totalCustomers = 0, isLoading: totalCustomersLoading, error: totalCustomersError } = api.customers.getTotalCount.useQuery();
-  const { data: newCustomersThisMonth = 0, isLoading: newCustomersLoading, error: newCustomersError } = api.customers.getNewCustomersThisMonth.useQuery();
-  
+  const {
+    data: totalCustomers = 0,
+    isLoading: totalCustomersLoading,
+    error: totalCustomersError,
+  } = api.customers.getTotalCount.useQuery();
+  const {
+    data: newCustomersThisMonth = 0,
+    isLoading: newCustomersLoading,
+    error: newCustomersError,
+  } = api.customers.getNewCustomersThisMonth.useQuery();
+
   // Utils for query invalidation
   const utils = api.useUtils();
 
-  // Filtered data for search functionality
-  const filteredCustomers = useMemo(() => {
-    if (!customersSearchTerm.trim()) return customers;
-    const searchTerm = customersSearchTerm.toLowerCase();
-    return customers.filter((customer: { name: string; phone: string | null; address: string | null }) => {
-      // Search by name
-      const nameMatch = customer.name.toLowerCase().includes(searchTerm);
-      
-      // Search by phone
-      const phoneMatch = customer.phone?.toLowerCase().includes(searchTerm);
-      
-      // Search by address
-      const addressMatch = customer.address?.toLowerCase().includes(searchTerm);
-      
-      return nameMatch || phoneMatch || addressMatch;
-    });
-  }, [customers, customersSearchTerm]);
-  
   const createCustomerMutation = api.customers.create.useMutation({
     onSuccess: async () => {
       await utils.customers.getAll.invalidate();
@@ -93,8 +110,8 @@ export default function CustomersPage() {
   const handleCreateCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerName.trim()) return;
-    
-    createCustomerMutation.mutate({ 
+
+    createCustomerMutation.mutate({
       name: newCustomerName.trim(),
       phone: newCustomerPhone.trim() || undefined,
       address: newCustomerAddress.trim() || undefined,
@@ -112,7 +129,12 @@ export default function CustomersPage() {
     setNewCustomerAddress("");
   };
 
-  const openEditForm = (customer: { id: string; name: string; phone: string | null; address: string | null }) => {
+  const openEditForm = (customer: {
+    id: string;
+    name: string;
+    phone: string | null;
+    address: string | null;
+  }) => {
     setEditingCustomer(customer);
     setEditCustomerName(customer.name);
     setEditCustomerPhone(customer.phone || "");
@@ -131,7 +153,7 @@ export default function CustomersPage() {
   const handleEditCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editCustomerName.trim() || !editingCustomer) return;
-    
+
     updateCustomerMutation.mutate({
       id: editingCustomer.id,
       name: editCustomerName.trim(),
@@ -144,19 +166,59 @@ export default function CustomersPage() {
     router.push(`/customers/${customerId}`);
   };
 
+  const customerColumns: Column<Customer>[] = [
+    { header: "Name", className: "font-medium", cell: (c) => c.name },
+    { header: "Phone", cell: (c) => c.phone || "—" },
+    { header: "Address", cell: (c) => c.address || "—" },
+    {
+      header: "Created",
+      className: "text-muted-foreground",
+      cell: (c) => new Date(c.createdAt).toLocaleDateString(),
+    },
+    {
+      header: "Actions",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (c) => (
+        <div className="flex justify-end space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleViewCustomerDetails(c.id)}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openEditForm(c)}
+            title="Edit Customer"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-          <p className="text-muted-foreground">Manage your customer database and contact information</p>
+          <p className="text-muted-foreground">
+            Manage your customer database and contact information
+          </p>
         </div>
       </div>
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Customers
+            </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -170,14 +232,18 @@ export default function CustomersPage() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {totalCustomersError ? "Failed to load customer count" : "Registered customers"}
+              {totalCustomersError
+                ? "Failed to load customer count"
+                : "Registered customers"}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customers (This Month)</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              New Customers (This Month)
+            </CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -191,7 +257,9 @@ export default function CustomersPage() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {newCustomersError ? "Failed to load new customers" : "Added this month"}
+              {newCustomersError
+                ? "Failed to load new customers"
+                : "Added this month"}
             </p>
           </CardContent>
         </Card>
@@ -208,74 +276,17 @@ export default function CustomersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Search Input */}
-          <div className="mb-4">
-            <SearchInput
-              placeholder="Search by name, phone, or address..."
-              value={customersSearchTerm}
-              onChange={setCustomersSearchTerm}
-              className="max-w-sm"
-            />
-          </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customersLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : filteredCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
-                      {customersSearchTerm ? "No customers found matching your search." : "No customers found. Add your first customer to get started."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredCustomers.map((customer: { id: string; name: string; phone: string | null; address: string | null; createdAt: Date | string }) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.phone || "—"}</TableCell>
-                      <TableCell>{customer.address || "—"}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(customer.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewCustomerDetails(customer.id)}
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditForm(customer)}
-                            title="Edit Customer"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            rows={customers}
+            columns={customerColumns}
+            search={{
+              placeholder: "Search by name, phone, or address...",
+              predicate: customerPredicate,
+            }}
+            loading={customersLoading}
+            emptyMessage="No customers found. Add your first customer to get started."
+            emptySearchMessage="No customers found matching your search."
+          />
         </CardContent>
       </Card>
 
@@ -285,7 +296,8 @@ export default function CustomersPage() {
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
             <DialogDescription>
-              Enter the customer information. Name is required, phone and address are optional.
+              Enter the customer information. Name is required, phone and
+              address are optional.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateCustomer}>
@@ -319,7 +331,10 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label htmlFor="customerAddress" className="text-sm font-medium">
+                <label
+                  htmlFor="customerAddress"
+                  className="text-sm font-medium"
+                >
                   Address
                 </label>
                 <Input
@@ -333,16 +348,14 @@ export default function CustomersPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeCreateForm}
-              >
+              <Button type="button" variant="outline" onClick={closeCreateForm}>
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={createCustomerMutation.isPending || !newCustomerName.trim()}
+                disabled={
+                  createCustomerMutation.isPending || !newCustomerName.trim()
+                }
               >
                 {createCustomerMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -362,13 +375,17 @@ export default function CustomersPage() {
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>
-              Update the customer information. Name is required, phone and address are optional.
+              Update the customer information. Name is required, phone and
+              address are optional.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditCustomer}>
             <div className="space-y-4 py-4">
               <div>
-                <label htmlFor="editCustomerName" className="text-sm font-medium">
+                <label
+                  htmlFor="editCustomerName"
+                  className="text-sm font-medium"
+                >
                   Name *
                 </label>
                 <Input
@@ -383,7 +400,10 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label htmlFor="editCustomerPhone" className="text-sm font-medium">
+                <label
+                  htmlFor="editCustomerPhone"
+                  className="text-sm font-medium"
+                >
                   Phone
                 </label>
                 <Input
@@ -396,7 +416,10 @@ export default function CustomersPage() {
                 />
               </div>
               <div>
-                <label htmlFor="editCustomerAddress" className="text-sm font-medium">
+                <label
+                  htmlFor="editCustomerAddress"
+                  className="text-sm font-medium"
+                >
                   Address
                 </label>
                 <Input
@@ -410,16 +433,14 @@ export default function CustomersPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeEditForm}
-              >
+              <Button type="button" variant="outline" onClick={closeEditForm}>
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={updateCustomerMutation.isPending || !editCustomerName.trim()}
+                disabled={
+                  updateCustomerMutation.isPending || !editCustomerName.trim()
+                }
               >
                 {updateCustomerMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
