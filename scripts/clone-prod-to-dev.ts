@@ -57,20 +57,19 @@ if (!PROD_DIRECT_URL) {
   );
 }
 
-const hostOf = (u: string): string => {
-  try {
-    return new URL(u).host;
-  } catch {
-    return u;
-  }
+// Prisma Postgres ใช้ host เดียวกัน (db.prisma.io) ทุก instance → แยก DB ด้วย username (token ยาว)
+// เลยต้องเช็ค username ไม่ใช่ host
+const userOf = (u: string): string => {
+  const m = u.match(/^postgres(?:\+[^:]*)?:\/\/([^:]+):/);
+  return m ? m[1] : u;
 };
 
 if (PROD_DIRECT_URL === DEV_DIRECT_URL) {
   die("PROD URL เท่ากับ DEV URL แบบเป๊ะ — เสี่ยงเขียนทับ prod → abort");
 }
-if (hostOf(PROD_DIRECT_URL) === hostOf(DEV_DIRECT_URL)) {
+if (userOf(PROD_DIRECT_URL) === userOf(DEV_DIRECT_URL)) {
   die(
-    `host ของ prod กับ dev เหมือนกัน (${hostOf(PROD_DIRECT_URL)}) — ตรวจ URL อีกครั้ง อาจตั้งค่าผิด → abort`
+    "prod กับ dev ใช้ DB instance/username เดียวกัน (จาก connection string) — เสี่ยงเขียนทับ prod → abort"
   );
 }
 
