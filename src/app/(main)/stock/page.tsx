@@ -10,23 +10,15 @@ import {
   Ruler,
   ShoppingCart,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { api } from "~/app/providers";
-import { formatCurrency, formatDisplayDate } from "~/lib/utils";
+import { formatCurrency, formatDisplayDate, matchesAmount } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "~/components/ui/CurrencyInput";
-import { SearchInput } from "~/components/ui/SearchInput";
 import { ProductPicker } from "~/components/ui/pickers";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, type Column } from "~/components/ui/DataTable";
 import {
   Dialog,
   DialogContent,
@@ -37,16 +29,70 @@ import {
 } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/DatePicker";
 
+type CategoryRow = {
+  id: string;
+  name: string;
+  _count?: { products: number };
+};
+
+type UnitRow = {
+  id: string;
+  name: string;
+  _count?: { products: number };
+};
+
+type ProductRow = {
+  id: string;
+  name: string;
+  salePrice: number;
+  quantity: number;
+  averageCost: number;
+  categoryId: string;
+  unitId: string;
+  category?: { name: string };
+  unit?: { name: string };
+};
+
+type PurchaseRow = {
+  id: string;
+  quantity: number;
+  costPerUnit: number;
+  purchaseDate: Date | string;
+  product?: { name: string };
+};
+
+// Raw (trimmed, non-empty) term — DataTable handles the empty short-circuit.
+const categoryPredicate = (row: CategoryRow, term: string) =>
+  row.name.toLowerCase().includes(term.toLowerCase());
+
+const unitPredicate = (row: UnitRow, term: string) =>
+  row.name.toLowerCase().includes(term.toLowerCase());
+
+const productPredicate = (row: ProductRow, term: string) => {
+  const t = term.toLowerCase();
+  return (
+    row.name.toLowerCase().includes(t) ||
+    !!row.category?.name.toLowerCase().includes(t)
+  );
+};
+
+const purchasePredicate = (row: PurchaseRow, term: string) => {
+  const t = term.toLowerCase();
+  const productMatch = !!row.product?.name.toLowerCase().includes(t);
+  const dateMatch = formatDisplayDate(row.purchaseDate)
+    .toLowerCase()
+    .includes(t);
+  const qtyMatch = row.quantity.toString().includes(t);
+  const costMatch = matchesAmount(row.costPerUnit, t);
+  const total = row.quantity * row.costPerUnit;
+  const totalMatch = matchesAmount(total, t);
+  return productMatch || dateMatch || qtyMatch || costMatch || totalMatch;
+};
+
 export default function StockPage() {
   const [activeTab, setActiveTab] = useState<
     "categories" | "units" | "products" | "purchases"
   >("products");
-
-  // Search state
-  const [categorySearchTerm, setCategorySearchTerm] = useState("");
-  const [unitSearchTerm, setUnitSearchTerm] = useState("");
-  const [productSearchTerm, setProductSearchTerm] = useState("");
-  const [purchaseSearchTerm, setPurchaseSearchTerm] = useState("");
 
   // Categories state
   const [showCreateCategoryForm, setShowCreateCategoryForm] = useState(false);
@@ -182,95 +228,11 @@ export default function StockPage() {
     ? productPurchasesLoading
     : allPurchasesLoading;
 
-  // Filtered data for search functionality
-  const filteredCategories = useMemo(() => {
-    if (!categorySearchTerm.trim()) return categories;
-    const searchTerm = categorySearchTerm.toLowerCase();
-    return categories.filter((category: { name: string }) =>
-      category.name.toLowerCase().includes(searchTerm)
-    );
-  }, [categories, categorySearchTerm]);
-
-  const filteredUnits = useMemo(() => {
-    if (!unitSearchTerm.trim()) return units;
-    const searchTerm = unitSearchTerm.toLowerCase();
-    return units.filter((unit: { name: string }) =>
-      unit.name.toLowerCase().includes(searchTerm)
-    );
-  }, [units, unitSearchTerm]);
-
-  const filteredProducts = useMemo(() => {
-    if (!productSearchTerm.trim()) return products;
-    const searchTerm = productSearchTerm.toLowerCase();
-    return products.filter(
-      (product: { name: string; category?: { name: string } }) =>
-        product.name.toLowerCase().includes(searchTerm) ||
-        product.category?.name.toLowerCase().includes(searchTerm)
-    );
-  }, [products, productSearchTerm]);
-
-  // Filtered purchase history for search functionality
-  const filteredPurchaseHistory = useMemo(() => {
-    const dataToFilter = selectedProductForHistory
-      ? productPurchases
-      : allPurchases;
-
-    if (!purchaseSearchTerm.trim()) return dataToFilter;
-
-    const searchTerm = purchaseSearchTerm.toLowerCase();
-    return dataToFilter.filter(
-      (purchase: {
-        product: { name: string };
-        purchaseDate: Date | string;
-        quantity: number;
-        costPerUnit: number;
-      }) => {
-        // Search by product name
-        const productNameMatch = purchase.product?.name
-          .toLowerCase()
-          .includes(searchTerm);
-
-        // Search by date (various formats)
-        const dateString = formatDisplayDate(
-          purchase.purchaseDate
-        ).toLowerCase();
-        const dateMatch = dateString.includes(searchTerm);
-
-        // Search by quantity
-        const quantityMatch = purchase.quantity.toString().includes(searchTerm);
-
-        // Search by cost per unit (both number and formatted currency)
-        const costPerUnitString = purchase.costPerUnit.toString();
-        const formattedCostPerUnit = formatCurrency(
-          purchase.costPerUnit
-        ).toLowerCase();
-        const costPerUnitMatch =
-          costPerUnitString.includes(searchTerm) ||
-          formattedCostPerUnit.includes(searchTerm);
-
-        // Search by total cost
-        const totalCost = purchase.quantity * purchase.costPerUnit;
-        const totalCostString = totalCost.toString();
-        const formattedTotalCost = formatCurrency(totalCost).toLowerCase();
-        const totalCostMatch =
-          totalCostString.includes(searchTerm) ||
-          formattedTotalCost.includes(searchTerm);
-
-        return (
-          productNameMatch ||
-          dateMatch ||
-          quantityMatch ||
-          costPerUnitMatch ||
-          totalCostMatch
-        );
-      }
-    );
-  }, [
-    allPurchases,
-    productPurchases,
-    selectedProductForHistory,
-    purchaseSearchTerm,
-  ]);
+  // Base rows for the purchase-history table: pre-filtered by the selected
+  // product (or all purchases). DataTable's search layers on top of this.
+  const purchaseHistoryRows = selectedProductForHistory
+    ? productPurchases
+    : allPurchases;
 
   const createPurchaseMutation = api.purchases.create.useMutation({
     onSuccess: () => {
@@ -519,6 +481,307 @@ export default function StockPage() {
     });
   };
 
+  const categoryColumns: Column<CategoryRow>[] = [
+    {
+      header: "Name",
+      cell: (c) =>
+        editingCategory?.id === c.id ? (
+          <form onSubmit={handleUpdateCategory} className="flex gap-2">
+            <Input
+              type="text"
+              value={editCategoryName}
+              onChange={(e) => setEditCategoryName(e.target.value)}
+              className="flex-1 h-8"
+              autoFocus
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={
+                updateCategoryMutation.isPending || !editCategoryName.trim()
+              }
+            >
+              {updateCategoryMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={cancelEditCategory}
+            >
+              Cancel
+            </Button>
+          </form>
+        ) : (
+          <span className="font-medium">{c.name}</span>
+        ),
+    },
+    {
+      header: "Products",
+      className: "text-muted-foreground",
+      cell: (c) => c._count?.products ?? 0,
+    },
+    {
+      header: "Actions",
+      cell: (c) =>
+        editingCategory?.id === c.id ? null : (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => startEditCategory(c)}
+              className="h-8 w-8"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeleteCategoryConfirm(c.id)}
+              className="h-8 w-8 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+    },
+  ];
+
+  const unitColumns: Column<UnitRow>[] = [
+    {
+      header: "Name",
+      cell: (u) =>
+        editingUnit?.id === u.id ? (
+          <form onSubmit={handleUpdateUnit} className="flex gap-2">
+            <Input
+              type="text"
+              value={editUnitName}
+              onChange={(e) => setEditUnitName(e.target.value)}
+              className="flex-1 h-8"
+              autoFocus
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={updateUnitMutation.isPending || !editUnitName.trim()}
+            >
+              {updateUnitMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={cancelEditUnit}
+            >
+              Cancel
+            </Button>
+          </form>
+        ) : (
+          <span className="font-medium">{u.name}</span>
+        ),
+    },
+    {
+      header: "Products",
+      className: "text-muted-foreground",
+      cell: (u) => u._count?.products ?? 0,
+    },
+    {
+      header: "Actions",
+      cell: (u) =>
+        editingUnit?.id === u.id ? null : (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => startEditUnit(u)}
+              className="h-8 w-8"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setDeleteUnitConfirm(u.id)}
+              className="h-8 w-8 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+    },
+  ];
+
+  const productColumns: Column<ProductRow>[] = [
+    {
+      header: "Name",
+      cell: (p) =>
+        editingProduct?.id === p.id ? (
+          <Input
+            type="text"
+            value={editProductName}
+            onChange={(e) => setEditProductName(e.target.value)}
+            className="h-8"
+            autoFocus
+          />
+        ) : (
+          <span className="font-medium">{p.name}</span>
+        ),
+    },
+    {
+      header: "Category",
+      cell: (p) =>
+        editingProduct?.id === p.id ? (
+          <select
+            value={editProductCategoryId}
+            onChange={(e) => setEditProductCategoryId(e.target.value)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+          >
+            {categories.map((category: { id: string; name: string }) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span>{p.category?.name}</span>
+        ),
+    },
+    {
+      header: "Unit",
+      cell: (p) =>
+        editingProduct?.id === p.id ? (
+          <select
+            value={editProductUnitId}
+            onChange={(e) => setEditProductUnitId(e.target.value)}
+            className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+          >
+            {units.map((unit: { id: string; name: string }) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span>{p.unit?.name}</span>
+        ),
+    },
+    {
+      header: "Sale Price",
+      cell: (p) =>
+        editingProduct?.id === p.id ? (
+          <CurrencyInput
+            value={editProductPrice ? parseFloat(editProductPrice) : undefined}
+            onChange={(value) => setEditProductPrice(value?.toString() ?? "")}
+            className="h-8 w-20"
+            min={0}
+          />
+        ) : (
+          <span>{formatCurrency(p.salePrice)}</span>
+        ),
+    },
+    {
+      header: "Quantity",
+      className: "text-muted-foreground",
+      cell: (p) => p.quantity,
+    },
+    {
+      header: "Avg Cost",
+      className: "text-muted-foreground",
+      cell: (p) => formatCurrency(p.averageCost),
+    },
+    {
+      header: "Actions",
+      cell: (p) =>
+        editingProduct?.id === p.id ? (
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleUpdateProduct}
+              disabled={
+                updateProductMutation.isPending ||
+                !editProductName.trim() ||
+                !editProductPrice.trim() ||
+                !editProductCategoryId ||
+                !editProductUnitId
+              }
+            >
+              {updateProductMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Save"
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={cancelEditProduct}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => startEditProduct(p)}
+              className="h-8 w-8"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </div>
+        ),
+    },
+  ];
+
+  const purchaseHistoryColumns: Column<PurchaseRow>[] =
+    selectedProductForHistory
+      ? [
+          {
+            header: "Date",
+            cell: (p) => formatDisplayDate(p.purchaseDate),
+          },
+          { header: "Quantity", cell: (p) => p.quantity },
+          {
+            header: "Cost Per Unit",
+            cell: (p) => formatCurrency(p.costPerUnit),
+          },
+          {
+            header: "Total Cost",
+            cell: (p) => formatCurrency(p.quantity * p.costPerUnit),
+          },
+        ]
+      : [
+          {
+            header: "Product",
+            className: "font-medium",
+            cell: (p) => p.product?.name,
+          },
+          {
+            header: "Date",
+            cell: (p) => formatDisplayDate(p.purchaseDate),
+          },
+          { header: "Quantity", cell: (p) => p.quantity },
+          {
+            header: "Cost Per Unit",
+            cell: (p) => formatCurrency(p.costPerUnit),
+          },
+          {
+            header: "Total Cost",
+            cell: (p) => formatCurrency(p.quantity * p.costPerUnit),
+          },
+        ];
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -648,15 +911,6 @@ export default function StockPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Search Input */}
-                <div className="mb-4">
-                  <SearchInput
-                    placeholder="Search categories..."
-                    value={categorySearchTerm}
-                    onChange={setCategorySearchTerm}
-                    className="max-w-sm"
-                  />
-                </div>
                 {/* Create Category Form */}
                 {showCreateCategoryForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
@@ -699,124 +953,17 @@ export default function StockPage() {
                   </div>
                 )}
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Products</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {categoriesLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="text-center text-muted-foreground"
-                          >
-                            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredCategories.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="text-center text-muted-foreground"
-                          >
-                            {categorySearchTerm
-                              ? "No categories found matching your search."
-                              : "No categories found. Create your first category to get started."}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredCategories.map(
-                          (category: {
-                            id: string;
-                            name: string;
-                            _count: { products: number };
-                          }) => (
-                            <TableRow key={category.id}>
-                              <TableCell>
-                                {editingCategory?.id === category.id ? (
-                                  <form
-                                    onSubmit={handleUpdateCategory}
-                                    className="flex gap-2"
-                                  >
-                                    <Input
-                                      type="text"
-                                      value={editCategoryName}
-                                      onChange={(e) =>
-                                        setEditCategoryName(e.target.value)
-                                      }
-                                      className="flex-1 h-8"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      type="submit"
-                                      size="sm"
-                                      disabled={
-                                        updateCategoryMutation.isPending ||
-                                        !editCategoryName.trim()
-                                      }
-                                    >
-                                      {updateCategoryMutation.isPending ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        "Save"
-                                      )}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={cancelEditCategory}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </form>
-                                ) : (
-                                  <span className="font-medium">
-                                    {category.name}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {category._count?.products ?? 0}
-                              </TableCell>
-                              <TableCell>
-                                {editingCategory?.id === category.id ? null : (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        startEditCategory(category)
-                                      }
-                                      className="h-8 w-8"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        setDeleteCategoryConfirm(category.id)
-                                      }
-                                      className="h-8 w-8 text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                <DataTable
+                  rows={categories}
+                  columns={categoryColumns}
+                  search={{
+                    placeholder: "Search categories...",
+                    predicate: categoryPredicate,
+                  }}
+                  loading={categoriesLoading}
+                  emptyMessage="No categories found. Create your first category to get started."
+                  emptySearchMessage="No categories found matching your search."
+                />
               </CardContent>
             </Card>
           )}
@@ -834,15 +981,6 @@ export default function StockPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Search Input */}
-                <div className="mb-4">
-                  <SearchInput
-                    placeholder="Search units..."
-                    value={unitSearchTerm}
-                    onChange={setUnitSearchTerm}
-                    className="max-w-sm"
-                  />
-                </div>
                 {/* Create Unit Form */}
                 {showCreateUnitForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
@@ -881,122 +1019,17 @@ export default function StockPage() {
                   </div>
                 )}
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Products</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {unitsLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="text-center text-muted-foreground"
-                          >
-                            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredUnits.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={3}
-                            className="text-center text-muted-foreground"
-                          >
-                            {unitSearchTerm
-                              ? "No units found matching your search."
-                              : "No units found. Create your first unit to get started."}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredUnits.map(
-                          (unit: {
-                            id: string;
-                            name: string;
-                            _count: { products: number };
-                          }) => (
-                            <TableRow key={unit.id}>
-                              <TableCell>
-                                {editingUnit?.id === unit.id ? (
-                                  <form
-                                    onSubmit={handleUpdateUnit}
-                                    className="flex gap-2"
-                                  >
-                                    <Input
-                                      type="text"
-                                      value={editUnitName}
-                                      onChange={(e) =>
-                                        setEditUnitName(e.target.value)
-                                      }
-                                      className="flex-1 h-8"
-                                      autoFocus
-                                    />
-                                    <Button
-                                      type="submit"
-                                      size="sm"
-                                      disabled={
-                                        updateUnitMutation.isPending ||
-                                        !editUnitName.trim()
-                                      }
-                                    >
-                                      {updateUnitMutation.isPending ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        "Save"
-                                      )}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={cancelEditUnit}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </form>
-                                ) : (
-                                  <span className="font-medium">
-                                    {unit.name}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {unit._count?.products ?? 0}
-                              </TableCell>
-                              <TableCell>
-                                {editingUnit?.id === unit.id ? null : (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => startEditUnit(unit)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() =>
-                                        setDeleteUnitConfirm(unit.id)
-                                      }
-                                      className="h-8 w-8 text-destructive hover:text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                <DataTable
+                  rows={units}
+                  columns={unitColumns}
+                  search={{
+                    placeholder: "Search units...",
+                    predicate: unitPredicate,
+                  }}
+                  loading={unitsLoading}
+                  emptyMessage="No units found. Create your first unit to get started."
+                  emptySearchMessage="No units found matching your search."
+                />
               </CardContent>
             </Card>
           )}
@@ -1016,15 +1049,6 @@ export default function StockPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Search Input */}
-                <div className="mb-4">
-                  <SearchInput
-                    placeholder="Search products by name or category..."
-                    value={productSearchTerm}
-                    onChange={setProductSearchTerm}
-                    className="max-w-sm"
-                  />
-                </div>
                 {/* Create Product Form */}
                 {showCreateProductForm && (
                   <div className="mb-4 p-4 border rounded-lg bg-muted/50">
@@ -1135,197 +1159,17 @@ export default function StockPage() {
                   </div>
                 )}
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Unit</TableHead>
-                        <TableHead>Sale Price</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Avg Cost</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {productsLoading ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center text-muted-foreground"
-                          >
-                            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ) : filteredProducts.length === 0 ? (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="text-center text-muted-foreground"
-                          >
-                            {productSearchTerm
-                              ? "No products found matching your search."
-                              : "No products found. Create your first product to get started."}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredProducts.map(
-                          (product: {
-                            id: string;
-                            name: string;
-                            salePrice: number;
-                            quantity: number;
-                            averageCost: number;
-                            categoryId: string;
-                            unitId: string;
-                            category: { name: string };
-                            unit: { name: string };
-                          }) => (
-                            <TableRow key={product.id}>
-                              <TableCell>
-                                {editingProduct?.id === product.id ? (
-                                  <Input
-                                    type="text"
-                                    value={editProductName}
-                                    onChange={(e) =>
-                                      setEditProductName(e.target.value)
-                                    }
-                                    className="h-8"
-                                    autoFocus
-                                  />
-                                ) : (
-                                  <span className="font-medium">
-                                    {product.name}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {editingProduct?.id === product.id ? (
-                                  <select
-                                    value={editProductCategoryId}
-                                    onChange={(e) =>
-                                      setEditProductCategoryId(e.target.value)
-                                    }
-                                    className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                                  >
-                                    {categories.map(
-                                      (category: {
-                                        id: string;
-                                        name: string;
-                                      }) => (
-                                        <option
-                                          key={category.id}
-                                          value={category.id}
-                                        >
-                                          {category.name}
-                                        </option>
-                                      )
-                                    )}
-                                  </select>
-                                ) : (
-                                  <span>{product.category?.name}</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {editingProduct?.id === product.id ? (
-                                  <select
-                                    value={editProductUnitId}
-                                    onChange={(e) =>
-                                      setEditProductUnitId(e.target.value)
-                                    }
-                                    className="h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
-                                  >
-                                    {units.map(
-                                      (unit: { id: string; name: string }) => (
-                                        <option key={unit.id} value={unit.id}>
-                                          {unit.name}
-                                        </option>
-                                      )
-                                    )}
-                                  </select>
-                                ) : (
-                                  <span>{product.unit?.name}</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {editingProduct?.id === product.id ? (
-                                  <CurrencyInput
-                                    value={
-                                      editProductPrice
-                                        ? parseFloat(editProductPrice)
-                                        : undefined
-                                    }
-                                    onChange={(value) =>
-                                      setEditProductPrice(
-                                        value?.toString() ?? ""
-                                      )
-                                    }
-                                    className="h-8 w-20"
-                                    min={0}
-                                  />
-                                ) : (
-                                  <span>
-                                    {formatCurrency(product.salePrice)}
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {product.quantity}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {formatCurrency(product.averageCost)}
-                              </TableCell>
-                              <TableCell>
-                                {editingProduct?.id === product.id ? (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      onClick={handleUpdateProduct}
-                                      disabled={
-                                        updateProductMutation.isPending ||
-                                        !editProductName.trim() ||
-                                        !editProductPrice.trim() ||
-                                        !editProductCategoryId ||
-                                        !editProductUnitId
-                                      }
-                                    >
-                                      {updateProductMutation.isPending ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : (
-                                        "Save"
-                                      )}
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={cancelEditProduct}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => startEditProduct(product)}
-                                      className="h-8 w-8"
-                                    >
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        )
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                <DataTable
+                  rows={products}
+                  columns={productColumns}
+                  search={{
+                    placeholder: "Search products by name or category...",
+                    predicate: productPredicate,
+                  }}
+                  loading={productsLoading}
+                  emptyMessage="No products found. Create your first product to get started."
+                  emptySearchMessage="No products found matching your search."
+                />
               </CardContent>
             </Card>
           )}
@@ -1448,16 +1292,6 @@ export default function StockPage() {
                       Purchase History
                     </h3>
 
-                    {/* Search Input */}
-                    <div className="mb-4">
-                      <SearchInput
-                        placeholder="Search purchase history by product, date, or amount..."
-                        value={purchaseSearchTerm}
-                        onChange={setPurchaseSearchTerm}
-                        className="max-w-sm"
-                      />
-                    </div>
-
                     <div className="mb-4">
                       <label className="text-sm font-medium mb-2 block">
                         Filter by product
@@ -1484,76 +1318,22 @@ export default function StockPage() {
                       </select>
                     </div>
 
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {!selectedProductForHistory && (
-                              <TableHead>Product</TableHead>
-                            )}
-                            <TableHead>Date</TableHead>
-                            <TableHead>Quantity</TableHead>
-                            <TableHead>Cost Per Unit</TableHead>
-                            <TableHead>Total Cost</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {purchaseHistoryLoading ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={!selectedProductForHistory ? 5 : 4}
-                                className="text-center text-muted-foreground"
-                              >
-                                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                              </TableCell>
-                            </TableRow>
-                          ) : filteredPurchaseHistory.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={!selectedProductForHistory ? 5 : 4}
-                                className="text-center text-muted-foreground"
-                              >
-                                {purchaseSearchTerm
-                                  ? "No purchase records found matching your search."
-                                  : selectedProductForHistory
-                                    ? "No purchase history found for this product."
-                                    : "No purchase records found."}
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            filteredPurchaseHistory.map(
-                              (purchase: {
-                                id: string;
-                                quantity: number;
-                                costPerUnit: number;
-                                purchaseDate: Date | string;
-                                product: { name: string };
-                              }) => (
-                                <TableRow key={purchase.id}>
-                                  {!selectedProductForHistory && (
-                                    <TableCell className="font-medium">
-                                      {purchase.product?.name}
-                                    </TableCell>
-                                  )}
-                                  <TableCell>
-                                    {formatDisplayDate(purchase.purchaseDate)}
-                                  </TableCell>
-                                  <TableCell>{purchase.quantity}</TableCell>
-                                  <TableCell>
-                                    {formatCurrency(purchase.costPerUnit)}
-                                  </TableCell>
-                                  <TableCell>
-                                    {formatCurrency(
-                                      purchase.quantity * purchase.costPerUnit
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              )
-                            )
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
+                    <DataTable
+                      rows={purchaseHistoryRows}
+                      columns={purchaseHistoryColumns}
+                      search={{
+                        placeholder:
+                          "Search purchase history by product, date, or amount...",
+                        predicate: purchasePredicate,
+                      }}
+                      loading={purchaseHistoryLoading}
+                      emptyMessage={
+                        selectedProductForHistory
+                          ? "No purchase history found for this product."
+                          : "No purchase records found."
+                      }
+                      emptySearchMessage="No purchase records found matching your search."
+                    />
                   </div>
                 </div>
               </CardContent>

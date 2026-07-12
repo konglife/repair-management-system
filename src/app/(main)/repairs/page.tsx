@@ -10,7 +10,7 @@ import {
   Receipt,
   Package,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
 import { formatCurrency, formatDisplayDate } from "~/lib/utils";
@@ -18,17 +18,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "~/components/ui/CurrencyInput";
-import { SearchInput } from "~/components/ui/SearchInput";
 import { CustomerPicker, ProductPicker } from "~/components/ui/pickers";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, type Column } from "~/components/ui/DataTable";
 import {
   Dialog,
   DialogContent,
@@ -96,11 +88,16 @@ interface UsedPart {
 
 type DateRange = "today" | "7days" | "1month" | undefined;
 
+// Raw (trimmed, non-empty) term — DataTable handles the empty short-circuit.
+const repairPredicate = (repair: RepairWithRelations, term: string) => {
+  const t = term.toLowerCase();
+  const customerMatch = repair.customer.name.toLowerCase().includes(t);
+  const descriptionMatch = repair.description.toLowerCase().includes(t);
+  return customerMatch || descriptionMatch;
+};
+
 export default function RepairsPage() {
   const router = useRouter();
-
-  // Search state
-  const [repairsSearchTerm, setRepairsSearchTerm] = useState("");
 
   // Date range filter state
   const [dateRange, setDateRange] = useState<DateRange>(undefined);
@@ -128,34 +125,6 @@ export default function RepairsPage() {
   } = api.repairs.getAnalytics.useQuery(dateRange ? { dateRange } : undefined);
   const { data: customers = [] } = api.customers.getAll.useQuery();
   const { data: products = [] } = api.products.getAll.useQuery();
-
-  // Filtered data for search functionality
-  const filteredRepairs = useMemo(() => {
-    if (!repairsSearchTerm.trim()) return repairs;
-    const searchTerm = repairsSearchTerm.toLowerCase();
-    return repairs.filter(
-      (repair: {
-        customer: { name: string };
-        description: string;
-        status?: string;
-      }) => {
-        // Search by customer name
-        const customerNameMatch = repair.customer.name
-          .toLowerCase()
-          .includes(searchTerm);
-
-        // Search by device/description
-        const descriptionMatch = repair.description
-          .toLowerCase()
-          .includes(searchTerm);
-
-        // Search by status if available (optional field)
-        const statusMatch = repair.status?.toLowerCase().includes(searchTerm);
-
-        return customerNameMatch || descriptionMatch || statusMatch;
-      }
-    );
-  }, [repairs, repairsSearchTerm]);
 
   // tRPC mutations
   const createRepairMutation = api.repairs.create.useMutation({
@@ -290,6 +259,38 @@ export default function RepairsPage() {
   };
 
   // Note: displayRepairs calculation removed as analytics now come from dedicated endpoint
+
+  const repairColumns: Column<RepairWithRelations>[] = [
+    {
+      header: "Date",
+      className: "font-medium",
+      cell: (r) => formatDisplayDate(r.createdAt),
+    },
+    { header: "Customer", cell: (r) => r.customer.name },
+    {
+      header: "Description",
+      className: "max-w-xs truncate",
+      cell: (r) => r.description,
+    },
+    { header: "Parts Used", cell: (r) => `${r.usedParts.length} part(s)` },
+    { header: "Total Cost", cell: (r) => formatCurrency(r.totalCost) },
+    { header: "Labor Cost", cell: (r) => formatCurrency(r.laborCost) },
+    {
+      header: "Actions",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (r) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          title="View Details"
+          onClick={() => router.push(`/repairs/${r.id}`)}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -438,77 +439,17 @@ export default function RepairsPage() {
         </CardHeader>
         <CardContent>
           {/* Search Input */}
-          <div className="mb-4">
-            <SearchInput
-              placeholder="Search by customer name, device, or status..."
-              value={repairsSearchTerm}
-              onChange={setRepairsSearchTerm}
-              className="max-w-sm"
-            />
-          </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Parts Used</TableHead>
-                  <TableHead>Total Cost</TableHead>
-                  <TableHead>Labor Cost</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {repairsLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center text-muted-foreground"
-                    >
-                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : filteredRepairs.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="text-center text-muted-foreground"
-                    >
-                      {repairsSearchTerm
-                        ? "No repairs found matching your search."
-                        : "No repairs found. Create your first repair job to get started."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRepairs.map((repair: RepairWithRelations) => (
-                    <TableRow key={repair.id}>
-                      <TableCell className="font-medium">
-                        {formatDisplayDate(repair.createdAt)}
-                      </TableCell>
-                      <TableCell>{repair.customer.name}</TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {repair.description}
-                      </TableCell>
-                      <TableCell>{repair.usedParts.length} part(s)</TableCell>
-                      <TableCell>{formatCurrency(repair.totalCost)}</TableCell>
-                      <TableCell>{formatCurrency(repair.laborCost)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="View Details"
-                          onClick={() => router.push(`/repairs/${repair.id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            rows={repairs}
+            columns={repairColumns}
+            search={{
+              placeholder: "Search by customer name or description...",
+              predicate: repairPredicate,
+            }}
+            loading={repairsLoading}
+            emptyMessage="No repairs found. Create your first repair job to get started."
+            emptySearchMessage="No repairs found matching your search."
+          />
         </CardContent>
       </Card>
 

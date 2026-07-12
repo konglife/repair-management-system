@@ -10,24 +10,16 @@ import {
   Receipt,
   Package,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "~/app/providers";
-import { formatCurrency, formatDisplayDate } from "~/lib/utils";
+import { formatCurrency, formatDisplayDate, matchesAmount } from "~/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SearchInput } from "~/components/ui/SearchInput";
 import { CustomerPicker, ProductPicker } from "~/components/ui/pickers";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, type Column } from "~/components/ui/DataTable";
 import {
   Select,
   SelectContent,
@@ -86,11 +78,17 @@ interface SaleItem {
 
 type DateRange = "today" | "7days" | "1month" | undefined;
 
+// Raw (trimmed, non-empty) term — DataTable handles the empty short-circuit.
+const salePredicate = (sale: SaleWithRelations, term: string) => {
+  const t = term.toLowerCase();
+  const customerMatch = sale.customer.name.toLowerCase().includes(t);
+  const dateMatch = formatDisplayDate(sale.createdAt).toLowerCase().includes(t);
+  const amountMatch = matchesAmount(sale.totalAmount, t);
+  return customerMatch || dateMatch || amountMatch;
+};
+
 export default function SalesPage() {
   const router = useRouter();
-
-  // Search state
-  const [salesSearchTerm, setSalesSearchTerm] = useState("");
 
   // Date range filter state
   const [dateRange, setDateRange] = useState<DateRange>(undefined);
@@ -113,37 +111,6 @@ export default function SalesPage() {
 
   // Utils for query invalidation
   const utils = api.useUtils();
-
-  // Filtered data for search functionality
-  const filteredSales = useMemo(() => {
-    if (!salesSearchTerm.trim()) return sales;
-    const searchTerm = salesSearchTerm.toLowerCase();
-    return sales.filter(
-      (sale: {
-        customer: { name: string };
-        totalAmount: number;
-        createdAt: string | Date;
-      }) => {
-        // Search by customer name
-        const customerNameMatch = sale.customer.name
-          .toLowerCase()
-          .includes(searchTerm);
-
-        // Search by date (various formats)
-        const dateString = formatDisplayDate(sale.createdAt).toLowerCase();
-        const dateMatch = dateString.includes(searchTerm);
-
-        // Search by total amount (both number and formatted currency)
-        const totalAmountString = sale.totalAmount.toString();
-        const formattedAmount = formatCurrency(sale.totalAmount).toLowerCase();
-        const amountMatch =
-          totalAmountString.includes(searchTerm) ||
-          formattedAmount.includes(searchTerm);
-
-        return customerNameMatch || dateMatch || amountMatch;
-      }
-    );
-  }, [sales, salesSearchTerm]);
 
   // tRPC mutations
   const createSaleMutation = api.sales.create.useMutation({
@@ -265,6 +232,32 @@ export default function SalesPage() {
   };
 
   // Note: displaySales removed as analytics now come from dedicated endpoint
+
+  const saleColumns: Column<SaleWithRelations>[] = [
+    {
+      header: "Date",
+      className: "font-medium",
+      cell: (s) => formatDisplayDate(s.createdAt),
+    },
+    { header: "Customer", cell: (s) => s.customer.name },
+    { header: "Items", cell: (s) => `${s.saleItems.length} item(s)` },
+    { header: "Total Amount", cell: (s) => formatCurrency(s.totalAmount) },
+    {
+      header: "Actions",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (s) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          title="View Details"
+          onClick={() => router.push(`/sales/${s.id}`)}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      ),
+    },
+  ];
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -560,71 +553,17 @@ export default function SalesPage() {
           )}
 
           {/* Search Input */}
-          <div className="mb-4">
-            <SearchInput
-              placeholder="Search by customer name, date, or amount..."
-              value={salesSearchTerm}
-              onChange={setSalesSearchTerm}
-              className="max-w-sm"
-            />
-          </div>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Total Amount</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {salesLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground"
-                    >
-                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                    </TableCell>
-                  </TableRow>
-                ) : filteredSales.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="text-center text-muted-foreground"
-                    >
-                      {salesSearchTerm
-                        ? "No sales found matching your search."
-                        : "No sales found. Create your first sale to get started."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredSales.map((sale: SaleWithRelations) => (
-                    <TableRow key={sale.id}>
-                      <TableCell className="font-medium">
-                        {formatDisplayDate(sale.createdAt)}
-                      </TableCell>
-                      <TableCell>{sale.customer.name}</TableCell>
-                      <TableCell>{sale.saleItems.length} item(s)</TableCell>
-                      <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="View Details"
-                          onClick={() => router.push(`/sales/${sale.id}`)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            rows={sales}
+            columns={saleColumns}
+            search={{
+              placeholder: "Search by customer name, date, or amount...",
+              predicate: salePredicate,
+            }}
+            loading={salesLoading}
+            emptyMessage="No sales found. Create your first sale to get started."
+            emptySearchMessage="No sales found matching your search."
+          />
         </CardContent>
       </Card>
     </div>
