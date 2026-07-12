@@ -963,6 +963,7 @@ export default function StockPage() {
                   loading={categoriesLoading}
                   emptyMessage="No categories found. Create your first category to get started."
                   emptySearchMessage="No categories found matching your search."
+                  pagination={{ pageSize: 25 }}
                 />
               </CardContent>
             </Card>
@@ -1029,6 +1030,7 @@ export default function StockPage() {
                   loading={unitsLoading}
                   emptyMessage="No units found. Create your first unit to get started."
                   emptySearchMessage="No units found matching your search."
+                  pagination={{ pageSize: 25 }}
                 />
               </CardContent>
             </Card>
@@ -1169,6 +1171,7 @@ export default function StockPage() {
                   loading={productsLoading}
                   emptyMessage="No products found. Create your first product to get started."
                   emptySearchMessage="No products found matching your search."
+                  pagination={{ pageSize: 25 }}
                 />
               </CardContent>
             </Card>
@@ -1333,6 +1336,7 @@ export default function StockPage() {
                           : "No purchase records found."
                       }
                       emptySearchMessage="No purchase records found matching your search."
+                      pagination={{ pageSize: 25 }}
                     />
                   </div>
                 </div>

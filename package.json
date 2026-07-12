@@ -1,6 +1,6 @@
 {
   "name": "repair-management-system",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:clone-prod-to-dev": "tsx scripts/clone-prod-to-dev.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.31.1",
