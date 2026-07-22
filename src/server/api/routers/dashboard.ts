@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { DATE_RANGE_VALUES, parseDateRange } from "~/server/dates";
+import { salesProfit, repairMargin, grossProfit } from "~/server/financials";
 
 // Type interfaces for database operations
 interface PurchaseRecord {
@@ -122,7 +123,7 @@ export const dashboardRouter = createTRPCRouter({
         },
         _sum: {
           totalCost: true,
-          laborCost: true,
+          partsCost: true,
         },
       });
 
@@ -130,7 +131,7 @@ export const dashboardRouter = createTRPCRouter({
       const totalSalesIncome = salesAggregation._sum.totalAmount ?? 0;
       const totalSalesCost = salesAggregation._sum.totalCost ?? 0;
       const totalRepairIncome = repairAggregation._sum.totalCost ?? 0;
-      const totalRepairLaborCost = repairAggregation._sum.laborCost ?? 0;
+      const totalRepairPartsCost = repairAggregation._sum.partsCost ?? 0;
 
       // Calculate total stock value (quantity * average cost)
       const products = await ctx.db.product.findMany({
@@ -146,14 +147,21 @@ export const dashboardRouter = createTRPCRouter({
         0
       );
 
+      // กำไรผ่านกล่อง canonical — ดู src/server/financials.ts (C4)
+      const salesProfitValue = salesProfit(totalSalesIncome, totalSalesCost);
+      const repairMarginValue = repairMargin(
+        totalRepairIncome,
+        totalRepairPartsCost
+      );
+
       return {
         totalExpenses,
         totalRepairIncome,
         totalSalesIncome,
-        salesProfit: totalSalesIncome - totalSalesCost,
-        repairProfit: totalRepairLaborCost,
+        salesProfit: salesProfitValue,
+        repairProfit: repairMarginValue,
         totalStockValue,
-        grossProfit: totalSalesIncome - totalSalesCost + totalRepairLaborCost,
+        grossProfit: grossProfit(salesProfitValue, repairMarginValue),
       };
     }),
 
