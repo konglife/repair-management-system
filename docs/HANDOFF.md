@@ -1,41 +1,15 @@
-# Handoff — C4 implement เสร็จ + push develop · รอ release v1.3.0
+# Handoff — ✅ v1.3.0 (C4) released ลง production · เป้าถัดไปกลับแผนหลัก C9
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-22, session 10):** 🟢 **C4 (Financial aggregation) implement เสร็จ + push develop แล้ว** — รอ release
+> **สถานะล่าสุด (2026-07-22, session 10):** 🟢 **v1.3.0 (C4 Financials module) released ลง production แล้ว**
 >
-> - session 10: `/implement` C4 ตาม design doc → สร้าง `src/server/financials.ts` + ดัดแปลง 3 call sites · `/code-review` (0 hard) · เปิด+ปิด issue `#8`
-> - verify: 679/679 เขียว · tsc+lint สะอาด · parity บน dev DB (538 repairs) `Δ=0` · commit `632a9e8` push แล้วบน develop
-> - **งานถัดไป = release v1.3.0** (merge develop→main + tag) — **รอผู้ใช้สั่ง** · ยังไม่ release
-> - prod ยัง = v1.2.1 (`main` = `df504f0`) · develop = `632a9e8`
-
----
-
-## 🎯 เป้าหมายเซสชันถัดไป = **release v1.3.0 (C4)**
-
-C4 implement เสร็จ + verify ครบ + push develop แล้ว (commit `632a9e8`) → เหลือแค่ release
-
-**สรุปสิ่งที่ทำ (session 10):**
-
-- สร้าง `src/server/financials.ts` (pure functions: `salesProfit` / `repairMargin` / `grossProfit`) + unit test
-- ดัดแปลง 3 call sites: `dashboard.getSummary` · `reports.getMonthlySummary` · `sale.getById` → ใช้กล่อง canonical
-- ปลด coupling จากชื่อฟิลด์ `laborCost` ที่หลอก → ใช้ `totalCost − partsCost` ตรงๆ (ADR-0001)
-- `/code-review`: Standards 0 hard · Spec 0 hard · แก้ naming drift (`repairMarginValue`) · issue `#8` CLOSED
-
-**Verify (ครบ):**
-
-- `npm test` 679/679 เขียว · tsc + lint สะอาด
-- parity บน dev DB (ข้อมูล prod จริง 538 repairs + 44 sales): per-repair invariant เคร่งครัด · กำไรเก่า vs ใหม่ `Δ = 0.000000`
-
-**ขั้นตอน release (รอผู้ใช้สั่ง):**
-
-1. แก้ version files บน develop → `package.json`, `CHANGELOG.md`, `src/components/layout/sidebar.tsx` (ดู `CLAUDE.md` 🏷️ Versioning)
-2. commit → `git merge --no-ff develop` ลง main → `git tag v1.3.0` → push develop + main + tag
-3. ⚠️ merge/tag/push main โดน Claude auto-classifier บล็อก → **ผู้ใช้รันเองผ่าน `!` prefix**
-
-> **อ้างอิง C4:** `docs/c4-financials-design.md` (grill 7 ข้อ + interface + ขั้นตอน) · `docs/adr/0001-repair-pricing-residual-margin.md`
+> - session 10: `/implement` C4 → `/code-review` (0 hard) → verify (test+parity+browser) → bump version → **merge main + tag `v1.3.0` + GitHub Release** · issue `#8` CLOSED
+> - **C4 จบสมบูรณ์** — `src/server/financials.ts` + 3 call sites · ไม่แตะ DB · เลขกำไรเท่าเดิม (parity `Δ=0` บน 538 repairs)
+> - prod = **v1.3.0** (`main` = `fd28488` = tag `v1.3.0` = GitHub Release Latest) · develop = `f8b2396`
+> - **งานถัดไป = กลับแผนหลัก** → C9 (Money type · MAJOR · ⚠️แตะ DB) หรือ C10 (Speculative) · ดูตารางด้านล่าง
 
 ---
 
@@ -48,7 +22,7 @@ C4 implement เสร็จ + verify ครบ + push develop แล้ว (com
 | **C1**  | EntityPicker               | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
 | **C2**  | Repair pricing             | 🟡 Worth exploring | ⚙️ จบด้วย ADR-0001 (คง residual model ไม่แก้โค้ด)  |
 | **C3**  | Stock deduction            | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
-| **C4**  | Financial aggregation      | 🟢 Strong          | ✅ ทำแล้ว (develop) · รอ release v1.3.0 · issue #8 |
+| **C4**  | Financial aggregation      | 🟢 Strong          | ✅ ทำแล้ว · v1.3.0 · issue #8                      |
 | **C5**  | Auth seam                  | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
 | **C6**  | Date-range                 | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
 | **C7**  | Date input (DatePicker)    | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
@@ -71,7 +45,8 @@ C4 implement เสร็จ + verify ครบ + push develop แล้ว (com
 
 ## ✅ สถานะงานที่จบแล้ว
 
-- **C4 implement + code-review** _(session 10)_ — `src/server/financials.ts` + 3 call sites · `/code-review` 0 hard · parity `Δ=0` · issue `#8` CLOSED (ยังไม่ release)
+- **release v1.3.0 (C4)** _(session 10)_ — merge `fd28488` + tag + GitHub Release · C4 Financials module · issue `#8` CLOSED
+- **C4 implement + code-review** _(session 10)_ — `src/server/financials.ts` + 3 call sites · `/code-review` 0 hard · parity `Δ=0`
 - **C4 grilled + design doc** _(session 9)_ — `docs/c4-financials-design.md` + Financials module term ใน `CONTEXT.md`
 - **release v1.2.1** _(session 8)_ — merge `df504f0` + tag + GitHub Release · เปิด pagination pageSize 25 + clone tooling
 - **clone script** _(session 8)_ — `scripts/clone-prod-to-dev.ts` + `.env.prod-readonly.local` (gitignored)
@@ -82,9 +57,9 @@ C4 implement เสร็จ + verify ครบ + push develop แล้ว (com
 
 ## 📍 สถานะ git
 
-- **สาขาปัจจุบัน = `develop`** (= `632a9e8` · commit + push แล้ว)
-- **`main` = `df504f0`** (= origin/main = tag `v1.2.1` = GitHub Release Latest)
-- **tag บน GitHub:** `v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.2.1`
+- **สาขาปัจจุบัน = `develop`** (= `f8b2396` · commit + push แล้ว)
+- **`main` = `fd28488`** (= origin/main = tag `v1.3.0` = GitHub Release Latest)
+- **tag บน GitHub:** `v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.2.1`, `v1.3.0`
 - **working tree:** สะอาด (เหลือแค่ scratch `docs/1.csv`, `docs/2.csv` ตามปกติ)
 - **GitHub Issues เปิด:** ไม่มี · ปิดแล้ว: `#3` `#4` `#5` `#6` `#7` `#8`
 
@@ -104,12 +79,11 @@ C4 implement เสร็จ + verify ครบ + push develop แล้ว (com
 
 ---
 
-## 🏷️ Flow release v1.3.0 (C4 — รอผู้ใช้สั่ง)
+## 🏷️ v1.3.0 released เรียบร้อย ✅
 
-> C4 implement เสร็จ + push develop แล้ว → เหลือ release · กฎเต็ม → `CLAUDE.md` section 🏷️ Versioning
-> C4 = ฟีเจอร์ใหม่ (module) ของเดิมยังใช้ได้ = **MINOR** (`1.3.0`) · ไม่แตะ DB (ไม่ใช่ MAJOR)
-> ขั้นตอน: แก้ version files บน develop → merge main → tag v1.3.0 → push
-> ⚠️ merge + tag + push main โดน Claude auto-classifier บล็อก → **ผู้ใช้รันเองผ่าน `!` prefix**
+> C4 ลง production แล้ว (`fd28488` + tag `v1.3.0` + GitHub Release) · รอบถัดไป = แผนหลัก C9/C10
+> กฎ release ครั้งต่อไป → `CLAUDE.md` section 🏷️ Versioning
+> ⚠️ merge + tag + push main โดน Claude auto-classifier บล็อก → **ผู้ใช้รันเองผ่าน `!` prefix** (เหมือนครั้งนี้)
 
 ---
 
@@ -118,14 +92,12 @@ C4 implement เสร็จ + verify ครบ + push develop แล้ว (com
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: C4 (Financial aggregation) implement เสร็จ + push develop แล้ว — รอ release v1.3.0
-- src/server/financials.ts + 3 call sites (dashboard/reports/sale) · commit 632a9e8 บน develop
-- verify: 679/679 เขียว · tsc+lint สะอาด · parity บน dev DB (538 repairs) Δ=0 · /code-review 0 hard · issue #8 CLOSED
-- prod = v1.2.1 (main df504f0) · develop = 632a9e8 · working tree สะอาด
+สถานะ: v1.3.0 (C4 Financials module) released ลง production แล้ว · C4 จบสมบูรณ์
+- prod = v1.3.0 (main fd28488 = tag v1.3.0 = GitHub Release) · develop = f8b2396 · working tree สะอาด
+- C4: src/server/financials.ts + 3 call sites · ไม่แตะ DB · parity Δ=0 (538 repairs) · /code-review 0 hard · issue #8 CLOSED
 
-เป้าหมาย: release v1.3.0 (merge develop→main + tag) — รอคำสั่ง
-- Matt flow: grill(เสร็จ) → design doc(เสร็จ) → implement(เสร็จ) → code-review(เสร็จ) → release(ต่อ)
-- แก้ version files บน develop (package.json/CHANGELOG.md/sidebar.tsx) → merge main → tag → push
+เป้าหมาย: กลับแผนหลัก → C9 (Money type · MAJOR · แตะ DB) หรือ C10 (Speculative)
+- C9 ต้องเริ่มด้วย /grill-with-docs + ทดสอบ migration บน dev (โคลนจาก prod) ก่อน merge main
 ```
 
 ---
