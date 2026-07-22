@@ -13,6 +13,25 @@ _ยังไม่มีการเปลี่ยนแปลง_
 
 ---
 
+## [1.3.0] — 2026-07-22
+
+Minor — รวมสูตรกำไรเข้า module เดียว (C4) · ฝั่ง server ล้วน ไม่มี DB migration · เลขกำไรเท่าเดิมเป๊ะ (parity)
+
+### Changed — Financials module (C4)
+
+- **สร้าง `src/server/financials.ts`** — pure functions `salesProfit` / `repairMargin` / `grossProfit` เป็น single source ของนิยามกำไร (`632a9e8`)
+- **ดัดแปลง 3 call sites** ให้ใช้กล่อง canonical แทนสูตรเขียนซ้ำ:
+  - `dashboard.getSummary` — เลิกอ่าน `_sum.laborCost` ตรงๆ → ใช้ `_sum.partsCost` + `repairMargin()` (ปลด coupling ชื่อฟิลด์ที่หลอก)
+  - `reports.getMonthlySummary` — overview + กำไรต่อบิลผ่านกล่อง
+  - `sale.getById` — `grossProfit` ผ่าน `salesProfit()`
+- **ปลด drift สูตร** — dashboard กับ reports เคยคิดกำไรซ่อมต่างกัน (ออกเท่ากันแค่โดยบังเอิญ) → ตอนนี้นิยามที่เดียว ตาม ADR-0001 (residual margin model)
+
+### Internal
+
+- unit test กล่อง (8 cases รวมกำไรติดลบ) · parity check บน dev DB (ข้อมูล prod จริง 538 repairs) `Δ = 0` · `/code-review` 0 hard · issue `#8` CLOSED
+
+---
+
 ## [1.2.1] — 2026-07-12
 
 Patch — เปิดใช้ pagination ที่สร้างไว้ใน 1.2.0 (UI ล้วน ไม่มี DB migration · ข้อมูลจริงไม่กระทบ) + เครื่องมือโคลนข้อมูลทดสอบ (ภายใน)
