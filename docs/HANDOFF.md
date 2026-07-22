@@ -1,50 +1,41 @@
-# Handoff — C4 grilled + design doc พร้อม · แชทใหม่เข้า `/implement`
+# Handoff — C4 implement เสร็จ + push develop · รอ release v1.3.0
 
 > ไฟล์ส่งต่อบริบทไปแชทใหม่ — **อ่านก่อนเริ่มงาน**
 > กฎ/โฟลว์/env → `CLAUDE.md` · domain + รูปร่างธุรกิจ + โมเดลราคาซ่อม + pain backlog → `CONTEXT.md`
 > เอกสารนี้โฟกัสที่ **เป้าหมาย + สถานะ + จุดที่จะต่อ**
 
-> **สถานะล่าสุด (2026-07-22, session 9):** 🟡 **C4 (Financial aggregation) grill เสร็จ + design doc พร้อมแล้ว** — ยังไม่ implement
+> **สถานะล่าสุด (2026-07-22, session 10):** 🟢 **C4 (Financial aggregation) implement เสร็จ + push develop แล้ว** — รอ release
 >
-> - session 9: เข้า `/grill-with-docs` ไล่ปัญหา C4 (7 ข้อ) → เขียน `docs/c4-financials-design.md` + เพิ่ม Financials module term ใน `CONTEXT.md`
-> - **งานถัดไป = `/implement` ตาม design doc** (Matt flow: grill → design doc → implement → verify)
-> - **ไม่ได้แตะโค้ด production** — แค่เขียน docs · commit + push แล้ว (`38260c0` บน develop)
-> - prod ยัง = v1.2.1 (`main` = `df504f0`) · develop = `38260c0`
+> - session 10: `/implement` C4 ตาม design doc → สร้าง `src/server/financials.ts` + ดัดแปลง 3 call sites · `/code-review` (0 hard) · เปิด+ปิด issue `#8`
+> - verify: 679/679 เขียว · tsc+lint สะอาด · parity บน dev DB (538 repairs) `Δ=0` · commit `632a9e8` push แล้วบน develop
+> - **งานถัดไป = release v1.3.0** (merge develop→main + tag) — **รอผู้ใช้สั่ง** · ยังไม่ release
+> - prod ยัง = v1.2.1 (`main` = `df504f0`) · develop = `632a9e8`
 
 ---
 
-## 🎯 เป้าหมายเซสชันถัดไป = **`/implement` C4 ตาม design doc**
+## 🎯 เป้าหมายเซสชันถัดไป = **release v1.3.0 (C4)**
 
-C4 = **รวมสูตรกำไรเข้ากล่องเดียว** (`src/server/financials.ts`) — refactor ฝั่ง server ไม่แตะ DB
+C4 implement เสร็จ + verify ครบ + push develop แล้ว (commit `632a9e8`) → เหลือแค่ release
 
-**อ่านก่อน implement:**
+**สรุปสิ่งที่ทำ (session 10):**
 
-1. **`docs/c4-financials-design.md`** ← design doc ฉบับเต็ม (grill 7 ข้อ + interface + ขั้นตอน + verify)
-2. `docs/adr/0001-repair-pricing-residual-margin.md` — `laborCost` = margin (residual)
-3. ส่วน C4 ใน `docs/architecture-review-20260705-th.html`
+- สร้าง `src/server/financials.ts` (pure functions: `salesProfit` / `repairMargin` / `grossProfit`) + unit test
+- ดัดแปลง 3 call sites: `dashboard.getSummary` · `reports.getMonthlySummary` · `sale.getById` → ใช้กล่อง canonical
+- ปลด coupling จากชื่อฟิลด์ `laborCost` ที่หลอก → ใช้ `totalCost − partsCost` ตรงๆ (ADR-0001)
+- `/code-review`: Standards 0 hard · Spec 0 hard · แก้ naming drift (`repairMarginValue`) · issue `#8` CLOSED
 
-### สรุปการตัดสินใจ C4 (7 ข้อ — ล็อกแล้วใน grill)
+**Verify (ครบ):**
 
-| #   | ข้อตกลง                                                                           |
-| --- | --------------------------------------------------------------------------------- |
-| Q1  | scope = แค่ "รวมสูตร" ไม่ยุ่ง Float/Decimal (เก็บ C9)                             |
-| Q2  | นิยามกำไรซ่อม = `totalCost − partsCost` (ไม่อ่านฟิลด์ `laborCost` ตรงๆ)           |
-| Q3  | กล่อง = pure function รับค่า sum · ที่อยู่ `src/server/financials.ts`             |
-| Q4  | call sites = ① dashboard ② reports ③ sale.getById (ปล่อย ④ `repair.getAnalytics`) |
-| Q5  | ชื่อในโค้ด = `margin` (DB ยัง `laborCost` ค้างให้ C9)                             |
-| Q6  | ไม่จัดการกำไรติดลบ (เป็น C2-remain คนละเรื่อง)                                    |
-| Q7  | verify = unit test กล่อง + parity check (เลขก่อน/หลังเท่ากัน)                     |
+- `npm test` 679/679 เขียว · tsc + lint สะอาด
+- parity บน dev DB (ข้อมูล prod จริง 538 repairs + 44 sales): per-repair invariant เคร่งครัด · กำไรเก่า vs ใหม่ `Δ = 0.000000`
 
-### ขั้นตอน implement (incremental — ดู design doc ตารางเต็ม)
+**ขั้นตอน release (รอผู้ใช้สั่ง):**
 
-1. สร้าง `src/server/financials.ts` + `financials.test.ts` → verify: unit test เขียว
-2. ดัดแปลง ① `dashboard.getSummary` (`_sum.laborCost` → `_sum.partsCost` ผ่าน `repairMargin`) → ค่าเท่าเดิม
-3. ดัดแปลง ② `reports.getMonthlySummary` (รวมต่อแถว sale) → ค่าเท่าเดิม
-4. ดัดแปลง ③ `sale.getById` → ค่าเท่าเดิม
-5. `npm test` + tsc + lint → เขียว
-6. parity check บน dev DB → เลขกำไร dashboard/reports ก่อน = หลัง เป๊ะ
+1. แก้ version files บน develop → `package.json`, `CHANGELOG.md`, `src/components/layout/sidebar.tsx` (ดู `CLAUDE.md` 🏷️ Versioning)
+2. commit → `git merge --no-ff develop` ลง main → `git tag v1.3.0` → push develop + main + tag
+3. ⚠️ merge/tag/push main โดน Claude auto-classifier บล็อก → **ผู้ใช้รันเองผ่าน `!` prefix**
 
-> **คุณสมบัติสำคัญ:** refactor ที่เลขไม่เปลี่ยน (dashboard vs reports ออกเท่ากันอยู่แล้วโดยบังเอิญ — C4 แค่นิยามสูตรที่เดียว)
+> **อ้างอิง C4:** `docs/c4-financials-design.md` (grill 7 ข้อ + interface + ขั้นตอน) · `docs/adr/0001-repair-pricing-residual-margin.md`
 
 ---
 
@@ -52,25 +43,25 @@ C4 = **รวมสูตรกำไรเข้ากล่องเดีย�
 
 > แผนหลัก = `docs/architecture-review-20260705-th.html` (badge = ความสำคัญ)
 
-| C       | ชื่อ                       | badge              | สถานะ                                               |
-| ------- | -------------------------- | ------------------ | --------------------------------------------------- |
-| **C1**  | EntityPicker               | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                  |
-| **C2**  | Repair pricing             | 🟡 Worth exploring | ⚙️ จบด้วย ADR-0001 (คง residual model ไม่แก้โค้ด)   |
-| **C3**  | Stock deduction            | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                  |
-| **C4**  | Financial aggregation      | 🟢 Strong          | 🔶 **grilled + design doc พร้อม** → รอ `/implement` |
-| **C5**  | Auth seam                  | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                  |
-| **C6**  | Date-range                 | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                  |
-| **C7**  | Date input (DatePicker)    | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                  |
-| **C8**  | List + search + pagination | 🟡 Worth exploring | ✅ ทำแล้ว · v1.2.0 + v1.2.1                         |
-| **C9**  | Money type                 | 🟡 Worth exploring | ⬜ ยังไม่เริ่ม · ⚠️ แตะ DB (MAJOR candidate 2.0.0)  |
-| **C10** | แยกหน้า stock 1641 บรรทัด  | ⚪ Speculative     | ⬜ ยังไม่เริ่ม (ลำดับต่ำสุด)                        |
+| C       | ชื่อ                       | badge              | สถานะ                                              |
+| ------- | -------------------------- | ------------------ | -------------------------------------------------- |
+| **C1**  | EntityPicker               | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
+| **C2**  | Repair pricing             | 🟡 Worth exploring | ⚙️ จบด้วย ADR-0001 (คง residual model ไม่แก้โค้ด)  |
+| **C3**  | Stock deduction            | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
+| **C4**  | Financial aggregation      | 🟢 Strong          | ✅ ทำแล้ว (develop) · รอ release v1.3.0 · issue #8 |
+| **C5**  | Auth seam                  | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
+| **C6**  | Date-range                 | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
+| **C7**  | Date input (DatePicker)    | 🟢 Strong          | ✅ ทำแล้ว · v1.1.0                                 |
+| **C8**  | List + search + pagination | 🟡 Worth exploring | ✅ ทำแล้ว · v1.2.0 + v1.2.1                        |
+| **C9**  | Money type                 | 🟡 Worth exploring | ⬜ ยังไม่เริ่ม · ⚠️ แตะ DB (MAJOR candidate 2.0.0) |
+| **C10** | แยกหน้า stock 1641 บรรทัด  | ⚪ Speculative     | ⬜ ยังไม่เริ่ม (ลำดับต่ำสุด)                       |
 
 ---
 
 ## 🔑 Decision สำคัญที่ต้องรู้ก่อนทำงานต่อ
 
 - **ADR-0001: Repair pricing = residual margin model** — `laborCost` semantic = margin ไม่ใช่ค่าแรง · `docs/adr/0001-repair-pricing-residual-margin.md`
-- **C4 design doc** — `docs/c4-financials-design.md` (grill 7 ข้อ + interface + ขั้นตอน) — **อ่านก่อน implement**
+- **C4 design doc** — `docs/c4-financials-design.md` (grill 7 ข้อ + interface + ขั้นตอน) — **implement เสร็จแล้ว session 10**
 - **กฎ versioning** → `CLAUDE.md` section 🏷️ Versioning
 - **C8 pagination** = optional config (`pageSize`) ใน `DataTable<T>` · รายละเอียด → `docs/c8-datatable-design.md`
 - **C9 (Float/money)** = จุดเดียวที่จะแตะ DB จริง (MAJOR candidate) · **ทดสอบ migration บน dev ที่โคลนจาก prod** ก่อน merge main
@@ -80,7 +71,8 @@ C4 = **รวมสูตรกำไรเข้ากล่องเดีย�
 
 ## ✅ สถานะงานที่จบแล้ว
 
-- **C4 grilled + design doc** _(session 9)_ — `docs/c4-financials-design.md` + Financials module term ใน `CONTEXT.md` (ยังไม่ implement)
+- **C4 implement + code-review** _(session 10)_ — `src/server/financials.ts` + 3 call sites · `/code-review` 0 hard · parity `Δ=0` · issue `#8` CLOSED (ยังไม่ release)
+- **C4 grilled + design doc** _(session 9)_ — `docs/c4-financials-design.md` + Financials module term ใน `CONTEXT.md`
 - **release v1.2.1** _(session 8)_ — merge `df504f0` + tag + GitHub Release · เปิด pagination pageSize 25 + clone tooling
 - **clone script** _(session 8)_ — `scripts/clone-prod-to-dev.ts` + `.env.prod-readonly.local` (gitignored)
 - **release v1.2.0** _(session 7)_ — DataTable<T> module + 7 call sites · issue #6 CLOSED
@@ -90,11 +82,11 @@ C4 = **รวมสูตรกำไรเข้ากล่องเดีย�
 
 ## 📍 สถานะ git
 
-- **สาขาปัจจุบัน = `develop`** (= `38260c0` · commit + push แล้ว)
+- **สาขาปัจจุบัน = `develop`** (= `632a9e8` · commit + push แล้ว)
 - **`main` = `df504f0`** (= origin/main = tag `v1.2.1` = GitHub Release Latest)
 - **tag บน GitHub:** `v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.2.1`
 - **working tree:** สะอาด (เหลือแค่ scratch `docs/1.csv`, `docs/2.csv` ตามปกติ)
-- **GitHub Issues เปิด:** ไม่มี · ปิดแล้ว: `#3` `#4` `#5` `#6` `#7`
+- **GitHub Issues เปิด:** ไม่มี · ปิดแล้ว: `#3` `#4` `#5` `#6` `#7` `#8`
 
 ---
 
@@ -102,7 +94,7 @@ C4 = **รวมสูตรกำไรเข้ากล่องเดีย�
 
 ### clone prod → dev (ทดสอบกับข้อมูลจริง)
 
-- 🔁 `npm run db:clone-prod-to-dev` (prod URL อยู่ใน `.env.prod-readonly.local` แล้ว) — **ใช้ parity check C4 ขั้น 6** (เทียบเลขกำไรก่อน/หลัง refactor บนข้อมูลจริง)
+- 🔁 `npm run db:clone-prod-to-dev` (prod URL อยู่ใน `.env.prod-readonly.local` แล้ว) — **ใช้แล้วใน C4 parity check** (เทียบเลขกำไรก่อน/หลัง refactor บนข้อมูลจริง · `Δ=0`)
 - ⚠️ แตะ prod (read-only) → เตือนผู้ใช้ก่อนรันทุกครั้ง
 
 ### chrome-devtools MCP + CDP (verify UI)
@@ -112,11 +104,12 @@ C4 = **รวมสูตรกำไรเข้ากล่องเดีย�
 
 ---
 
-## 🏷️ Flow release (เมื่อ C4 implement เสร็จ + พอใจ)
+## 🏷️ Flow release v1.3.0 (C4 — รอผู้ใช้สั่ง)
 
-> ทำบน `develop` → merge main → tag → push · กฎเต็ม → `CLAUDE.md` section 🏷️ Versioning
-> C4 = ฟีเจอร์ใหม่ (module) ของเดิมยังใช้ได้ = **MINOR** (1.3.0) · ไม่แตะ DB (ไม่ใช่ MAJOR)
-> ⚠️ merge + tag + push main โดน Claude auto-classifier บล็อก → ผู้ใช้รันเองผ่าน `!` prefix
+> C4 implement เสร็จ + push develop แล้ว → เหลือ release · กฎเต็ม → `CLAUDE.md` section 🏷️ Versioning
+> C4 = ฟีเจอร์ใหม่ (module) ของเดิมยังใช้ได้ = **MINOR** (`1.3.0`) · ไม่แตะ DB (ไม่ใช่ MAJOR)
+> ขั้นตอน: แก้ version files บน develop → merge main → tag v1.3.0 → push
+> ⚠️ merge + tag + push main โดน Claude auto-classifier บล็อก → **ผู้ใช้รันเองผ่าน `!` prefix**
 
 ---
 
@@ -125,14 +118,14 @@ C4 = **รวมสูตรกำไรเข้ากล่องเดีย�
 ```
 อ่าน docs/HANDOFF.md ก่อน
 
-สถานะ: C4 (Financial aggregation) grill เสร็จ + design doc พร้อมแล้ว — ยังไม่ implement
-- design doc: docs/c4-financials-design.md (grill 7 ข้อ + interface + ขั้นตอน + verify)
-- docs ทั้งหมด commit + push แล้วบน develop (38260c0) · working tree สะอาด
-- prod = v1.2.1 (main df504f0) · develop = 38260c0 · 671/671 เขียว
+สถานะ: C4 (Financial aggregation) implement เสร็จ + push develop แล้ว — รอ release v1.3.0
+- src/server/financials.ts + 3 call sites (dashboard/reports/sale) · commit 632a9e8 บน develop
+- verify: 679/679 เขียว · tsc+lint สะอาด · parity บน dev DB (538 repairs) Δ=0 · /code-review 0 hard · issue #8 CLOSED
+- prod = v1.2.1 (main df504f0) · develop = 632a9e8 · working tree สะอาด
 
-เป้าหมาย: /implement C4 ตาม design doc — รวมสูตรกำไรเข้า src/server/financials.ts (refactor ไม่แตะ DB)
-- Matt flow: grill(เสร็จ) → design doc(เสร็จ) → implement(ต่อ) → verify
-- หลัง implement ใช้ npm run db:clone-prod-to-dev เทียบเลขกำไรก่อน/หลัง (parity)
+เป้าหมาย: release v1.3.0 (merge develop→main + tag) — รอคำสั่ง
+- Matt flow: grill(เสร็จ) → design doc(เสร็จ) → implement(เสร็จ) → code-review(เสร็จ) → release(ต่อ)
+- แก้ version files บน develop (package.json/CHANGELOG.md/sidebar.tsx) → merge main → tag → push
 ```
 
 ---
