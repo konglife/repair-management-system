@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import type { Prisma } from "@prisma/client";
 import { validateAndDeductStock } from "~/server/stock";
 import { DATE_RANGE_VALUES, parseDateRange } from "~/server/dates";
+import { salesProfit } from "~/server/financials";
 
 // Type interfaces for database operations
 interface Sale {
@@ -81,8 +82,8 @@ export const saleRouter = createTRPCRouter({
         });
       }
 
-      // Calculate gross profit (totalAmount - totalCost)
-      const grossProfit = sale.totalAmount - sale.totalCost;
+      // Calculate gross profit — ผ่านกล่อง canonical (C4)
+      const grossProfit = salesProfit(sale.totalAmount, sale.totalCost);
 
       return {
         ...sale,

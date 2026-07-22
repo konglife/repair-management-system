@@ -81,7 +81,7 @@ export function Sidebar({ className, isCollapsed = false }: SidebarProps) {
         ) : (
           <div className="px-6">
             <h1 className="text-xl font-semibold text-gray-900">
-              Repair Shop 1.2.1
+              Repair Shop 1.3.0
             </h1>
           </div>
         )}

@@ -50,6 +50,10 @@ _Avoid_: สร้าง date picker inline ใหม่เฉพาะที่
 ตาราง list แบบ generic `<T extends { id: string }>` ที่รวม search + filter + table render + loading/empty states + optional pagination ไว้ในตัว — caller ส่งแค่ `rows + columns + predicate`. ใช้แทน pattern ซ้ำ (~70 บรรทัด/ตาราง × 7 ตาราง: customers/sales/repairs/stock×4) ที่เขียน `useState`+`useMemo`+`.filter`+`<SearchInput>`+`<Table>`+states ของตัวเอง. `cell` เป็น render fn (รองรับ nested field / format date / currency / inline edit / action button ได้หมด). pagination = optional (omit = show all). ดู `docs/c8-datatable-design.md`
 _Avoid_: เขียน search+filter+table block เองในหน้าใหม่ — ใช้ `<DataTable>` แทน (column-def + predicate เท่านั้นที่ส่งเข้า)
 
+**Financials**:
+กล่องสูตรกำไรฝั่ง server (`src/server/financials.ts`) — pure function รับค่าที่ sum แล้ว คืนกำไร: `salesProfit(income, cost)` · `repairMargin(totalCost, partsCost)` · `grossProfit(salesProfit, repairMargin)`. นิยาม "กำไร repair = `totalCost − partsCost`" มีที่เดียว (ห้ามอ่านฟิลด์ `laborCost` ตรงๆ — semantic จริง = margin ตาม ADR-0001). ใช้แทนสูตรกำไรที่ drift อยู่ก่อนหน้า (dashboard ใช้ `laborCost` vs reports ใช้ `totalCost−partsCost` — เท่ากันโดยบังเอิญ). ปิด candidate C4. ดู `docs/c4-financials-design.md`
+_Avoid_: เขียนสูตรกำไร (`income − cost` / `totalCost − partsCost`) ใหม่ใน router/summary — ใช้ฟังก์ชันใน Financials แทน · ห้ามตีความ `laborCost` เป็นค่าแรงล้วน
+
 ## รูปร่างธุรกิจจริง (จากข้อมูล production)
 
 > ข้อมูลจาก prod aggregate (สค 2025 – กค 2026, ~11 เดือน) — ยืนยันแล้วไม่อ่อนไหว ร้านเล็กในหมู่บ้าน
